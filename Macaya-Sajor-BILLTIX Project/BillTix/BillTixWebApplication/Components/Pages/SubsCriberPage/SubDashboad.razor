@@ -1,0 +1,12 @@
+﻿@page "/subcriberdashboard"
+@rendermode InteractiveServer
+@inject NavigationManager _Nav
+
+	<button @onclick="GoToCreate">Create</button>
+
+@code {
+    private void GoToCreate()
+    {
+        _Nav.NavigateTo("/createAcc");
+    }
+}

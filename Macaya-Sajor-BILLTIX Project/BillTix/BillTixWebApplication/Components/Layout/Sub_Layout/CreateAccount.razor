@@ -1,0 +1,67 @@
+﻿@page "/createAcc"
+@inject ICreate_User _createUser
+@rendermode InteractiveServer
+
+<h3>Create Account</h3>
+
+<button class="btn btn-primary" @onclick="OpenModal">
+    Open Create Form
+</button>
+
+@if (showModal)
+{
+    <div class="modal-backdrop">
+        <div class="modal-box">
+
+            <h4>Create Account</h4>
+
+            <input class="form-control mb-2" placeholder="First Name" @bind="firstName" />
+            <input class="form-control mb-2" placeholder="Last Name" @bind="lastName" />
+            <input class="form-control mb-2" placeholder="Username" @bind="username" />
+            <input type="password" class="form-control mb-2" placeholder="Password" @bind="password" />
+
+            <!-- ROLE DROPDOWN -->
+            <select class="form-control mb-2" @bind="selectedRole">
+                <option value="Admin">Admin</option>
+                <option value="Technician">Technician</option>
+                <option value="Subscriber">Subscriber</option>
+            </select>
+
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+                <button class="btn btn-success" @onclick="Save">Save</button>
+            </div>
+
+        </div>
+    </div>
+}
+
+@code {
+    private bool showModal = false;
+
+    private string firstName = "";
+    private string lastName = "";
+    private string username = "";
+    private string password = "";
+
+    private Role selectedRole = Role.Subscriber;
+
+    private void OpenModal() => showModal = true;
+    private void CloseModal() => showModal = false;
+
+    private async Task Save()
+    {
+        var user = new Users()
+        {
+            FirstName = firstName,
+            LastName = lastName,
+            Username = username,
+            Password = password,
+            Role = selectedRole.ToString()
+        };
+
+        await _createUser.ExecuteAsync(user);
+
+        showModal = false;
+    }
+}
