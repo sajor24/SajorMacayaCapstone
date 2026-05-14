@@ -1,0 +1,9 @@
+<Solution>
+  <Project Path="BillTixDB/BillTixDB.sqlproj" Id="0cf6d0e8-370a-4cbf-8364-873be165cfbb">
+    <Build />
+    <Deploy />
+  </Project>
+  <Project Path="BillTixWebApplication/BillTixWebApplication.csproj" Id="d19333cc-c5ea-4054-b05c-875f8c737092" />
+  <Project Path="Domain/Domain.csproj" Id="5812dd4e-366b-454a-9a1f-9b413d999525" />
+  <Project Path="Framework/Framework.csproj" Id="b6ef1694-7453-41bb-9f1f-faf05d694008" />
+</Solution>
