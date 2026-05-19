@@ -1,0 +1,249 @@
+﻿@page "/"
+@layout EmptyLayout
+@rendermode InteractiveServer
+@inject NavigationManager _Nav
+@using BillTixWebApp.Components.Layout
+
+<PageTitle>BILLTIX</PageTitle>
+
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+
+    .navbar {
+        padding: 18px 40px;
+        background: #0f0c29;
+        color: white;
+        font-size: 1.4rem;
+        font-weight: 700;
+        letter-spacing: 2px;
+    }
+
+    .hero {
+        background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+        color: white;
+        text-align: center;
+        padding: 80px 20px;
+    }
+
+    .hero h1 {
+        font-size: 2.8rem;
+        font-weight: 800;
+        letter-spacing: 1px;
+        margin-bottom: 12px;
+    }
+
+    .hero p {
+        font-size: 1.1rem;
+        opacity: 0.75;
+    }
+
+    .hero-btn {
+        margin-top: 28px;
+        padding: 14px 36px;
+        background: #4f46e5;
+        color: white;
+        border: none;
+        border-radius: 30px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .hero-btn:hover { background: #3730a3; }
+
+    .pricing-section {
+        text-align: center;
+        padding: 60px 20px 40px;
+        background: #f9f9f9;
+    }
+
+    .pricing-section h2 { font-size: 2rem; font-weight: 700; margin-bottom: 8px; }
+    .pricing-section .sub { color: #888; margin-bottom: 36px; font-size: 0.95rem; }
+
+    .pricing-cards {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        flex-wrap: wrap;
+    }
+
+    .pricing-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 30px 24px;
+        width: 230px;
+        text-align: left;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+        transition: transform 0.2s;
+    }
+
+    .pricing-card:hover { transform: translateY(-4px); }
+    .pricing-card h3 { font-size: 1rem; color: #333; }
+    .pricing-card .speed { color: #4f46e5; font-weight: 700; font-size: 1rem; margin-bottom: 12px; }
+    .pricing-card .price { font-size: 1.6rem; font-weight: 800; color: #111; margin-bottom: 16px; }
+    .pricing-card .price span { font-size: 0.85rem; font-weight: 400; color: #888; }
+    .pricing-card ul { list-style: none; padding: 0; }
+    .pricing-card ul li { font-size: 0.88rem; color: #555; padding: 4px 0; }
+    .pricing-card ul li::before { content: "✓ "; color: #4f46e5; font-weight: bold; }
+
+    .roles-section {
+        padding: 50px 20px;
+        background: white;
+        text-align: center;
+    }
+
+    .roles-section h2 { font-size: 1.8rem; font-weight: 700; margin-bottom: 8px; }
+    .roles-section .sub { color: #888; margin-bottom: 36px; font-size: 0.95rem; }
+
+    .role-cards {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+
+    .role-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 28px 20px;
+        width: 210px;
+        text-align: left;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        transition: transform 0.2s;
+    }
+
+    .role-card:hover { transform: translateY(-4px); }
+    .role-card .icon { font-size: 1.8rem; margin-bottom: 10px; }
+    .role-card h4 { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+    .role-card .subtitle { font-size: 0.78rem; color: #4f46e5; font-weight: 600; margin-bottom: 8px; }
+    .role-card p { font-size: 0.78rem; color: #666; margin-bottom: 20px; line-height: 1.5; }
+
+    .btn-login {
+        background: #4f46e5;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 0;
+        width: 100%;
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-weight: 600;
+        transition: background 0.2s;
+    }
+
+    .btn-login:hover { background: #3730a3; }
+
+    .footer {
+        background: linear-gradient(135deg, #0f0c29, #302b63);
+        color: white;
+        text-align: center;
+        padding: 50px 20px;
+    }
+
+    .footer h3 { font-size: 1.6rem; font-weight: 800; margin-bottom: 10px; }
+    .footer p { font-size: 0.9rem; opacity: 0.75; margin-bottom: 24px; }
+    .footer-btn {
+        padding: 12px 32px;
+        background: white;
+        color: #4f46e5;
+        border: none;
+        border-radius: 30px;
+        font-size: 0.95rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: opacity 0.2s;
+    }
+    .footer-btn:hover { opacity: 0.85; }
+</style>
+
+<!-- Navbar -->
+<div class="navbar">BILLTIX</div>
+
+<!-- Hero -->
+<div class="hero">
+    <h1>Welcome to BILLTIX</h1>
+    <p>Fast, reliable internet service for everyone.</p>
+    <button class="hero-btn" @onclick='() => _Nav.NavigateTo("/login")'>Get Started</button>
+</div>
+
+<!-- Pricing -->
+<div class="pricing-section">
+    <h2>Simple, Transparent Pricing</h2>
+    <p class="sub">Choose the perfect plan for your needs. No hidden fees, cancel anytime.</p>
+    <div class="pricing-cards">
+        <div class="pricing-card">
+            <h3>Upto</h3>
+            <div class="speed">150 MBPS</div>
+            <div class="price">₱1,000.00<span>/Month</span></div>
+            <ul>
+                <li>Waived Installation Fee</li>
+                <li>Unlimited Data</li>
+                <li>Free Router</li>
+            </ul>
+        </div>
+        <div class="pricing-card">
+            <h3>Upto</h3>
+            <div class="speed">200 MBPS</div>
+            <div class="price">₱1,300.00<span>/Month</span></div>
+            <ul>
+                <li>Waived Installation Fee</li>
+                <li>Unlimited Data</li>
+                <li>Free Router</li>
+            </ul>
+        </div>
+        <div class="pricing-card">
+            <h3>Upto</h3>
+            <div class="speed">250 MBPS</div>
+            <div class="price">₱1,500.00<span>/Month</span></div>
+            <ul>
+                <li>Waived Installation Fee</li>
+                <li>Unlimited Data</li>
+                <li>Free Router</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Roles -->
+<div class="roles-section">
+    <h2>Login to Your Portal</h2>
+    <p class="sub">Select your role to access your dashboard.</p>
+    <div class="role-cards">
+        <div class="role-card">
+            <div class="icon">👤</div>
+            <h4>Subscriber</h4>
+            <div class="subtitle">Access your account</div>
+            <p>View billing statements, pay bills online, and track your payment history.</p>
+            <button class="btn-login" @onclick='() => _Nav.NavigateTo("/login?role=Subscriber")'>Login as Subscriber</button>
+        </div>
+        <div class="role-card">
+            <div class="icon">👥</div>
+            <h4>Staff</h4>
+            <div class="subtitle">Manage accounts</div>
+            <p>View your billing statements, pay bills online, and track your payment history.</p>
+            <button class="btn-login" @onclick='() => _Nav.NavigateTo("/login?role=Staff")'>Login as Staff</button>
+        </div>
+        <div class="role-card">
+            <div class="icon">🛡️</div>
+            <h4>Administrator</h4>
+            <div class="subtitle">Full system access</div>
+            <p>Manage subscriber accounts, configure billing rates, and process payments.</p>
+            <button class="btn-login" @onclick='() => _Nav.NavigateTo("/login?role=Admin")'>Login as Admin</button>
+        </div>
+        <div class="role-card">
+            <div class="icon">🔧</div>
+            <h4>Technician</h4>
+            <div class="subtitle">Field operations</div>
+            <p>Manage subscriber accounts, configure billing rates, and process payments.</p>
+            <button class="btn-login" @onclick='() => _Nav.NavigateTo("/login?role=Technician")'>Login as Technician</button>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+    <h3>Ready to Get Started?</h3>
+    <p>Join thousands of satisfied customers enjoying fast, reliable internet service.</p>
+    <button class="footer-btn" @onclick='() => _Nav.NavigateTo("/login")'>Get Started Now</button>
+</div>

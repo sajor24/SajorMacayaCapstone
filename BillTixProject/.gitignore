@@ -1,0 +1,18 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Build results
+bin/
+obj/
+
+# Published files
+publish/
+
+# NuGet
+*.nupkg
+packages/
+
+# Sensitive config
+appsettings.Development.json

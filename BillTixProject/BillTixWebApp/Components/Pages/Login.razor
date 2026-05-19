@@ -1,0 +1,160 @@
+﻿@page "/login"
+@rendermode InteractiveServer
+@inject NavigationManager _Nav
+@using BillTixWebApp.Components.Layout
+@layout EmptyLayout
+
+<PageTitle>Login - BillTix</PageTitle>
+
+<style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    .login-wrapper {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .login-card {
+        background: white;
+        border-radius: 16px;
+        padding: 40px 36px;
+        width: 100%;
+        max-width: 400px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+
+    .login-card h2 {
+        font-size: 1.6rem;
+        font-weight: 800;
+        margin-bottom: 4px;
+        color: #111;
+    }
+
+    .role-badge {
+        display: inline-block;
+        background: #ede9fe;
+        color: #4f46e5;
+        font-size: 0.78rem;
+        font-weight: 600;
+        padding: 4px 12px;
+        border-radius: 20px;
+        margin-bottom: 24px;
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #444;
+        margin-bottom: 6px;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        outline: none;
+        transition: border 0.2s;
+    }
+
+    .form-group input:focus {
+        border-color: #4f46e5;
+    }
+
+    .error {
+        color: #ef4444;
+        font-size: 0.85rem;
+        margin-bottom: 12px;
+        background: #fef2f2;
+        padding: 8px 12px;
+        border-radius: 6px;
+    }
+
+    .btn-submit {
+        width: 100%;
+        padding: 12px;
+        background: #4f46e5;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        margin-top: 8px;
+        transition: background 0.2s;
+    }
+
+    .btn-submit:hover {
+        background: #3730a3;
+    }
+
+    .back-link {
+        display: block;
+        text-align: center;
+        margin-top: 16px;
+        font-size: 0.85rem;
+        color: #4f46e5;
+        cursor: pointer;
+        text-decoration: underline;
+    }
+</style>
+
+<div class="login-wrapper">
+    <div class="login-card">
+        <h2>BillTix</h2>
+        <span class="role-badge">@(roleLabel) Portal</span>
+
+        @if (error == 1)
+        {
+            <p class="error">Invalid username or password.</p>
+        }
+        else if (error == 2)
+        {
+            <p class="error">Access denied. This portal is for @roleLabel only.</p>
+        }
+
+        <form method="post" action="/account/login">
+            <AntiforgeryToken />
+            <!-- pass the role so the endpoint can validate it -->
+            <input type="hidden" name="returnRole" value="@ExpectedRole" />
+
+            <div class="form-group">
+                <label>Username</label>
+                <input name="username" placeholder="Enter username" />
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input name="password" type="password" placeholder="Enter password" />
+            </div>
+
+            <button type="submit" class="btn-submit">Login</button>
+        </form>
+
+        <a href="/" class="back-link">← Back to Home</a>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    private string? role { get; set; }
+
+    [SupplyParameterFromQuery]
+    private int error { get; set; }
+
+    private string? ExpectedRole => role;
+    private string roleLabel => role ?? "User";
+}
