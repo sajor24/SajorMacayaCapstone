@@ -11,6 +11,137 @@
 
 <PageTitle>Admin Dashboard - BillTix</PageTitle>
 
+
+<div class="wrapper">
+
+    <div class="topnav">
+        <div class="topnav-left">
+            <h2>Welcome, @username</h2>
+            <p>Manage your internet billing system</p>
+        </div>
+        <div class="topnav-right">
+            <button class="notif-btn">
+                🔔
+                <span class="notif-dot"></span>
+            </button>
+            <div class="avatar">👤</div>
+            <button class="logout-btn" @onclick="Logout" title="Logout">⇥</button>
+        </div>
+    </div>
+
+    <div class="content">
+        <h1>Dashboard</h1>
+
+        <div class="stat-cards">
+            <div class="stat-card">
+                <div>
+                    <div class="label">Total Subscribers</div>
+                    <div class="value">4</div>
+                    <div class="trend">↑ 12% from last month</div>
+                </div>
+                <div class="stat-icon icon-blue">👥</div>
+            </div>
+            <div class="stat-card">
+                <div>
+                    <div class="label">Total Revenue</div>
+                    <div class="value">₱9,496</div>
+                    <div class="trend">↑ 8% from last month</div>
+                </div>
+                <div class="stat-icon icon-green">💲</div>
+            </div>
+            <div class="stat-card">
+                <div>
+                    <div class="label">Pending Bills</div>
+                    <div class="value">3</div>
+                </div>
+                <div class="stat-icon icon-orange">🪪</div>
+            </div>
+        </div>
+
+        <div class="bottom-grid">
+
+            <div class="card">
+                <div class="card-title">Recent Transactions</div>
+                <div class="card-sub">Latest payment activities</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Transaction ID</th>
+                            <th>Subscriber</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var txn in transactions)
+                        {
+                            <tr>
+                                <td>@txn.Id</td>
+                                <td>@txn.Subscriber</td>
+                                <td>@txn.Amount</td>
+                                <td>@txn.Method</td>
+                                <td><span class="badge">@txn.Status</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🔔 Notifications</div>
+                <div class="card-sub">Recent system alerts</div>
+
+                @foreach (var notif in notifications)
+                {
+                    <div class="notif-item">
+                        <p>@notif.Message</p>
+                        <span>@notif.Time</span>
+                    </div>
+                }
+
+                <button class="view-all-btn">View All Notifications</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@code {
+    private string username = "Admin";
+
+    private record Transaction(string Id, string Subscriber, string Amount, string Method, string Status);
+    private record Notification(string Message, string Time);
+
+    private List<Transaction> transactions = new()
+    {
+        new("TXN001", "Juan Dela Cruz",  "₱1,499", "GCash", "completed"),
+        new("TXN002", "Maria Santos",    "₱2,499", "GCash", "completed"),
+        new("TXN003", "Ana Garcia",      "₱3,999", "GCash", "completed"),
+        new("TXN004", "Pedro Reyes",     "₱999",   "GCash", "completed"),
+        new("TXN005", "Juan Dela Cruz",  "₱1,499", "GCash", "completed"),
+    };
+
+    private List<Notification> notifications = new()
+    {
+        new("New subscriber registration",          "2 minutes ago"),
+        new("Payment received from Juan Dela Cruz", "15 minutes ago"),
+        new("Overdue bill for Pedro Reyes",         "1 hour ago"),
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity?.IsAuthenticated == true)
+            username = user.Identity.Name ?? "Admin";
+    }
+
+    private void Logout()
+    {
+        _Nav.NavigateTo("/account/logout", forceLoad: true);
+    }
+}
 <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
 
@@ -158,134 +289,3 @@
 
     .view-all-btn:hover { background: #f9fafb; }
 </style>
-
-<div class="wrapper">
-
-    <div class="topnav">
-        <div class="topnav-left">
-            <h2>Welcome, @username</h2>
-            <p>Manage your internet billing system</p>
-        </div>
-        <div class="topnav-right">
-            <button class="notif-btn">
-                🔔
-                <span class="notif-dot"></span>
-            </button>
-            <div class="avatar">👤</div>
-            <button class="logout-btn" @onclick="Logout" title="Logout">⇥</button>
-        </div>
-    </div>
-
-    <div class="content">
-        <h1>Dashboard</h1>
-
-        <div class="stat-cards">
-            <div class="stat-card">
-                <div>
-                    <div class="label">Total Subscribers</div>
-                    <div class="value">4</div>
-                    <div class="trend">↑ 12% from last month</div>
-                </div>
-                <div class="stat-icon icon-blue">👥</div>
-            </div>
-            <div class="stat-card">
-                <div>
-                    <div class="label">Total Revenue</div>
-                    <div class="value">₱9,496</div>
-                    <div class="trend">↑ 8% from last month</div>
-                </div>
-                <div class="stat-icon icon-green">💲</div>
-            </div>
-            <div class="stat-card">
-                <div>
-                    <div class="label">Pending Bills</div>
-                    <div class="value">3</div>
-                </div>
-                <div class="stat-icon icon-orange">🪪</div>
-            </div>
-        </div>
-
-        <div class="bottom-grid">
-
-            <div class="card">
-                <div class="card-title">Recent Transactions</div>
-                <div class="card-sub">Latest payment activities</div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Transaction ID</th>
-                            <th>Subscriber</th>
-                            <th>Amount</th>
-                            <th>Method</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var txn in transactions)
-                        {
-                            <tr>
-                                <td>@txn.Id</td>
-                                <td>@txn.Subscriber</td>
-                                <td>@txn.Amount</td>
-                                <td>@txn.Method</td>
-                                <td><span class="badge">@txn.Status</span></td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="card">
-                <div class="card-title">🔔 Notifications</div>
-                <div class="card-sub">Recent system alerts</div>
-
-                @foreach (var notif in notifications)
-                {
-                    <div class="notif-item">
-                        <p>@notif.Message</p>
-                        <span>@notif.Time</span>
-                    </div>
-                }
-
-                <button class="view-all-btn">View All Notifications</button>
-            </div>
-
-        </div>
-    </div>
-</div>
-
-@code {
-    private string username = "Admin";
-
-    private record Transaction(string Id, string Subscriber, string Amount, string Method, string Status);
-    private record Notification(string Message, string Time);
-
-    private List<Transaction> transactions = new()
-    {
-        new("TXN001", "Juan Dela Cruz",  "₱1,499", "GCash", "completed"),
-        new("TXN002", "Maria Santos",    "₱2,499", "GCash", "completed"),
-        new("TXN003", "Ana Garcia",      "₱3,999", "GCash", "completed"),
-        new("TXN004", "Pedro Reyes",     "₱999",   "GCash", "completed"),
-        new("TXN005", "Juan Dela Cruz",  "₱1,499", "GCash", "completed"),
-    };
-
-    private List<Notification> notifications = new()
-    {
-        new("New subscriber registration",          "2 minutes ago"),
-        new("Payment received from Juan Dela Cruz", "15 minutes ago"),
-        new("Overdue bill for Pedro Reyes",         "1 hour ago"),
-    };
-
-    protected override async Task OnInitializedAsync()
-    {
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
-        if (user.Identity?.IsAuthenticated == true)
-            username = user.Identity.Name ?? "Admin";
-    }
-
-    private void Logout()
-    {
-        _Nav.NavigateTo("/", forceLoad: true);
-    }
-}

@@ -109,5 +109,10 @@ app.MapPost("/account/login", async (
 
     return Results.Redirect(redirect);
 }).DisableAntiforgery();
+app.MapGet("/account/logout", async (HttpContext context) =>
+{
+    await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+    return Results.Redirect("/");
+});
 
 app.Run();
