@@ -7,58 +7,87 @@
 <PageTitle>BILLTIX</PageTitle>
 
 <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    body {
+        background: #191825;
+    }
 
     .navbar {
         padding: 18px 40px;
-        background: #0f0c29;
-        color: white;
+        background: #221c36;
+        color: #f1eaff;
         font-size: 1.4rem;
         font-weight: 700;
         letter-spacing: 2px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.15);
     }
 
     .hero {
-        background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-        color: white;
+        background: linear-gradient(135deg, #191825 60%, #302b63 100%);
+        color: #f1eaff;
         text-align: center;
         padding: 80px 20px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.12);
     }
 
-    .hero h1 {
-        font-size: 2.8rem;
-        font-weight: 800;
-        letter-spacing: 1px;
-        margin-bottom: 12px;
-    }
+        .hero h1 {
+            font-size: 2.7rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            color: #fff;
+        }
 
-    .hero p {
-        font-size: 1.1rem;
-        opacity: 0.75;
-    }
+        .hero p {
+            font-size: 1.12rem;
+            opacity: 0.83;
+            color: #b4baff;
+        }
 
     .hero-btn {
         margin-top: 28px;
         padding: 14px 36px;
-        background: #4f46e5;
-        color: white;
+        background: linear-gradient(90deg, #7367f0 60%, #28c76f 100%);
+        color: #fff;
         border: none;
         border-radius: 30px;
-        font-size: 1rem;
+        font-size: 1.01rem;
         cursor: pointer;
-        transition: background 0.2s;
+        transition: background 0.2s, box-shadow 0.2s;
+        font-weight: 700;
+        box-shadow: 0 2px 16px rgba(82,73,202,0.13);
     }
 
-    .hero-btn:hover { background: #3730a3; }
+        .hero-btn:hover {
+            background: linear-gradient(90deg, #4739ab 40%, #26a04f 100%);
+            box-shadow: 0 4px 24px rgba(72,110,190,0.18);
+        }
 
     .pricing-section {
         text-align: center;
         padding: 60px 20px 40px;
-        background: #f9f9f9;
+        background: #222030;
     }
 
-    .pricing-section h2 { font-size: 2rem; font-weight: 700; margin-bottom: 8px; }
-    .pricing-section .sub { color: #888; margin-bottom: 36px; font-size: 0.95rem; }
+        .pricing-section h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #d1c7ff;
+            letter-spacing: 1px;
+        }
+
+        .pricing-section .sub {
+            color: #b5aad5;
+            margin-bottom: 36px;
+            font-size: 0.99rem;
+        }
 
     .pricing-cards {
         display: flex;
@@ -68,95 +97,218 @@
     }
 
     .pricing-card {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 16px;
+        background: rgba(37,37,60,0.95);
+        border: 1.5px solid #3b3755;
+        border-radius: 17px;
         padding: 30px 24px;
         width: 230px;
         text-align: left;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-        transition: transform 0.2s;
+        box-shadow: 0 4px 20px rgba(22,14,40,0.15);
+        transition: transform 0.2s, border 0.21s;
     }
 
-    .pricing-card:hover { transform: translateY(-4px); }
-    .pricing-card h3 { font-size: 1rem; color: #333; }
-    .pricing-card .speed { color: #4f46e5; font-weight: 700; font-size: 1rem; margin-bottom: 12px; }
-    .pricing-card .price { font-size: 1.6rem; font-weight: 800; color: #111; margin-bottom: 16px; }
-    .pricing-card .price span { font-size: 0.85rem; font-weight: 400; color: #888; }
-    .pricing-card ul { list-style: none; padding: 0; }
-    .pricing-card ul li { font-size: 0.88rem; color: #555; padding: 4px 0; }
-    .pricing-card ul li::before { content: "✓ "; color: #4f46e5; font-weight: bold; }
+        .pricing-card:hover {
+            transform: translateY(-6px) scale(1.03);
+            border: 1.5px solid #7367f0;
+        }
+
+        .pricing-card h3 {
+            font-size: 1rem;
+            color: #88b4ff;
+            font-weight: 700;
+        }
+
+        .pricing-card .speed {
+            color: #28c76f;
+            font-weight: 700;
+            font-size: 1.01rem;
+            margin-bottom: 12px;
+            letter-spacing: .5px;
+            background: rgba(76,224,164,0.08);
+            padding: 2px 9px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        .pricing-card .price {
+            font-size: 1.55rem;
+            font-weight: 800;
+            color: #f1eaff;
+            margin-bottom: 16px;
+        }
+
+            .pricing-card .price span {
+                font-size: 0.86rem;
+                font-weight: 400;
+                color: #b2acf4;
+            }
+
+        .pricing-card ul {
+            list-style: none;
+            padding: 0;
+        }
+
+            .pricing-card ul li {
+                font-size: 0.93rem;
+                color: #bebef7;
+                padding: 4px 0;
+                font-weight: 500;
+                letter-spacing: .4px;
+            }
+
+                .pricing-card ul li::before {
+                    content: "✓ ";
+                    color: #7367f0;
+                    font-weight: bold;
+                }
 
     .roles-section {
         padding: 50px 20px;
-        background: white;
+        background: #191825;
         text-align: center;
     }
 
-    .roles-section h2 { font-size: 1.8rem; font-weight: 700; margin-bottom: 8px; }
-    .roles-section .sub { color: #888; margin-bottom: 36px; font-size: 0.95rem; }
+        .roles-section h2 {
+            font-size: 1.7rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #ebe8fd;
+            letter-spacing: 1px;
+        }
+
+        .roles-section .sub {
+            color: #bcbfe0;
+            margin-bottom: 36px;
+            font-size: 0.97rem;
+        }
 
     .role-cards {
         display: flex;
         justify-content: center;
-        gap: 20px;
+        gap: 22px;
         flex-wrap: wrap;
     }
 
     .role-card {
-        border: 1px solid #e5e7eb;
+        background: rgba(30,28,42,0.90);
+        border: 1.5px solid #332f48;
         border-radius: 16px;
         padding: 28px 20px;
         width: 210px;
         text-align: left;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.05);
-        transition: transform 0.2s;
+        box-shadow: 0 2px 14px rgba(0,0,0,0.09);
+        transition: transform 0.20s, border 0.21s;
     }
 
-    .role-card:hover { transform: translateY(-4px); }
-    .role-card .icon { font-size: 1.8rem; margin-bottom: 10px; }
-    .role-card h4 { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
-    .role-card .subtitle { font-size: 0.78rem; color: #4f46e5; font-weight: 600; margin-bottom: 8px; }
-    .role-card p { font-size: 0.78rem; color: #666; margin-bottom: 20px; line-height: 1.5; }
+        .role-card:hover {
+            transform: translateY(-6px) scale(1.04);
+            border: 1.5px solid #28c76f;
+        }
+
+        .role-card .icon {
+            font-size: 2rem;
+            margin-bottom: 12px;
+            color: #e7e7ff;
+            text-shadow: 0 4px 20px rgba(68,110,222,0.16);
+        }
+
+        .role-card h4 {
+            font-size: 1.08rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: #b8aaff;
+        }
+
+        .role-card .subtitle {
+            font-size: 0.83rem;
+            color: #28c76f;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .role-card p {
+            font-size: 0.81rem;
+            color: #b5b1df;
+            margin-bottom: 18px;
+            line-height: 1.6;
+        }
 
     .btn-login {
-        background: #4f46e5;
+        background: linear-gradient(90deg, #7367f0 70%, #28c76f 100%);
         color: white;
         border: none;
         border-radius: 8px;
         padding: 10px 0;
         width: 100%;
         cursor: pointer;
-        font-size: 0.85rem;
-        font-weight: 600;
-        transition: background 0.2s;
+        font-size: 0.94rem;
+        font-weight: 700;
+        box-shadow: 0 2px 14px rgba(82,73,202,0.11);
+        transition: background 0.19s, box-shadow 0.21s;
     }
 
-    .btn-login:hover { background: #3730a3; }
+        .btn-login:hover {
+            background: linear-gradient(90deg, #4339ab 45%, #17e398 100%);
+            box-shadow: 0 4px 22px rgba(44,80,120,0.13);
+        }
 
     .footer {
-        background: linear-gradient(135deg, #0f0c29, #302b63);
-        color: white;
+        background: linear-gradient(135deg, #181728 80%, #221c3a 100%);
+        color: #cec8f9;
         text-align: center;
-        padding: 50px 20px;
+        padding: 52px 20px;
     }
 
-    .footer h3 { font-size: 1.6rem; font-weight: 800; margin-bottom: 10px; }
-    .footer p { font-size: 0.9rem; opacity: 0.75; margin-bottom: 24px; }
+        .footer h3 {
+            font-size: 1.62rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+
+        .footer p {
+            font-size: 0.95rem;
+            opacity: 0.78;
+            margin-bottom: 26px;
+            color: #b3b9d9;
+        }
+
     .footer-btn {
-        padding: 12px 32px;
-        background: white;
-        color: #4f46e5;
+        padding: 13px 32px;
+        background: linear-gradient(90deg, #7367f0 70%, #28c76f 100%);
+        color: #fff;
         border: none;
         border-radius: 30px;
-        font-size: 0.95rem;
+        font-size: 1.01rem;
         font-weight: 700;
         cursor: pointer;
-        transition: opacity 0.2s;
+        transition: opacity 0.19s, box-shadow 0.19s;
+        box-shadow: 0 2px 14px rgba(82,73,202,0.10);
     }
-    .footer-btn:hover { opacity: 0.85; }
-</style>
 
+        .footer-btn:hover {
+            opacity: 0.88;
+            box-shadow: 0 4px 20px rgba(82,73,202,0.18);
+        }
+
+    /* Responsive for mobile */
+    @@media (max-width: 700px) {
+        .pricing-cards, .role-cards {
+            flex-direction: column;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .hero {
+            padding: 50px 12px;
+        }
+
+        .footer {
+            padding: 34px 8px;
+        }
+    }
+</style>
 <!-- Navbar -->
 <div class="navbar">BILLTIX</div>
 

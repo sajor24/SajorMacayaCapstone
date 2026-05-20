@@ -101,9 +101,9 @@ app.MapPost("/account/login", async (
     var redirect = user.Role switch
     {
         "Admin"       => "/admin-dashboard",
-        "Subscriber"  => "/subcriberdashboard",
+        "Subscriber"  => "/sub-dashboard",
         "Staff"       => "/staff-dashboard",
-        "Technician"  => "/technician-dashboard",
+        "Technician"  => "/tech-dashboard",
         _             => "/"
     };
 
