@@ -1,40 +1,52 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Data;
 using Dapper;
 using Domain.Models;
-using BCrypt.Net;
 
-namespace Framework.Extentions
+namespace Framework.Extensions
 {
-    public static class EmployeeExtension
+    public static class UserExtension
     {
-        public static DynamicParameters ToCreateEmployeeDynamicParameters(this Users user)
+        public static DynamicParameters ToUserDynamicParameters(this Users model)
+        {
+            var param = new DynamicParameters();
+            var hashedPassword = BCrypt.Net.BCrypt.HashPassword(model.Password);
+
+            param.Add("@UserId", model.UserId, DbType.String, ParameterDirection.Input);
+            param.Add("@FirstName", model.FirstName, DbType.String, ParameterDirection.Input);
+            param.Add("@LastName", model.LastName, DbType.String, ParameterDirection.Input);
+            param.Add("@Username", model.Username, DbType.String, ParameterDirection.Input);
+            param.Add("@Password", hashedPassword, DbType.String, ParameterDirection.Input);
+            param.Add("@Role", model.Role, DbType.String, ParameterDirection.Input);
+            param.Add("@Email", model.Email, DbType.String, ParameterDirection.Input);
+            param.Add("@ContactNumber", model.ContactNumber, DbType.String, ParameterDirection.Input);
+            param.Add("@Address", model.Address, DbType.String, ParameterDirection.Input);
+
+            return param;
+        }
+
+        public static DynamicParameters ToCreateUserDynamicParameters(this Users model)
+        {
+            var param = new DynamicParameters();
+            var hashedPassword = BCrypt.Net.BCrypt.HashPassword(model.Password);
+            param.Add("@FirstName", model.FirstName, DbType.String, ParameterDirection.Input);
+            param.Add("@LastName", model.LastName, DbType.String, ParameterDirection.Input);
+            param.Add("@Username", model.Username, DbType.String, ParameterDirection.Input);
+            param.Add("@Password", hashedPassword, DbType.String, ParameterDirection.Input);
+            param.Add("@Role", model.Role, DbType.String, ParameterDirection.Input);
+            param.Add("@Email", model.Email, DbType.String, ParameterDirection.Input);
+            param.Add("@ContactNumber", model.ContactNumber, DbType.String, ParameterDirection.Input);
+            param.Add("@Address", model.Address, DbType.String, ParameterDirection.Input);
+
+            return param;
+        }
+
+        public static DynamicParameters ToDeleteUserDynamicParameters(this Users model)
         {
             var param = new DynamicParameters();
 
-            param.Add("@FirstName", user.FirstName);
-            param.Add("@LastName", user.LastName);
-            param.Add("@Username", user.Username);
-
-            string hashedPassword =
-                BCrypt.Net.BCrypt.HashPassword(user.Password);
-
-            param.Add("@Password", hashedPassword);
-
-            param.Add("@Role", user.Role);
+            param.Add("@UserId", model.UserId, DbType.String, ParameterDirection.Input);
 
             return param;
         }
     }
-
-        public static class UserExtension
-        {
-            public static DynamicParameters ToLoginParameters(this string username)
-            {
-                var param = new DynamicParameters();
-                param.Add("@Username", username);
-                return param;
-            }
-        }
-    }
+}

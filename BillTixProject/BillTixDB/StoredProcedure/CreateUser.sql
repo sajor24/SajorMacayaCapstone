@@ -1,4 +1,4 @@
-﻿CREATE PROCEDURE CreateUsers
+﻿CREATE PROCEDURE CreateUser
     @FirstName NVARCHAR(100),
     @LastName NVARCHAR(100),
     @Username NVARCHAR(100),

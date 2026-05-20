@@ -1,6 +1,6 @@
 ﻿using Domain.Models;
 using Domain.ICommands;
-using Framework.Extentions;
+using Framework.Extensions;
 namespace Framework.Commands
 {
     public class Create_User : ICreate_User
@@ -11,12 +11,14 @@ namespace Framework.Commands
             _repository = repository;
         }
     
-    public async Task ExecuteAsync(Users user)
+        public async Task ExecuteAsync(Users user)
         {
-            var param = user.ToCreateEmployeeDynamicParameters();
-            await _repository.SaveDataAsync("DefaultConnection","CreateUsers",  param);
+            // Hash password before saving
+            if (!string.IsNullOrWhiteSpace(user.Password))
+                user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
 
+            var param = user.ToCreateUserDynamicParameters();
+            await _repository.SaveDataAsync("DefaultConnection", "CreateUser", param);
         }
-
     }
 }

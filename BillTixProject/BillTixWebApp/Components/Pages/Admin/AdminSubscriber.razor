@@ -1,100 +1,316 @@
 ﻿@page "/admin-subscriber"
 @layout AdminLayout
 @using Microsoft.AspNetCore.Authorization
+@using Domain.ICommands
+@using Domain.Models
+@rendermode InteractiveServer
+@inject IDelete_User delete
+@inject IGetAll_User getAll
+@inject ICreate_User create
+@inject IUpdate_User update
+
 @attribute [Authorize(Roles = "Admin")]
 
-<h1>Subscriber</h1>
-
-<!-- SEARCH + ADD -->
-<div class="toolbar">
-    <input type="text" placeholder="Search subscriber..."
-           class="form-control search-box"
-           @bind="searchText" />
-
-    <button class="btn btn-success btn-sm" @onclick="AddSubscriber">
-        + Add Subscriber
+<!-- HEADER -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0">Subscribers</h2>
+    <button class="btn btn-primary d-flex align-items-center gap-2" @onclick="OpenAddForm">
+        <i class="bi bi-person-plus-fill"></i> Add Subscriber
     </button>
 </div>
 
-<!-- TABLE -->
-<div class="card mt-3">
-    <table class="table table-hover">
-        <thead>
-            <tr>
+<!-- ERROR -->
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger alert-dismissible">
+        @errorMessage
+        <button type="button" class="btn-close" @onclick="() => errorMessage = string.Empty"></button>
+    </div>
+}
+
+<!-- ADD/EDIT MODAL -->
+@if (showForm)
+{
+    <div class="modal-backdrop-custom" @onclick="CancelForm"></div>
+    <div class="modal-box shadow-lg">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">@(isEditing ? "Edit Subscriber" : "Add Subscriber")</h5>
+            <button class="btn-close" @onclick="CancelForm"></button>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">First Name <span class="text-danger">*</span></label>
+                <input class="form-control" placeholder="First Name" @bind="user.FirstName" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Last Name <span class="text-danger">*</span></label>
+                <input class="form-control" placeholder="Last Name" @bind="user.LastName" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Username <span class="text-danger">*</span></label>
+                <input class="form-control" placeholder="Username" @bind="user.Username" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">
+                    Password @(isEditing ? "" : "") <span class="text-danger">@(isEditing ? "" : "*")</span>
+                </label>
+                <input type="password" class="form-control"
+                       placeholder="@(isEditing ? "Leave blank to keep current" : "Password")"
+                       @bind="passwordInput" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Email</label>
+                <input class="form-control" placeholder="Email" @bind="user.Email" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Contact Number</label>
+                <input class="form-control" placeholder="Contact Number" @bind="user.ContactNumber" />
+            </div>
+            <div class="col-12">
+                <label class="form-label">Address</label>
+                <input class="form-control" placeholder="Address" @bind="user.Address" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Role <span class="text-danger">*</span></label>
+                <select class="form-select" @bind="user.Role">
+                    <option value="">Select Role</option>
+                    <option value="Subscriber">Subscriber</option>
+                    <option value="Admin">Admin</option>
+                    <option value="Technician">Technician</option>
+                    <option value="Staff">Staff</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-4 justify-content-end">
+            <button class="btn btn-secondary" @onclick="CancelForm">Cancel</button>
+            <button class="btn btn-primary" @onclick="SaveUser">
+                @(isEditing ? "Update" : "Add Subscriber")
+            </button>
+        </div>
+    </div>
+}
+
+<!-- TABLE CARD -->
+<div class="card border-0 shadow-sm rounded-3 p-3">
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <div class="fw-semibold">All Subscribers</div>
+            <small class="text-muted">
+                Total: @users.Count subscribers (@users.Count(x => x.Role == "Subscriber") active)
+            </small>
+        </div>
+        <div class="input-group" style="width: 260px;">
+            <span class="input-group-text bg-white border-end-0">
+                <i class="bi bi-search text-muted"></i>
+            </span>
+            <input class="form-control border-start-0"
+                   placeholder="Search subscribers..."
+                   @bind="searchText"
+                   @bind:event="oninput" />
+        </div>
+    </div>
+
+    <table class="table table-borderless align-middle">
+        <thead class="border-bottom">
+            <tr class="text-muted small">
+                <th>ID</th>
                 <th>Name</th>
                 <th>Email</th>
+                <th>Phone</th>
+                <th>Plan</th>
+                <th>Status</th>
+                <th>Next Billing</th>
                 <th>Actions</th>
             </tr>
         </thead>
-
         <tbody>
-            @foreach (var sub in FilteredSubscribers)
+            @foreach (var item in filteredUsers)
+            {
+                <tr class="border-bottom">
+                    <td class="fw-semibold">@item.UserId</td>
+                    <td>@item.FirstName @item.LastName</td>
+                    <td class="text-muted">@item.Email</td>
+                    <td class="text-muted">@item.ContactNumber</td>
+                    <td class="text-muted">—</td>
+                    <td>
+                        <span class="badge rounded-pill px-3 py-2"
+                              style="background-color: #1a1a1a; color: white; font-size: 0.75rem;">
+                            active
+                        </span>
+                    </td>
+                    <td class="text-muted">—</td>
+                    <td>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-outline-secondary"
+                                    title="Edit"
+                                    @onclick="() => EditUser(item)">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger"
+                                    title="Deactivate"
+                                    @onclick="() => Delete(item.UserId)">
+                                <i class="bi bi-power"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            }
+            @if (!filteredUsers.Any())
             {
                 <tr>
-                    <td>@sub.Name</td>
-                    <td>@sub.Email</td>
-                    <td>
-                        <button class="btn btn-primary btn-sm" @onclick="() => EditSubscriber(sub)">
-                            Edit
-                        </button>
-
-                        <button class="btn btn-danger btn-sm" @onclick="() => DeleteSubscriber(sub)">
-                            Delete
-                        </button>
-                    </td>
+                    <td colspan="8" class="text-center text-muted py-4">No subscribers found.</td>
                 </tr>
             }
         </tbody>
     </table>
 </div>
 
----
+<style>
+    .modal-backdrop-custom {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.4);
+        z-index: 1040;
+    }
 
-# 🧠 CODE (LOGIC)
+    .modal-box {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        width: 600px;
+        max-width: 95vw;
+        z-index: 1050;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+</style>
 
-```razor
 @code {
-    private string searchText = "";
 
-    private List<Subscriber> subscribers = new()
+    private List<Users> users = new();
+    private Users user = new();
+    private bool isEditing = false;
+    private bool showForm = false;
+    private string searchText = string.Empty;
+    private string passwordInput = string.Empty;
+    private string errorMessage = string.Empty;
+
+    private IEnumerable<Users> filteredUsers =>
+        string.IsNullOrWhiteSpace(searchText)
+        ? users
+        : users.Where(x =>
+            (x.FirstName != null && x.FirstName.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            || (x.LastName != null && x.LastName.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            || (x.Username != null && x.Username.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            || (x.UserId != null && x.UserId.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+        );
+
+    protected override async Task OnInitializedAsync()
     {
-        new Subscriber { Id = 1, Name = "Juan Dela Cruz", Email = "juan@gmail.com" },
-        new Subscriber { Id = 2, Name = "Maria Santos", Email = "maria@gmail.com" }
-    };
+        await LoadUsers();
+    }
 
-    private List<Subscriber> FilteredSubscribers =>
-        subscribers
-            .Where(s =>
-                string.IsNullOrWhiteSpace(searchText) ||
-                s.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
-                s.Email.Contains(searchText, StringComparison.OrdinalIgnoreCase)
-            )
-            .ToList();
-
-    private void AddSubscriber()
+    async Task LoadUsers()
     {
-        subscribers.Add(new Subscriber
+        var result = await getAll.ExecuteAsync();
+        users = result?.Where(x => x.Role == "Subscriber").ToList() ?? new();
+    }
+
+    void OpenAddForm()
+    {
+        user = new Users();
+        passwordInput = string.Empty;
+        isEditing = false;
+        errorMessage = string.Empty;
+        showForm = true;
+    }
+
+    void EditUser(Users item)
+    {
+        user = new Users
         {
-            Id = subscribers.Count + 1,
-            Name = "New Subscriber",
-            Email = "new@email.com"
-        });
+            UserId = item.UserId,
+            FirstName = item.FirstName,
+            LastName = item.LastName,
+            Username = item.Username,
+            Password = item.Password,
+            Role = item.Role,
+            Email = item.Email,
+            ContactNumber = item.ContactNumber,
+            Address = item.Address
+        };
+        passwordInput = string.Empty;
+        isEditing = true;
+        errorMessage = string.Empty;
+        showForm = true;
     }
 
-    private void EditSubscriber(Subscriber sub)
+    async Task SaveUser()
     {
-        sub.Name = sub.Name + " (Edited)";
+        if (string.IsNullOrWhiteSpace(user.FirstName) ||
+            string.IsNullOrWhiteSpace(user.LastName) ||
+            string.IsNullOrWhiteSpace(user.Username) ||
+            string.IsNullOrWhiteSpace(user.Role))
+        {
+            errorMessage = "First Name, Last Name, Username, and Role are required.";
+            return;
+        }
+
+        if (!isEditing && string.IsNullOrWhiteSpace(passwordInput))
+        {
+            errorMessage = "Password is required when adding a new subscriber.";
+            return;
+        }
+
+        errorMessage = string.Empty;
+
+        try
+        {
+            if (isEditing)
+            {
+                if (!string.IsNullOrWhiteSpace(passwordInput))
+                    user.Password = passwordInput;
+
+                await update.ExecuteAsync(user);
+            }
+            else
+            {
+                user.Password = passwordInput;
+                await create.ExecuteAsync(user);
+            }
+
+            user = new Users();
+            passwordInput = string.Empty;
+            isEditing = false;
+            showForm = false;
+
+            await LoadUsers();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
     }
 
-    private void DeleteSubscriber(Subscriber sub)
+    void CancelForm()
     {
-        subscribers.Remove(sub);
+        user = new Users();
+        passwordInput = string.Empty;
+        isEditing = false;
+        showForm = false;
+        errorMessage = string.Empty;
     }
 
-    public class Subscriber
+    async Task Delete(string id)
     {
-        public int Id { get; set; }
-        public string Name { get; set; }
-        public string Email { get; set; }
+        var deleteUser = new Users { UserId = id };
+        await delete.ExecuteAsync(deleteUser);
+        await LoadUsers();
     }
 }

@@ -13,6 +13,9 @@ builder.Services.AddSingleton<Repository>();
 
 builder.Services.AddScoped<ICreate_User, Create_User>();
 builder.Services.AddScoped<ILoginUser, LoginUser>();
+builder.Services.AddScoped<IUpdate_User, Update_User>();
+builder.Services.AddScoped<IDelete_User, Delete_User>();
+builder.Services.AddScoped<IGetAll_User, GetAll_User>();
 
 // Razor Components
 builder.Services.AddRazorComponents()
