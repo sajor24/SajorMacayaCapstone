@@ -1,12 +1,100 @@
 ﻿@page "/admin-subscriber"
 @layout AdminLayout
 @using Microsoft.AspNetCore.Authorization
-@using Microsoft.AspNetCore.Components.Authorization
 @attribute [Authorize(Roles = "Admin")]
 
-<h1> Subsciber</h1>
+<h1>Subscriber</h1>
 
-@code
-{
+<!-- SEARCH + ADD -->
+<div class="toolbar">
+    <input type="text" placeholder="Search subscriber..."
+           class="form-control search-box"
+           @bind="searchText" />
 
+    <button class="btn btn-success btn-sm" @onclick="AddSubscriber">
+        + Add Subscriber
+    </button>
+</div>
+
+<!-- TABLE -->
+<div class="card mt-3">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (var sub in FilteredSubscribers)
+            {
+                <tr>
+                    <td>@sub.Name</td>
+                    <td>@sub.Email</td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" @onclick="() => EditSubscriber(sub)">
+                            Edit
+                        </button>
+
+                        <button class="btn btn-danger btn-sm" @onclick="() => DeleteSubscriber(sub)">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+---
+
+# 🧠 CODE (LOGIC)
+
+```razor
+@code {
+    private string searchText = "";
+
+    private List<Subscriber> subscribers = new()
+    {
+        new Subscriber { Id = 1, Name = "Juan Dela Cruz", Email = "juan@gmail.com" },
+        new Subscriber { Id = 2, Name = "Maria Santos", Email = "maria@gmail.com" }
+    };
+
+    private List<Subscriber> FilteredSubscribers =>
+        subscribers
+            .Where(s =>
+                string.IsNullOrWhiteSpace(searchText) ||
+                s.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                s.Email.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+            )
+            .ToList();
+
+    private void AddSubscriber()
+    {
+        subscribers.Add(new Subscriber
+        {
+            Id = subscribers.Count + 1,
+            Name = "New Subscriber",
+            Email = "new@email.com"
+        });
+    }
+
+    private void EditSubscriber(Subscriber sub)
+    {
+        sub.Name = sub.Name + " (Edited)";
+    }
+
+    private void DeleteSubscriber(Subscriber sub)
+    {
+        subscribers.Remove(sub);
+    }
+
+    public class Subscriber
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string Email { get; set; }
+    }
 }
