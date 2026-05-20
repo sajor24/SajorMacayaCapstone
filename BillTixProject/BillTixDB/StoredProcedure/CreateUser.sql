@@ -3,7 +3,10 @@
     @LastName NVARCHAR(100),
     @Username NVARCHAR(100),
     @Password NVARCHAR(255),
-    @Role NVARCHAR(50)
+    @Role NVARCHAR(50),
+    @Email NVARCHAR(255) = NULL,
+    @ContactNumber NVARCHAR(20) = NULL,
+    @Address NVARCHAR(255) = NULL
 AS
 BEGIN
     DECLARE @Prefix NVARCHAR(3)
@@ -20,19 +23,43 @@ BEGIN
             ELSE 'USR'
         END
 
-    -- get last number
+    -- get last number per role prefix
     SELECT @LastNumber =
         ISNULL(MAX(CAST(RIGHT(UserId, 3) AS INT)), 0)
     FROM Users
     WHERE UserId LIKE @Prefix + '%'
 
-    -- +1
+    -- increment
     SET @LastNumber = @LastNumber + 1
 
-    -- build ID
+    -- build ID (ADM001, USR001, etc.)
     SET @NewId = @Prefix + RIGHT('000' + CAST(@LastNumber AS NVARCHAR), 3)
 
-    -- insert
-    INSERT INTO Users (UserId, FirstName, LastName, Username, Password, Role)
-    VALUES (@NewId, @FirstName, @LastName, @Username, @Password, @Role)
+    -- insert into updated table
+    INSERT INTO Users
+    (
+        UserId,
+        FirstName,
+        LastName,
+        Username,
+        Password,
+        Role,
+        Email,
+        ContactNumber,
+        Address,
+        CreatedAt
+    )
+    VALUES
+    (
+        @NewId,
+        @FirstName,
+        @LastName,
+        @Username,
+        @Password,
+        @Role,
+        @Email,
+        @ContactNumber,
+        @Address,
+        GETDATE()
+    )
 END
