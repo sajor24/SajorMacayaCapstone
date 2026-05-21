@@ -1,13 +1,14 @@
 ﻿@page "/admin-dashboard"
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
+@using Domain.ICommands
 @attribute [Authorize(Roles = "Admin")]
 @inject NavigationManager _Nav
 @layout AdminLayout
 @using BillTixWebApp.Components.Layout
 @inject IJSRuntime JS
-
 @inject AuthenticationStateProvider AuthStateProvider
+@inject IGetAll_User getAll
 
 <PageTitle>Admin Dashboard - BillTix</PageTitle>
 
@@ -41,8 +42,8 @@
             <div class="stat-card">
                 <div>
                     <div class="label">Total Subscribers</div>
-                    <div class="value">4</div>
-                    <div class="trend">↑ 12% from last month</div>
+                    <div class="value">@totalSubscribers</div>
+                    <div class="trend">Active accounts</div>
                 </div>
                 <div class="stat-icon icon-blue">👥</div>
             </div>
@@ -114,6 +115,7 @@
 
 @code {
     private string username = "Admin";
+    private int totalSubscribers = 0;
 
     private record Transaction(string Id, string Subscriber, string Amount, string Method, string Status);
     private record Notification(string Message, string Time);
@@ -140,6 +142,9 @@
         var user = authState.User;
         if (user.Identity?.IsAuthenticated == true)
             username = user.Identity.Name ?? "Admin";
+
+        var users = await getAll.ExecuteAsync();
+        totalSubscribers = users?.Count(x => x.Role == "Subscriber") ?? 0;
     }
 
 private async Task Logout()
