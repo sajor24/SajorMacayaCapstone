@@ -64,6 +64,19 @@
     <Build Include="StoredProcedure\UpdateUser.sql" />
     <Build Include="StoredProcedure\DeleteUser.sql" />
     <Build Include="StoredProcedure\GetAllUser.sql" />
+    <Build Include="Tables\Billing.sql" />
+    <Build Include="Tables\Subscription.sql" />
+    <Build Include="StoredProcedure\CreateBilling.sql" />
+    <Build Include="StoredProcedure\UpdateBilling.sql" />
+    <Build Include="StoredProcedure\DeleteBilling.sql" />
+    <Build Include="StoredProcedure\GetAllBilling.sql" />
+    <Build Include="StoredProcedure\GetBillingByUser.sql" />
+    <Build Include="StoredProcedure\GetRecentBilling.sql" />
+    <Build Include="StoredProcedure\CreateSubscription.sql" />
+    <Build Include="StoredProcedure\UpdateSubscription.sql" />
+    <Build Include="StoredProcedure\DeleteSubscription.sql" />
+    <Build Include="StoredProcedure\GetAllSubscription.sql" />
+    <Build Include="StoredProcedure\GetSubscriptionByUser.sql" />
   </ItemGroup>
   <ItemGroup>
     <None Include="BillTixDB.publish.xml" />

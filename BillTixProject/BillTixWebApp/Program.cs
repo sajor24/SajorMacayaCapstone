@@ -17,6 +17,21 @@ builder.Services.AddScoped<IUpdate_User, Update_User>();
 builder.Services.AddScoped<IDelete_User, Delete_User>();
 builder.Services.AddScoped<IGetAll_User, GetAll_User>();
 
+// Billing
+builder.Services.AddScoped<ICreate_Billing, Create_Billing>();
+builder.Services.AddScoped<IUpdate_Billing, Update_Billing>();
+builder.Services.AddScoped<IDelete_Billing, Delete_Billing>();
+builder.Services.AddScoped<IGetAll_Billing, GetAll_Billing>();
+builder.Services.AddScoped<IGetByUser_Billing, GetByUser_Billing>();
+builder.Services.AddScoped<IGetRecent_Billing, GetRecent_Billing>();
+
+// Subscription
+builder.Services.AddScoped<ICreate_Subscription, Create_Subscription>();
+builder.Services.AddScoped<IUpdate_Subscription, Update_Subscription>();
+builder.Services.AddScoped<IDelete_Subscription, Delete_Subscription>();
+builder.Services.AddScoped<IGetAll_Subscription, GetAll_Subscription>();
+builder.Services.AddScoped<IGetByUser_Subscription, GetByUser_Subscription>();
+
 // Razor Components
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();

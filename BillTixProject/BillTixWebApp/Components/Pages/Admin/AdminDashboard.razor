@@ -2,6 +2,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using Domain.ICommands
+@using Domain.Models
 @attribute [Authorize(Roles = "Admin")]
 @inject NavigationManager _Nav
 @layout AdminLayout
@@ -9,6 +10,8 @@
 @inject IJSRuntime JS
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IGetAll_User getAll
+@inject IGetRecent_Billing getRecentBilling
+@inject IGetAll_Billing getAllBilling
 
 <PageTitle>Admin Dashboard - BillTix</PageTitle>
 
