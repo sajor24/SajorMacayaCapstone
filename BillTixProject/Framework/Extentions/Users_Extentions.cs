@@ -27,11 +27,10 @@ namespace Framework.Extensions
         public static DynamicParameters ToCreateUserDynamicParameters(this Users model)
         {
             var param = new DynamicParameters();
-            var hashedPassword = BCrypt.Net.BCrypt.HashPassword(model.Password);
             param.Add("@FirstName", model.FirstName, DbType.String, ParameterDirection.Input);
             param.Add("@LastName", model.LastName, DbType.String, ParameterDirection.Input);
             param.Add("@Username", model.Username, DbType.String, ParameterDirection.Input);
-            param.Add("@Password", hashedPassword, DbType.String, ParameterDirection.Input);
+            param.Add("@Password", model.Password, DbType.String, ParameterDirection.Input);
             param.Add("@Role", model.Role, DbType.String, ParameterDirection.Input);
             param.Add("@Email", model.Email, DbType.String, ParameterDirection.Input);
             param.Add("@ContactNumber", model.ContactNumber, DbType.String, ParameterDirection.Input);

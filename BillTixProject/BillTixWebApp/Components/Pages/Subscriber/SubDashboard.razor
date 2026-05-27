@@ -1,6 +1,76 @@
 ﻿@page "/sub-dashboard"
-<h1>Subscriber</h1>
+@layout SubscriberLayout
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Domain.ICommands
+@using Domain.Models
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Subscriber")]
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IGetAll_User getAll
+@inject IGetByUser_Subscription getSubscription
+@inject NavigationManager Nav
+@inject IJSRuntime JS
 
+<div class="mb-3">
+    <label for="exampleFormControlInput1" class="form-label">Email address</label>
+    <input type="email" class="form-control" id="exampleFormControlInput1" placeholder="name@example.com">
+</div>
+<div class="mb-3">
+    <label for="exampleFormControlTextarea1" class="form-label">Example textarea</label>
+    <textarea class="form-control" id="exampleFormControlTextarea1" rows="3"></textarea>
+</div>
 @code {
+    private string fullName = "";
+    private string userId = "";
+    private string planSpeed = "—";
+    private int daysUntilBilling = 0;
+    private Subscription? currentSub;
 
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var username = user.Identity.Name ?? "";
+            var users = await getAll.ExecuteAsync();
+            var currentUser = users?.FirstOrDefault(x => x.Username == username);
+
+            if (currentUser != null)
+            {
+                fullName = $"{currentUser.FirstName} {currentUser.LastName}";
+                userId = currentUser.UserId ?? "";
+
+                var subs = await getSubscription.ExecuteAsync(currentUser.UserId ?? "");
+                currentSub = subs?.FirstOrDefault(x => x.Status == "Active");
+
+                if (currentSub?.EndDate != null)
+                {
+                    daysUntilBilling = (int)(currentSub.EndDate.Value - DateTime.Now).TotalDays;
+
+                    if (daysUntilBilling < 0)
+                        daysUntilBilling = 0;
+                }
+
+                planSpeed = currentSub?.PlanName switch
+                {
+                    "Basic" => "50 Mbps",
+                    "Standard" => "100 Mbps",
+                    "Premium" => "200 Mbps",
+                    "Ultimate" => "500 Mbps",
+                    _ => "—"
+                };
+            }
+        }
+    }
+
+    private async Task Logout()
+    {
+        bool confirm = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to logout?");
+
+        if (confirm)
+            Nav.NavigateTo("/account/logout", forceLoad: true);
+    }
 }

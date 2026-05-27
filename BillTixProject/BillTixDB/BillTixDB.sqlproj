@@ -56,27 +56,31 @@
     <Folder Include="Properties" />
     <Folder Include="Tables" />
     <Folder Include="StoredProcedure" />
+    <Folder Include="StoredProcedure\User\" />
+    <Folder Include="StoredProcedure\Billing\" />
+    <Folder Include="StoredProcedure\Subscription\" />
   </ItemGroup>
   <ItemGroup>
-    <Build Include="StoredProcedure\CreateUser.sql" />
     <Build Include="Tables\Users.sql" />
-    <Build Include="StoredProcedure\LoginUser.sql" />
-    <Build Include="StoredProcedure\UpdateUser.sql" />
-    <Build Include="StoredProcedure\DeleteUser.sql" />
-    <Build Include="StoredProcedure\GetAllUser.sql" />
     <Build Include="Tables\Billing.sql" />
     <Build Include="Tables\Subscription.sql" />
-    <Build Include="StoredProcedure\CreateBilling.sql" />
-    <Build Include="StoredProcedure\UpdateBilling.sql" />
-    <Build Include="StoredProcedure\DeleteBilling.sql" />
-    <Build Include="StoredProcedure\GetAllBilling.sql" />
-    <Build Include="StoredProcedure\GetBillingByUser.sql" />
-    <Build Include="StoredProcedure\GetRecentBilling.sql" />
-    <Build Include="StoredProcedure\CreateSubscription.sql" />
-    <Build Include="StoredProcedure\UpdateSubscription.sql" />
-    <Build Include="StoredProcedure\DeleteSubscription.sql" />
-    <Build Include="StoredProcedure\GetAllSubscription.sql" />
-    <Build Include="StoredProcedure\GetSubscriptionByUser.sql" />
+    <Build Include="StoredProcedure\User\CreateUser.sql" />
+    <Build Include="StoredProcedure\User\LoginUser.sql" />
+    <Build Include="StoredProcedure\User\UpdateUser.sql" />
+    <Build Include="StoredProcedure\User\DeleteUser.sql" />
+    <Build Include="StoredProcedure\User\GetAllUser.sql" />
+    <Build Include="StoredProcedure\Billing\CreateBilling.sql" />
+    <Build Include="StoredProcedure\Billing\UpdateBilling.sql" />
+    <Build Include="StoredProcedure\Billing\DeleteBilling.sql" />
+    <Build Include="StoredProcedure\Billing\GetAllBilling.sql" />
+    <Build Include="StoredProcedure\Billing\GetBillingByUser.sql" />
+    <Build Include="StoredProcedure\Billing\GetRecentBilling.sql" />
+    <Build Include="StoredProcedure\Subscription\CreateSubscription.sql" />
+    <Build Include="StoredProcedure\Subscription\UpdateSubscription.sql" />
+    <Build Include="StoredProcedure\Subscription\DeleteSubscription.sql" />
+    <Build Include="StoredProcedure\Subscription\GetAllSubscription.sql" />
+    <Build Include="StoredProcedure\Subscription\GetSubscriptionByUser.sql" />
+    <Build Include="StoredProcedure\User\GetUserByUsername.sql" />
   </ItemGroup>
   <ItemGroup>
     <None Include="BillTixDB.publish.xml" />
