@@ -12,10 +12,10 @@
                 <span>⊞</span> Dashboard
             </NavLink>
 
-            <NavLink href="/sub-subscriber" class="nav-item">
-                <span>👤</span> Subscribers
+            <NavLink href="/sub-myaccount" class="nav-item">
+                <span>👤</span> My Account
             </NavLink>
-            <NavLink href="/sub-internet-plans" class="nav-item">
+            <NavLink href="/sub-internetplans" class="nav-item">
                 <span>🌐</span> Internet Plans
             </NavLink>
             <NavLink href="/sub-billing" class="nav-item">
@@ -136,38 +136,25 @@
 
     /* Responsive sidebar for tablets/phones */
     @@media (max-width: 800px) {
+
         .subscriber-container {
-            flex-direction: column;
+            flex-direction: row;
         }
 
         .sidebar {
-            height: auto;
-            width: 100vw;
-            min-width: unset;
-            flex-direction: row;
-            padding: 16px 6px;
-            border-radius: 0 0 22px 22px;
-            box-shadow: 0 7px 22px #18182584;
+            width: 260px;
+            min-width: 260px;
+            height: 100vh;
+            flex-direction: column;
+            border-radius: 0 22px 22px 0;
         }
 
         .sidebar-nav {
-            flex-direction: row;
-            gap: 7px;
-        }
-
-        .nav-item,
-        .sidebar a {
-            padding: 11px 13px;
-            font-size: 0.96rem;
-            border-radius: 8px;
-            margin-bottom: 0;
-            min-width: 0;
-            min-height: 0;
+            flex-direction: column;
         }
 
         .main-content {
-            border-radius: 0;
-            padding: 17px 3vw;
+            padding: 17px;
         }
     }
 </style>

@@ -2,7 +2,6 @@ using BillTixWebApp.Components;
 using Framework;
 using Framework.Commands;
 using Domain.ICommands;
-
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using System.Security.Claims;
@@ -118,11 +117,11 @@ app.MapPost("/account/login", async (
 
     var redirect = user.Role switch
     {
-        "Admin"       => "/admin-dashboard",
-        "Subscriber"  => "/sub-dashboard",
-        "Staff"       => "/staff-dashboard",
-        "Technician"  => "/tech-dashboard",
-        _             => "/"
+        "Admin" => "/admin-dashboard",
+        "Subscriber" => "/sub-dashboard",
+        "Staff" => "/staff-dashboard",
+        "Technician" => "/tech-dashboard",
+        _ => "/"
     };
 
     return Results.Redirect(redirect);

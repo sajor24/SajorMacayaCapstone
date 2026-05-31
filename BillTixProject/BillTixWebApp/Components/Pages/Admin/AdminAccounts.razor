@@ -1,0 +1,524 @@
+﻿@page "/admin-accounts"
+@layout AdminLayout
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Domain.ICommands
+@using Domain.Models
+@rendermode InteractiveServer
+@inject IDelete_User delete
+@inject IGetAll_User getAll
+@inject ICreate_User create
+@inject IUpdate_User update
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IGetAll_Subscription subscription
+@attribute [Authorize(Roles = "Admin")]
+
+<div class="sub-wrapper">
+
+    <!-- TOP NAV -->
+    <div class="topnav">
+        <div class="topnav-left">
+            <h2>Welcome, @username</h2>
+            <p>Manage your internet billing system</p>
+        </div>
+        <div class="topnav-right">
+            <div class="avatar">👤</div>
+        </div>
+    </div>
+
+    <!-- PAGE CONTENT -->
+    <div class="page-content">
+
+        <!-- HEADER -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold mb-0">Subscribers</h3>
+            <button class="btn btn-primary d-flex align-items-center gap-2 px-4" @onclick="OpenAddForm">
+                <i class="bi bi-person-plus-fill"></i> Add Accounts
+            </button>
+        </div>
+
+        <!-- ERROR -->
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger alert-dismissible mb-3">
+                @errorMessage
+                <button type="button" class="btn-close" @onclick="() => errorMessage = string.Empty"></button>
+            </div>
+        }
+
+        <!-- TABLE CARD -->
+        <div class="table-card">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <div class="fw-semibold">All Accounts</div>
+                    <small class="text-muted">Total: @users.Count</small>
+                </div>
+                <div class="search-box">
+                    <i class="bi bi-search text-muted"></i>
+                    <input placeholder="Search by Name or ID..."
+                           @bind="searchText"
+                           @bind:event="oninput" />
+                </div>
+            </div>
+
+            <table class="sub-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>First Name</th>
+                        <th>Last Name</th>
+                        <th>User Name</th>
+                        <th>Address</th>
+                        <th>Email</th>
+                        <th>Contact Number</th>
+                        <th>Created At</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in filteredUsers)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@item.UserId</td>
+                            <td>@item.FirstName</td>
+                            <td>@item.LastName</td>
+                            <td>@item.Username</td>
+                            <td>@item.Address</td>
+                            <td class="text-muted">@item.Email</td>
+                            <td class="text-muted">@item.ContactNumber</td>
+                            <td>@item.CreatedAt.ToString("MMM dd, yyyy")</td>
+                            <td>
+                                <div class="d-flex gap-2">
+                                    <button class="action-btn edit-btn" title="Edit" @onclick="() => EditUser(item)">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+                                    <button class="action-btn delete-btn" title="Delete" @onclick="() => Delete(item.UserId)">
+                                        <i class="bi bi-power"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    @if (!filteredUsers.Any())
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-4">No Accounts found.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
+
+<!-- DELETE CONFIRMATION MODAL -->
+@if (showDeleteConfirm)
+{
+    <div class="modal-backdrop-custom" @onclick="CancelDelete"></div>
+    <div class="modal-box shadow-lg" style="width: 420px;">
+        <div class="text-center py-2">
+            <div style="font-size: 3rem;">⚠️</div>
+            <h5 class="fw-bold mt-2">Delete Subscriber?</h5>
+            <p class="text-muted mt-1">Are you sure you want to delete <strong>@deleteTargetName</strong>? This action cannot be undone.</p>
+        </div>
+        <div class="d-flex gap-2 mt-3 justify-content-center">
+            <button class="btn btn-secondary px-4" @onclick="CancelDelete">Cancel</button>
+            <button class="btn btn-danger px-4" @onclick="ConfirmDelete">Yes, Delete</button>
+        </div>
+    </div>
+}
+
+<!-- ADD / EDIT MODAL -->
+@if (showForm)
+{
+    <div class="modal-backdrop-custom" @onclick="CancelForm"></div>
+    <div class="modal-box shadow-lg">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">@(isEditing ? "Edit" : "Add ")</h5>
+            <button class="btn-close" @onclick="CancelForm"></button>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">First Name <span class="text-danger">*</span></label>
+                <input class="form-control" placeholder="First Name" @bind="user.FirstName" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Last Name <span class="text-danger">*</span></label>
+                <input class="form-control" placeholder="Last Name" @bind="user.LastName" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Username <span class="text-danger">*</span></label>
+                <input class="form-control" placeholder="Username" @bind="user.Username" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">
+                    Password @if (!isEditing) {
+                    <span class="text-danger">*</span>
+                } else
+                {
+
+                    <span class="text-muted">(leave blank to keep)</span>
+                }
+            </label>
+            <input type="password" class="form-control"
+                   placeholder="@(isEditing ? "Leave blank to keep current" : "Password")"
+                   @bind="passwordInput" />
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Email</label>
+            <input class="form-control" placeholder="Email" @bind="user.Email" />
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Contact Number</label>
+            <input class="form-control" placeholder="Contact Number" @bind="user.ContactNumber" />
+        </div>
+        <div class="col-12">
+            <label class="form-label">Address</label>
+            <input class="form-control" placeholder="Address" @bind="user.Address" />
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Role <span class="text-danger">*</span></label>
+            <select class="form-select" @bind="user.Role">
+                <option value="">Select Role</option>
+                <option value="Subscriber">Subscriber</option>
+                <option value="Admin">Admin</option>
+                <option value="Technician">Technician</option>
+                <option value="Staff">Staff</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2 mt-4 justify-content-end">
+        <button class="btn btn-secondary" @onclick="CancelForm">Cancel</button>
+        <button class="btn btn-primary" @onclick="SaveUser">
+            @(isEditing ? "Update" : "Add Subscriber")
+        </button>
+    </div>
+</div>
+}
+
+<style>
+    .sub-wrapper {
+        min-height: 100vh;
+        background: #f5f6fa;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* TOP NAV */
+    .topnav {
+        background: white;
+        padding: 16px 32px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 2px solid #4f46e5;
+    }
+
+    .topnav-left h2 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #111;
+        margin: 0;
+    }
+
+    .topnav-left p {
+        font-size: .82rem;
+        color: #4f46e5;
+        margin: 0;
+    }
+
+    .topnav-right {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .avatar {
+        width: 38px;
+        height: 38px;
+        background: #4f46e5;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.1rem;
+    }
+
+    /* PAGE CONTENT */
+    .page-content {
+        padding: 32px;
+        flex: 1;
+    }
+
+    /* TABLE CARD */
+    .table-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 2px 12px rgba(0,0,0,.06);
+    }
+
+    /* SEARCH */
+    .search-box {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 8px 14px;
+        width: 260px;
+        background: white;
+    }
+
+        .search-box input {
+            border: none;
+            outline: none;
+            font-size: .9rem;
+            width: 100%;
+            color: #333;
+        }
+
+    /* TABLE */
+    .sub-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .sub-table thead tr {
+            border-bottom: 2px solid #f3f4f6;
+        }
+
+        .sub-table th {
+            text-align: left;
+            padding: 10px 12px;
+            font-size: .82rem;
+            color: #888;
+            font-weight: 600;
+        }
+
+        .sub-table td {
+            padding: 14px 12px;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: .9rem;
+            color: #333;
+        }
+
+        .sub-table tbody tr:hover {
+            background: #fafafa;
+        }
+
+    /* STATUS BADGE */
+    .status-badge {
+        background: #111827;
+        color: white;
+        padding: 5px 14px;
+        border-radius: 20px;
+        font-size: .75rem;
+        font-weight: 600;
+    }
+
+    /* ACTION BUTTONS */
+    .action-btn {
+        border: 1px solid #e5e7eb;
+        background: white;
+        border-radius: 8px;
+        padding: 6px 10px;
+        cursor: pointer;
+        transition: .2s;
+        font-size: .9rem;
+    }
+
+    .edit-btn:hover {
+        background: #f0f0ff;
+        border-color: #4f46e5;
+        color: #4f46e5;
+    }
+
+    .delete-btn:hover {
+        background: #fff0f0;
+        border-color: #ef4444;
+        color: #ef4444;
+    }
+
+    /* MODAL */
+    .modal-backdrop-custom {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.4);
+        z-index: 1040;
+    }
+
+    .modal-box {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        width: 620px;
+        max-width: 95vw;
+        z-index: 1050;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+</style>
+
+@code {
+
+    private string username = "Admin";
+    private List<Users> users = new();
+    private Users user = new();
+    private bool isEditing = false;
+    private bool showForm = false;
+    private bool showDeleteConfirm = false;
+    private string deleteTargetId = string.Empty;
+    private string deleteTargetName = string.Empty;
+    private string searchText = string.Empty;
+    private string passwordInput = string.Empty;
+    private string errorMessage = string.Empty;
+
+    
+    private IEnumerable<Users> filteredUsers =>
+            string.IsNullOrWhiteSpace(searchText)
+            ? users
+            : users.Where(x =>
+                (x.FirstName != null && x.FirstName.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+                || (x.LastName != null && x.LastName.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+                || (x.Username != null && x.Username.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+                || (x.UserId != null && x.UserId.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            );
+
+    protected override async Task OnInitializedAsync()
+    {
+        showForm = false;
+        showDeleteConfirm = false;
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var u = authState.User;
+        if (u.Identity?.IsAuthenticated == true)
+            username = u.Identity.Name ?? "Admin";
+
+        await LoadUsers();
+    }
+
+    async Task LoadUsers()
+    {
+        var result = await getAll.ExecuteAsync();
+        users = result?.ToList() ?? new();
+    }
+
+    void OpenAddForm()
+    {
+        user = new Users();
+        passwordInput = string.Empty;
+        isEditing = false;
+        errorMessage = string.Empty;
+        showForm = true;
+    }
+
+    void EditUser(Users item)
+    {
+        user = new Users
+        {
+            UserId = item.UserId,
+            FirstName = item.FirstName,
+            LastName = item.LastName,
+            Username = item.Username,
+            Password = item.Password,
+            Role = item.Role,
+            Email = item.Email,
+            ContactNumber = item.ContactNumber,
+            Address = item.Address
+        };
+        passwordInput = string.Empty;
+        isEditing = true;
+        errorMessage = string.Empty;
+        showForm = true;
+    }
+
+    async Task SaveUser()
+    {
+        if (string.IsNullOrWhiteSpace(user.FirstName) ||
+            string.IsNullOrWhiteSpace(user.LastName) ||
+            string.IsNullOrWhiteSpace(user.Username) ||
+            string.IsNullOrWhiteSpace(user.Role))
+        {
+            errorMessage = "First Name, Last Name, Username, and Role are required.";
+            return;
+        }
+
+        if (!isEditing && string.IsNullOrWhiteSpace(passwordInput))
+        {
+            errorMessage = "Password is required when adding a new subscriber.";
+            return;
+        }
+
+        errorMessage = string.Empty;
+
+        try
+        {
+            if (isEditing)
+            {
+                if (!string.IsNullOrWhiteSpace(passwordInput))
+                    user.Password = passwordInput;
+
+                await update.ExecuteAsync(user);
+            }
+            else
+            {
+                user.Password = passwordInput;
+                await create.ExecuteAsync(user);
+            }
+
+            user = new Users();
+            passwordInput = string.Empty;
+            isEditing = false;
+            showForm = false;
+
+            await LoadUsers();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
+    }
+
+    void CancelForm()
+    {
+        user = new Users();
+        passwordInput = string.Empty;
+        isEditing = false;
+        showForm = false;
+        errorMessage = string.Empty;
+    }
+
+    void Delete(string id)
+    {
+        var target = users.FirstOrDefault(x => x.UserId == id);
+        deleteTargetId = id;
+        deleteTargetName = target != null ? $"{target.FirstName} {target.LastName}" : id;
+        showDeleteConfirm = true;
+    }
+
+    void CancelDelete()
+    {
+        deleteTargetId = string.Empty;
+        deleteTargetName = string.Empty;
+        showDeleteConfirm = false;
+    }
+
+    async Task ConfirmDelete()
+    {
+        var deleteUser = new Users { UserId = deleteTargetId };
+        await delete.ExecuteAsync(deleteUser);
+        showDeleteConfirm = false;
+        deleteTargetId = string.Empty;
+        deleteTargetName = string.Empty;
+        await LoadUsers();
+    }
+}

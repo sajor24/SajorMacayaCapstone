@@ -9,8 +9,10 @@
 @inject IGetAll_User getAll
 @inject ICreate_User create
 @inject IUpdate_User update
+@inject IGetAll_Subscription getAllSubscription
+@inject ICreate_Subscription createSubscription
+@inject IUpdate_Subscription updateSubscription
 @inject AuthenticationStateProvider AuthStateProvider
-
 @attribute [Authorize(Roles = "Admin")]
 
 <div class="sub-wrapper">
@@ -29,15 +31,13 @@
     <!-- PAGE CONTENT -->
     <div class="page-content">
 
-        <!-- HEADER -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h3 class="fw-bold mb-0">Subscribers</h3>
+            <h3 class="fw-bold mb-0" style="color:#111;">Subscribers</h3>
             <button class="btn btn-primary d-flex align-items-center gap-2 px-4" @onclick="OpenAddForm">
                 <i class="bi bi-person-plus-fill"></i> Add Subscriber
             </button>
         </div>
 
-        <!-- ERROR -->
         @if (!string.IsNullOrEmpty(errorMessage))
         {
             <div class="alert alert-danger alert-dismissible mb-3">
@@ -46,12 +46,11 @@
             </div>
         }
 
-        <!-- TABLE CARD -->
         <div class="table-card">
             <div class="d-flex justify-content-between align-items-start mb-3">
                 <div>
-                    <div class="fw-semibold">All Subscribers</div>
-                    <small class="text-muted">Total: @users.Count subscriber@(users.Count != 1 ? "s" : "") (@users.Count active)</small>
+                    <div class="fw-semibold" style="color:#111;">All Subscribers</div>
+                    <small class="text-muted">Total: @users.Count subscriber@(users.Count != 1 ? "s" : "")</small>
                 </div>
                 <div class="search-box">
                     <i class="bi bi-search text-muted"></i>
@@ -61,54 +60,65 @@
                 </div>
             </div>
 
-            <table class="sub-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Adress</th>
-                        <th>Email</th>
-                        <th>Phone</th>
-                        <th>Plan</th>
-                        <th>Status</th>
-                        <th>Next Billing</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in filteredUsers)
-                    {
+            <div class="table-responsive">
+                <table class="sub-table">
+                    <thead>
                         <tr>
-                            <td class="fw-semibold">@item.UserId</td>
-                            <td>@item.FirstName @item.LastName</td>
-                            <td>@item.Address</td>
-                            <td class="text-muted">@item.Email</td>
-                            <td class="text-muted">@item.ContactNumber</td>
-
-                            <td class="text-muted">—</td>
-                            <td><span class="status-badge">active</span></td>
-                            <td class="text-muted">—</td>
-                            <td>
-                                <div class="d-flex gap-2">
-                                    <button class="action-btn edit-btn" title="Edit" @onclick="() => EditUser(item)">
-                                        <i class="bi bi-pencil-square"></i>
-                                    </button>
-                                    <button class="action-btn delete-btn" title="Delete" @onclick="() => Delete(item.UserId)">                                        <i class="bi bi-power"></i>
-                                    </button>
-                                </div>
-                            </td>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Plan</th>
+                            <th>Status</th>
+                            <th>Next Billing</th>
+                            <th>Actions</th>
                         </tr>
-                    }
-                    @if (!filteredUsers.Any())
-                    {
-                        <tr>
-                            <td colspan="8" class="text-center text-muted py-4">No subscribers found.</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in filteredUsers)
+                        {
+                            var sub = GetSubscription(item.UserId);
+                            <tr>
+                                <td class="fw-semibold">@item.UserId</td>
+                                <td>@item.FirstName @item.LastName</td>
+                                <td class="text-muted">@item.Email</td>
+                                <td class="text-muted">@item.ContactNumber</td>
+                                <td>@(sub?.PlanName ?? "—")</td>
+                                <td>
+                                    @if (sub != null)
+                                    {
+                                        <span class="status-badge @(sub.Status == "Active" ? "badge-active" : "badge-inactive")">
+                                            @sub.Status
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td class="text-muted">@(sub?.EndDate?.ToString("M/d/yyyy") ?? "—")</td>
+                                <td>
+                                    <div class="d-flex gap-2">
+                                        <button class="action-btn edit-btn" title="Edit" @onclick="() => EditUser(item)">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </button>
+                                        <button class="action-btn delete-btn" title="Delete" @onclick="() => Delete(item.UserId)">
+                                            <i class="bi bi-power"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        @if (!filteredUsers.Any())
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">No subscribers found.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
-
     </div>
 </div>
 
@@ -116,9 +126,9 @@
 @if (showDeleteConfirm)
 {
     <div class="modal-backdrop-custom" @onclick="CancelDelete"></div>
-    <div class="modal-box shadow-lg" style="width: 420px;">
+    <div class="modal-box shadow-lg" style="width:420px;">
         <div class="text-center py-2">
-            <div style="font-size: 3rem;">⚠️</div>
+            <div style="font-size:3rem;">⚠️</div>
             <h5 class="fw-bold mt-2">Delete Subscriber?</h5>
             <p class="text-muted mt-1">Are you sure you want to delete <strong>@deleteTargetName</strong>? This action cannot be undone.</p>
         </div>
@@ -138,7 +148,6 @@
             <h5 class="fw-bold mb-0">@(isEditing ? "Edit Subscriber" : "Add Subscriber")</h5>
             <button class="btn-close" @onclick="CancelForm"></button>
         </div>
-
         <div class="row g-3">
             <div class="col-md-6">
                 <label class="form-label">First Name <span class="text-danger">*</span></label>
@@ -154,7 +163,9 @@
             </div>
             <div class="col-md-6">
                 <label class="form-label">
-                    Password @if (!isEditing) { <span class="text-danger">*</span> } else { <span class="text-muted">(leave blank to keep)</span> }
+                    Password
+                    @if (!isEditing) { <span class="text-danger">*</span> }
+                    else { <span class="text-muted small">(leave blank to keep)</span> }
                 </label>
                 <input type="password" class="form-control"
                        placeholder="@(isEditing ? "Leave blank to keep current" : "Password")"
@@ -172,18 +183,32 @@
                 <label class="form-label">Address</label>
                 <input class="form-control" placeholder="Address" @bind="user.Address" />
             </div>
-            <div class="col-md-6">
-                <label class="form-label">Role <span class="text-danger">*</span></label>
-                <select class="form-select" @bind="user.Role">
-                    <option value="">Select Role</option>
-                    <option value="Subscriber">Subscriber</option>
-                    <option value="Admin">Admin</option>
-                    <option value="Technician">Technician</option>
-                    <option value="Staff">Staff</option>
-                </select>
-            </div>
+           
+            @if (!isEditing)
+            {
+                <div class="col-md-6">
+                    <label class="form-label">Plan <span class="text-danger">*</span></label>
+                    <select class="form-select" @bind="selectedPlan">
+                        <option value="">Select Plan</option>
+                        <option value="@nameof(PlanType.Basic)">Basic — 150 Mbps — ₱1,000/mo</option>
+                        <option value="@nameof(PlanType.Standard)">Standard — 200 Mbps — ₱1,300/mo</option>
+                        <option value="@nameof(PlanType.Premium)">Premium — 250 Mbps — ₱1,500/mo</option>
+                    </select>
+                </div>
+            }
+            else
+            {
+                <div class="col-md-6">
+                    <label class="form-label">Plan <span class="text-muted small">(leave blank to keep)</span></label>
+                    <select class="form-select" @bind="selectedPlan">
+                        <option value="">Keep current plan</option>
+                        <option value="Basic">Basic — 150 Mbps — ₱1,000/mo</option>
+                        <option value="Standard">Standard — 200 Mbps — ₱1,300/mo</option>
+                        <option value="Premium">Premium — 250 Mbps — ₱1,500/mo</option>
+                    </select>
+                </div>
+            }
         </div>
-
         <div class="d-flex gap-2 mt-4 justify-content-end">
             <button class="btn btn-secondary" @onclick="CancelForm">Cancel</button>
             <button class="btn btn-primary" @onclick="SaveUser">
@@ -193,179 +218,10 @@
     </div>
 }
 
-<style>
-    .sub-wrapper {
-        min-height: 100vh;
-        background: #f5f6fa;
-        display: flex;
-        flex-direction: column;
-    }
-
-    /* TOP NAV */
-    .topnav {
-        background: white;
-        padding: 16px 32px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 2px solid #4f46e5;
-    }
-
-    .topnav-left h2 {
-        font-size: 1.2rem;
-        font-weight: 700;
-        color: #111;
-        margin: 0;
-    }
-
-    .topnav-left p {
-        font-size: .82rem;
-        color: #4f46e5;
-        margin: 0;
-    }
-
-    .topnav-right {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-    }
-
-    .avatar {
-        width: 38px;
-        height: 38px;
-        background: #4f46e5;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 1.1rem;
-    }
-
-    /* PAGE CONTENT */
-    .page-content {
-        padding: 32px;
-        flex: 1;
-    }
-
-    /* TABLE CARD */
-    .table-card {
-        background: white;
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 2px 12px rgba(0,0,0,.06);
-    }
-
-    /* SEARCH */
-    .search-box {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        border: 1px solid #e5e7eb;
-        border-radius: 10px;
-        padding: 8px 14px;
-        width: 260px;
-        background: white;
-    }
-
-    .search-box input {
-        border: none;
-        outline: none;
-        font-size: .9rem;
-        width: 100%;
-        color: #333;
-    }
-
-    /* TABLE */
-    .sub-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    .sub-table thead tr {
-        border-bottom: 2px solid #f3f4f6;
-    }
-
-    .sub-table th {
-        text-align: left;
-        padding: 10px 12px;
-        font-size: .82rem;
-        color: #888;
-        font-weight: 600;
-    }
-
-    .sub-table td {
-        padding: 14px 12px;
-        border-bottom: 1px solid #f3f4f6;
-        font-size: .9rem;
-        color: #333;
-    }
-
-    .sub-table tbody tr:hover {
-        background: #fafafa;
-    }
-
-    /* STATUS BADGE */
-    .status-badge {
-        background: #111827;
-        color: white;
-        padding: 5px 14px;
-        border-radius: 20px;
-        font-size: .75rem;
-        font-weight: 600;
-    }
-
-    /* ACTION BUTTONS */
-    .action-btn {
-        border: 1px solid #e5e7eb;
-        background: white;
-        border-radius: 8px;
-        padding: 6px 10px;
-        cursor: pointer;
-        transition: .2s;
-        font-size: .9rem;
-    }
-
-    .edit-btn:hover {
-        background: #f0f0ff;
-        border-color: #4f46e5;
-        color: #4f46e5;
-    }
-
-    .delete-btn:hover {
-        background: #fff0f0;
-        border-color: #ef4444;
-        color: #ef4444;
-    }
-
-    /* MODAL */
-    .modal-backdrop-custom {
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.4);
-        z-index: 1040;
-    }
-
-    .modal-box {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: white;
-        border-radius: 16px;
-        padding: 2rem;
-        width: 620px;
-        max-width: 95vw;
-        z-index: 1050;
-        max-height: 90vh;
-        overflow-y: auto;
-    }
-</style>
-
 @code {
-
     private string username = "Admin";
     private List<Users> users = new();
+    private List<Subscription> subscriptions = new();
     private Users user = new();
     private bool isEditing = false;
     private bool showForm = false;
@@ -375,6 +231,17 @@
     private string searchText = string.Empty;
     private string passwordInput = string.Empty;
     private string errorMessage = string.Empty;
+    private string selectedPlan = string.Empty;
+
+    private static readonly Dictionary<string, (decimal Price, string Speed)> Plans = new()
+    {
+        { nameof(PlanType.Basic),    (1000m, "150 Mbps") },
+        { nameof(PlanType.Standard), (1300m, "200 Mbps") },
+        { nameof(PlanType.Premium),  (1500m, "250 Mbps") },
+    };
+
+    private Subscription? GetSubscription(string? userId) =>
+        subscriptions.FirstOrDefault(x => x.UserId == userId && x.Status == "Active");
 
     private IEnumerable<Users> filteredUsers =>
         string.IsNullOrWhiteSpace(searchText)
@@ -390,12 +257,10 @@
     {
         showForm = false;
         showDeleteConfirm = false;
-
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var u = authState.User;
         if (u.Identity?.IsAuthenticated == true)
             username = u.Identity.Name ?? "Admin";
-
         await LoadUsers();
     }
 
@@ -403,12 +268,16 @@
     {
         var result = await getAll.ExecuteAsync();
         users = result?.Where(x => x.Role == "Subscriber").ToList() ?? new();
+
+        var subs = await getAllSubscription.ExecuteAsync();
+        subscriptions = subs?.ToList() ?? new();
     }
 
     void OpenAddForm()
     {
-        user = new Users();
+        user = new Users { Role = "Subscriber" };
         passwordInput = string.Empty;
+        selectedPlan = string.Empty;
         isEditing = false;
         errorMessage = string.Empty;
         showForm = true;
@@ -438,41 +307,94 @@
     {
         if (string.IsNullOrWhiteSpace(user.FirstName) ||
             string.IsNullOrWhiteSpace(user.LastName) ||
-            string.IsNullOrWhiteSpace(user.Username) ||
-            string.IsNullOrWhiteSpace(user.Role))
+            string.IsNullOrWhiteSpace(user.Username))
         {
-            errorMessage = "First Name, Last Name, Username, and Role are required.";
+            errorMessage = "First Name, Last Name, and Username are required.";
             return;
         }
 
+        if (!isEditing && string.IsNullOrWhiteSpace(selectedPlan))
+        {
+            errorMessage = "Please select a plan.";
+            return;
+        }
+
+        // Always Subscriber
+        user.Role = "Subscriber";
         if (!isEditing && string.IsNullOrWhiteSpace(passwordInput))
         {
-            errorMessage = "Password is required when adding a new subscriber.";
+            errorMessage = "Password is required.";
             return;
         }
-
         errorMessage = string.Empty;
-
         try
         {
             if (isEditing)
             {
                 if (!string.IsNullOrWhiteSpace(passwordInput))
                     user.Password = passwordInput;
-
                 await update.ExecuteAsync(user);
+
+                // Update plan if a new one was selected
+                if (!string.IsNullOrEmpty(selectedPlan) && Plans.TryGetValue(selectedPlan, out var updatedPlan))
+                {
+                    var existingSub = subscriptions.FirstOrDefault(x => x.UserId == user.UserId);
+                    if (existingSub != null)
+                    {
+                        existingSub.PlanName = selectedPlan;
+                        existingSub.PlanPrice = updatedPlan.Price;
+                        existingSub.EndDate = DateTime.Now.AddMonths(1);
+                        existingSub.Status = "Active";
+                        await updateSubscription.ExecuteAsync(existingSub);
+                    }
+                    else
+                    {
+                        // No existing sub — create new one
+                        var newSub = new Subscription
+                        {
+                            UserId = user.UserId,
+                            PlanName = selectedPlan,
+                            PlanPrice = updatedPlan.Price,
+                            StartDate = DateTime.Now,
+                            EndDate = DateTime.Now.AddMonths(1),
+                            Status = "Active"
+                        };
+                        await createSubscription.ExecuteAsync(newSub);
+                    }
+                }
             }
             else
             {
                 user.Password = passwordInput;
                 await create.ExecuteAsync(user);
-            }
 
+                // Auto-create subscription
+                if (!string.IsNullOrEmpty(selectedPlan) && Plans.TryGetValue(selectedPlan, out var planInfo))
+                {
+                    // Get the newly created user to get UserId
+                    var allUsers = await getAll.ExecuteAsync();
+                    var newUser = allUsers?.FirstOrDefault(x => x.Username == user.Username);
+
+                    if (newUser != null)
+                    {
+                        var sub = new Subscription
+                        {
+                            UserId = newUser.UserId,
+                            PlanName = selectedPlan,
+                            PlanPrice = planInfo.Price,
+                            StartDate = DateTime.Now,
+                            EndDate = DateTime.Now.AddMonths(1),
+                            Status = "Active"
+                        };
+                        await createSubscription.ExecuteAsync(sub);
+                    }
+                }
+            }
             user = new Users();
             passwordInput = string.Empty;
+            selectedPlan = string.Empty;
             isEditing = false;
             showForm = false;
-
             await LoadUsers();
         }
         catch (Exception ex)
@@ -485,13 +407,15 @@
     {
         user = new Users();
         passwordInput = string.Empty;
+        selectedPlan = string.Empty;
         isEditing = false;
         showForm = false;
         errorMessage = string.Empty;
     }
 
-    void Delete(string id)
+    void Delete(string? id)
     {
+        if (string.IsNullOrEmpty(id)) return;
         var target = users.FirstOrDefault(x => x.UserId == id);
         deleteTargetId = id;
         deleteTargetName = target != null ? $"{target.FirstName} {target.LastName}" : id;

@@ -15,4 +15,18 @@ namespace Domain.Models
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
     }
+
+    public enum PlanType
+    {
+        Basic,
+        Standard,
+        Premium
+    }
+
+    public enum SubscriptionStatus
+    {
+        Active,
+        Inactive,
+        Expired
+    }
 }
