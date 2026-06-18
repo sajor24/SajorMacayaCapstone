@@ -41,7 +41,7 @@
             <div class="card-icon">🚀</div>
             <h5>Current Plan</h5>
             <h3>@(currentSub?.PlanName ?? "No Plan")</h3>
-            <p>@planSpeed</p>
+            <p>@planSpeed ?? "Wala"</p>
         </div>
 
         <!-- BILLING -->
@@ -96,7 +96,7 @@
 @code {
     private string fullName = "";
     private string userId = "";
-    private string planSpeed = "—";
+    private string planSpeed = "";
     private int daysUntilBilling = 0;
     private Subscription? currentSub;
 

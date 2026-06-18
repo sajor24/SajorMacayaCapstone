@@ -54,7 +54,19 @@
 .sub-table tbody tr:hover { background: #fafafa; }
 
 .status-badge { padding: 5px 14px; border-radius: 20px; font-size: .75rem; font-weight: 600; }
-.badge-active { background: #111827; color: white; }
+.badge-active {
+    background-color: #28a745;
+    color: white;
+}
+
+.badge-inactive {
+    background-color: #dc3545;
+    color: white;
+}
+.badge-active {
+    background-color: #28a745;
+    color: white;
+}
 .badge-inactive { background: #f3f4f6; color: #888; }
 
 .action-btn { border: 1px solid #e5e7eb; background: white; border-radius: 8px; padding: 6px 10px; cursor: pointer; transition: .2s; font-size: .9rem; }
