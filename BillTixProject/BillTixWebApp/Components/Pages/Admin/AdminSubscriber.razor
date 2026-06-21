@@ -12,6 +12,7 @@
 @inject IGetAll_Subscription getAllSubscription
 @inject ICreate_Subscription createSubscription
 @inject IUpdate_Subscription updateSubscription
+@inject IDelete_Subscription deleteSubscription
 @inject AuthenticationStateProvider AuthStateProvider
 @attribute [Authorize(Roles = "Admin")]
 
@@ -164,8 +165,15 @@
             <div class="col-md-6">
                 <label class="form-label">
                     Password
-                    @if (!isEditing) { <span class="text-danger">*</span> }
-                    else { <span class="text-muted small">(leave blank to keep)</span> }
+                    @if (!isEditing)
+                    {
+                        <span class="text-danger">*</span>
+                    }
+                    else
+                    {
+
+                        <span class="text-muted small">(leave blank to keep)</span>
+                    }
                 </label>
                 <input type="password" class="form-control"
                        placeholder="@(isEditing ? "Leave blank to keep current" : "Password")"
@@ -183,7 +191,7 @@
                 <label class="form-label">Address</label>
                 <input class="form-control" placeholder="Address" @bind="user.Address" />
             </div>
-           
+
             @if (!isEditing)
             {
                 <div class="col-md-6">
@@ -431,11 +439,28 @@
 
     async Task ConfirmDelete()
     {
-        var deleteUser = new Users { UserId = deleteTargetId };
-        await delete.ExecuteAsync(deleteUser);
-        showDeleteConfirm = false;
-        deleteTargetId = string.Empty;
-        deleteTargetName = string.Empty;
-        await LoadUsers();
+        try
+        {
+            // Delete subscription first (foreign key constraint)
+            var existingSub = subscriptions.FirstOrDefault(x => x.UserId == deleteTargetId);
+            if (existingSub != null)
+            {
+                await deleteSubscription.ExecuteAsync(existingSub);
+            }
+
+            // Then delete the user
+            var deleteUser = new Users { UserId = deleteTargetId };
+            await delete.ExecuteAsync(deleteUser);
+
+            showDeleteConfirm = false;
+            deleteTargetId = string.Empty;
+            deleteTargetName = string.Empty;
+            await LoadUsers();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+            showDeleteConfirm = false;
+        }
     }
 }
