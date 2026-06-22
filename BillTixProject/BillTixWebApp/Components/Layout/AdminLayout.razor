@@ -2,35 +2,40 @@
 
 <div class="admin-container">
 
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-        <div class="sidebar-brand" style="font-size: 2.5rem; font-weight: 900; color: white;">BILLTIX</div>
+    <!-- HAMBURGER BUTTON (mobile only) -->
+    <button class="hamburger" @onclick="ToggleSidebar">☰</button>
 
+    <!-- OVERLAY (mobile) -->
+    @if (sidebarOpen)
+    {
+        <div class="sidebar-overlay" @onclick="ToggleSidebar"></div>
+    }
+
+    <!-- SIDEBAR -->
+    <div class="sidebar @(sidebarOpen ? "sidebar-open" : "")">
+        <div class="sidebar-brand">BILLTIX</div>
 
         <nav class="sidebar-nav">
-            <NavLink href="/admin-dashboard" Match="NavLinkMatch.All" class="nav-item">
+            <NavLink href="/admin-dashboard" Match="NavLinkMatch.All" class="nav-item" ActiveClass="nav-active" @onclick="CloseSidebar">
                 <span>⊞</span> Dashboard
             </NavLink>
-
-            <NavLink href="/admin-subscriber" class="nav-item">
+            <NavLink href="/admin-subscriber" class="nav-item" ActiveClass="nav-active" @onclick="CloseSidebar">
                 <span>👤</span> Subscribers
             </NavLink>
-            <NavLink href="/admin-internet-plans" class="nav-item">
+            <NavLink href="/admin-internet-plans" class="nav-item" ActiveClass="nav-active" @onclick="CloseSidebar">
                 <span>🌐</span> Internet Plans
             </NavLink>
-            <NavLink href="/admin-billing" class="nav-item">
+            <NavLink href="/admin-billing" class="nav-item" ActiveClass="nav-active" @onclick="CloseSidebar">
                 <span>🪪</span> Billing
             </NavLink>
-            <NavLink href="/admin-technicians" class="nav-item">
+            <NavLink href="/admin-technicians" class="nav-item" ActiveClass="nav-active" @onclick="CloseSidebar">
                 <span>🔧</span> Technicians
             </NavLink>
-            <NavLink href="/admin-financial-report" class="nav-item">
+            <NavLink href="/admin-financial-report" class="nav-item" ActiveClass="nav-active" @onclick="CloseSidebar">
                 <span>📄</span> Financial Report
-
             </NavLink>
-            <NavLink href="/admin-accounts" class="nav-item">
-                <span>📄</span> Accounts
-
+            <NavLink href="/admin-accounts" class="nav-item" ActiveClass="nav-active" @onclick="CloseSidebar">
+                <span>👥</span> Accounts
             </NavLink>
         </nav>
     </div>
@@ -41,17 +46,44 @@
     </div>
 
 </div>
+
 <style>
     html, body, *, *::before, *::after {
         font-family: 'Segoe UI', Arial, sans-serif !important;
-        font-size: 16px !important;
         box-sizing: border-box;
     }
 
     .admin-container {
         display: flex;
         min-height: 100vh;
-        background: #181825; /* DARK BACKGROUND for the whole admin area */
+        background: #181825;
+    }
+
+    /* HAMBURGER - hidden on desktop */
+    .hamburger {
+        display: none;
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        z-index: 2000;
+        background: #7367f0;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        width: 42px;
+        height: 42px;
+        font-size: 1.3rem;
+        cursor: pointer;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    }
+
+    /* OVERLAY */
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1500;
     }
 
     .sidebar {
@@ -68,6 +100,8 @@
         position: sticky;
         top: 0;
         left: 0;
+        z-index: 1600;
+        transition: transform 0.3s ease;
     }
 
     .sidebar-brand {
@@ -77,11 +111,6 @@
         margin-bottom: 36px;
         padding-left: 8px;
         letter-spacing: 1.6px;
-        line-height: 1;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        text-shadow: 0 4px 28px rgba(100,90,200,0.12);
     }
 
     .sidebar-nav {
@@ -102,27 +131,20 @@
         text-decoration: none;
         font-size: 1rem;
         font-weight: 600;
-        box-shadow: 0 1px 6px rgba(38,34,70,0.06);
-        transition: background 0.18s, color 0.16s, font-weight 0.18s, transform 0.2s;
+        transition: background 0.18s, color 0.16s, transform 0.2s;
     }
 
-        .nav-item:hover,
-        .sidebar a:hover {
-            background: linear-gradient(90deg,#282855 40%,#4e418b 100%);
-            color: #fffaac;
-            transform: translateX(7px);
-            font-weight: 700;
-        }
+    .nav-item:hover, .sidebar a:hover {
+        background: linear-gradient(90deg,#282855 40%,#4e418b 100%);
+        color: #fffaac;
+        transform: translateX(7px);
+    }
 
-        .nav-item.active,
-        .nav-item.nav-active,
-        .sidebar a.active {
-            background: linear-gradient(90deg,#ae84ff 52%,#7367f0 100%);
-            color: #262248 !important;
-            font-weight: bold !important;
-            box-shadow: 0 1.5px 15px 0 rgba(164,125,250,0.11);
-            letter-spacing: .7px;
-        }
+    .nav-item.active, .nav-item.nav-active, .sidebar a.active {
+        background: linear-gradient(90deg,#ae84ff 52%,#7367f0 100%);
+        color: #262248 !important;
+        font-weight: bold !important;
+    }
 
     .main-content {
         flex: 1;
@@ -130,40 +152,45 @@
         overflow-y: auto;
         padding: 22px;
         border-radius: 22px 0 0 0;
+        min-width: 0;
     }
 
-    /* Responsive sidebar for tablets/phones */
+    /* MOBILE */
     @@media (max-width: 800px) {
+        .hamburger {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-        .admin-container {
-            flex-direction: column;
+        .sidebar-overlay {
+            display: block;
         }
 
         .sidebar {
-            width: 100%;
-            min-width: unset;
-            height: auto;
-            flex-direction: column;
-            border-radius: 0;
-            position: relative;
-            padding: 16px 12px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            transform: translateX(-100%);
+            border-radius: 0 22px 22px 0;
         }
 
-        .sidebar-nav {
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .nav-item,
-        .sidebar a {
-            padding: 10px 12px;
-            font-size: 0.9rem;
+        .sidebar.sidebar-open {
+            transform: translateX(0);
         }
 
         .main-content {
-            padding: 12px;
+            width: 100%;
+            padding: 60px 12px 12px 12px;
             border-radius: 0;
-            overflow-x: hidden;
         }
     }
 </style>
+
+@code {
+    private bool sidebarOpen = false;
+
+    void ToggleSidebar() => sidebarOpen = !sidebarOpen;
+    void CloseSidebar() => sidebarOpen = false;
+}

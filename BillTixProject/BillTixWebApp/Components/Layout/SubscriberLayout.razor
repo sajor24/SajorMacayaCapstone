@@ -2,27 +2,36 @@
 
 <div class="sub-container">
 
+    <!-- HAMBURGER BUTTON (mobile only) -->
+    <button class="sub-hamburger" @onclick="ToggleSidebar">☰</button>
+
+    <!-- OVERLAY -->
+    @if (sidebarOpen)
+    {
+        <div class="sub-overlay" @onclick="ToggleSidebar"></div>
+    }
+
     <!-- SIDEBAR -->
-    <div class="sub-sidebar">
+    <div class="sub-sidebar @(sidebarOpen ? "sub-sidebar-open" : "")">
         <div class="sub-brand">BILLTIX</div>
 
         <nav class="sub-nav">
-            <NavLink href="/sub-dashboard" Match="NavLinkMatch.All" class="sub-nav-item" ActiveClass="sub-nav-active">
+            <NavLink href="/sub-dashboard" Match="NavLinkMatch.All" class="sub-nav-item" ActiveClass="sub-nav-active" @onclick="CloseSidebar">
                 <i class="bi bi-grid-fill"></i> Dashboard
             </NavLink>
-            <NavLink href="/sub-myaccount" class="sub-nav-item" ActiveClass="sub-nav-active">
+            <NavLink href="/sub-myaccount" class="sub-nav-item" ActiveClass="sub-nav-active" @onclick="CloseSidebar">
                 <i class="bi bi-person-fill"></i> My Account
             </NavLink>
-            <NavLink href="/sub-internetplans" class="sub-nav-item" ActiveClass="sub-nav-active">
+            <NavLink href="/sub-internetplans" class="sub-nav-item" ActiveClass="sub-nav-active" @onclick="CloseSidebar">
                 <i class="bi bi-globe"></i> Internet Plans
             </NavLink>
-            <NavLink href="/sub-billing" class="sub-nav-item" ActiveClass="sub-nav-active">
+            <NavLink href="/sub-billing" class="sub-nav-item" ActiveClass="sub-nav-active" @onclick="CloseSidebar">
                 <i class="bi bi-credit-card-fill"></i> Billing
             </NavLink>
-            <NavLink href="/sub-support" class="sub-nav-item" ActiveClass="sub-nav-active">
+            <NavLink href="/sub-support" class="sub-nav-item" ActiveClass="sub-nav-active" @onclick="CloseSidebar">
                 <i class="bi bi-headset"></i> Support
             </NavLink>
-            <NavLink href="/sub-notification" class="sub-nav-item" ActiveClass="sub-nav-active">
+            <NavLink href="/sub-notification" class="sub-nav-item" ActiveClass="sub-nav-active" @onclick="CloseSidebar">
                 <i class="bi bi-bell-fill"></i> Notification
             </NavLink>
         </nav>
@@ -39,7 +48,32 @@
     .sub-container {
         display: flex;
         min-height: 100vh;
-        background: #181825;
+        background: #f5f6fa;
+    }
+
+    .sub-hamburger {
+        display: none;
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        z-index: 2000;
+        background: #0a0a5c;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        width: 42px;
+        height: 42px;
+        font-size: 1.3rem;
+        cursor: pointer;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    }
+
+    .sub-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1500;
     }
 
     .sub-sidebar {
@@ -54,6 +88,8 @@
         position: sticky;
         top: 0;
         left: 0;
+        z-index: 1600;
+        transition: transform 0.3s ease;
     }
 
     .sub-brand {
@@ -100,32 +136,43 @@
         flex: 1;
         overflow-y: auto;
         background: #f5f6fa;
+        min-width: 0;
     }
 
-   @@media (max-width: 800px) {
-        .sub-container {
-            flex-direction: column;
+    /* MOBILE */
+    @@media (max-width: 800px) {
+        .sub-hamburger {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sub-overlay {
+            display: block;
         }
 
         .sub-sidebar {
-            width: 100%;
-            min-width: unset;
-            height: auto;
-            position: relative;
-            padding: 16px 12px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            transform: translateX(-100%);
         }
 
-        .sub-nav {
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .sub-nav-item {
-            padding: 10px 12px;
-            font-size: 0.88rem;
+        .sub-sidebar.sub-sidebar-open {
+            transform: translateX(0);
         }
 
         .sub-main {
-            overflow-x: hidden;
+            width: 100%;
+            padding-top: 60px;
         }
-    }</style>
+    }
+</style>
+
+@code {
+    private bool sidebarOpen = false;
+
+    void ToggleSidebar() => sidebarOpen = !sidebarOpen;
+    void CloseSidebar() => sidebarOpen = false;
+}
