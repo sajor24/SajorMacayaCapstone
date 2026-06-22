@@ -101,4 +101,31 @@
         overflow-y: auto;
         background: #f5f6fa;
     }
-</style>
+
+   @@media (max-width: 800px) {
+        .sub-container {
+            flex-direction: column;
+        }
+
+        .sub-sidebar {
+            width: 100%;
+            min-width: unset;
+            height: auto;
+            position: relative;
+            padding: 16px 12px;
+        }
+
+        .sub-nav {
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .sub-nav-item {
+            padding: 10px 12px;
+            font-size: 0.88rem;
+        }
+
+        .sub-main {
+            overflow-x: hidden;
+        }
+    }</style>
