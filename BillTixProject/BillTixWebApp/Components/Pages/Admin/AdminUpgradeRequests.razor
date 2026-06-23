@@ -7,9 +7,12 @@
 @attribute [Authorize(Roles = "Admin")]
 @inject IGetAll_UpgradeRequest getAll
 @inject IUpdate_UpgradeRequest updateRequest
+@inject IDelete_UpgradeRequest deleteRequest
 @inject IGetAll_Subscription getAllSubs
 @inject IUpdate_Subscription updateSub
 @inject ICreate_Subscription createSub
+@inject ICreate_Billing createBilling
+@inject IGetAll_InternetPlan getPlans
 
 <div class="sub-wrapper">
 
@@ -71,11 +74,19 @@
                                             <button class="btn btn-danger btn-sm" @onclick="() => Reject(req)">
                                                 <i class="bi bi-x-lg"></i> Reject
                                             </button>
+                                            <button class="btn btn-outline-secondary btn-sm" @onclick="() => DeleteReq(req)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
                                         </div>
                                     }
                                     else
                                     {
-                                        <small class="text-muted">@req.ProcessedAt?.ToString("MMM dd, yyyy")</small>
+                                        <div class="d-flex gap-2 align-items-center">
+                                            <small class="text-muted">@req.ProcessedAt?.ToString("MMM dd, yyyy")</small>
+                                            <button class="btn btn-outline-secondary btn-sm" @onclick="() => DeleteReq(req)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
                                     }
                                 </td>
                             </tr>
@@ -139,23 +150,28 @@
     {
         try
         {
-            // Update request status
+            // 1. Update request status
             req.Status = "Approved";
             req.ProcessedAt = DateTime.Now;
             await updateRequest.ExecuteAsync(req);
 
-            // Update subscription — keep current EndDate + add 1 month from EndDate
+            // 2. Get plan price
+            var plans = await getPlans.ExecuteAsync();
+            var plan = plans?.FirstOrDefault(x => x.PlanName == req.PlanName);
+            decimal planPrice = plan?.Price ?? 0;
+
+            // 3. Update subscription — add 1 month from current EndDate
             var allSubs = await getAllSubs.ExecuteAsync();
             var currentSub = allSubs?.FirstOrDefault(x => x.UserId == req.UserId && x.Status == "Active");
 
             if (currentSub != null)
             {
-                // If EndDate is in the future, add 1 month from EndDate (subscriber finishes current plan)
                 var baseDate = currentSub.EndDate.HasValue && currentSub.EndDate > DateTime.Now
                     ? currentSub.EndDate.Value
                     : DateTime.Now;
 
                 currentSub.PlanName = req.PlanName;
+                currentSub.PlanPrice = planPrice;
                 currentSub.StartDate = baseDate;
                 currentSub.EndDate = baseDate.AddMonths(1);
                 currentSub.Status = "Active";
@@ -163,12 +179,11 @@
             }
             else
             {
-                // No existing subscription — create new
                 var newSub = new Subscription
                 {
                     UserId = req.UserId,
                     PlanName = req.PlanName,
-                    PlanPrice = 0,
+                    PlanPrice = planPrice,
                     StartDate = DateTime.Now,
                     EndDate = DateTime.Now.AddMonths(1),
                     Status = "Active"
@@ -176,7 +191,20 @@
                 await createSub.ExecuteAsync(newSub);
             }
 
-            message = $"Approved! {req.FirstName}'s plan upgraded to {req.PlanName}.";
+            // 4. Auto-create Billing record (Paid)
+            var newBilling = new Billing
+            {
+                UserId        = req.UserId,
+                Amount        = planPrice,
+                PaymentMethod = "Reference: " + req.ReferenceNo,
+                Status        = "Paid",
+                DueDate       = DateTime.Now,
+                PaidAt        = DateTime.Now,
+                Description   = $"Plan upgrade to {req.PlanName}"
+            };
+            await createBilling.ExecuteAsync(newBilling);
+
+            message = $"Approved! {req.FirstName}'s plan upgraded to {req.PlanName}. Billing record created.";
             isError = false;
             await LoadRequests();
         }
@@ -196,6 +224,22 @@
             await updateRequest.ExecuteAsync(req);
 
             message = $"Request rejected for {req.FirstName}.";
+            isError = false;
+            await LoadRequests();
+        }
+        catch (Exception ex)
+        {
+            message = $"Error: {ex.Message}";
+            isError = true;
+        }
+    }
+
+    async Task DeleteReq(UpgradeRequest req)
+    {
+        try
+        {
+            await deleteRequest.ExecuteAsync(req);
+            message = "Request deleted.";
             isError = false;
             await LoadRequests();
         }

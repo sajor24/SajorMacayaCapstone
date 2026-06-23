@@ -1,0 +1,306 @@
+@page "/sub-billing"
+@layout SubscriberLayout
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Domain.ICommands
+@using Domain.Models
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Subscriber")]
+@inject IGetByUser_Billing getBillings
+@inject IUpdate_Billing updateBilling
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IGetAll_User getAll
+
+<div class="billing-wrapper">
+
+    <div class="billing-header">
+        <h3 class="fw-bold mb-0">My Billing</h3>
+        <p class="text-muted">View and pay your billing statements</p>
+    </div>
+
+    @if (!string.IsNullOrEmpty(message))
+    {
+        <div class="alert @(isError ? "alert-danger" : "alert-success") alert-dismissible mb-3">
+            @message
+            <button type="button" class="btn-close" @onclick="() => message = string.Empty"></button>
+        </div>
+    }
+
+    <!-- SUMMARY -->
+    <div class="summary-cards mb-4">
+        <div class="summary-card">
+            <div class="summary-label">Total Bills</div>
+            <div class="summary-value">@billings.Count</div>
+        </div>
+        <div class="summary-card green">
+            <div class="summary-label">Paid</div>
+            <div class="summary-value">@billings.Count(x => x.Status == "Paid")</div>
+        </div>
+        <div class="summary-card orange">
+            <div class="summary-label">Pending</div>
+            <div class="summary-value">@billings.Count(x => x.Status == "Pending")</div>
+        </div>
+        <div class="summary-card red">
+            <div class="summary-label">Overdue</div>
+            <div class="summary-value">@billings.Count(x => x.Status == "Overdue")</div>
+        </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-card">
+        <div class="fw-semibold mb-3" style="color:#111;">Billing History</div>
+        <div class="table-responsive">
+            <table class="sub-table">
+                <thead>
+                    <tr>
+                        <th>Billing ID</th>
+                        <th>Amount</th>
+                        <th>Description</th>
+                        <th>Due Date</th>
+                        <th>Status</th>
+                        <th>Paid At</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var bill in billings)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@bill.BillingId</td>
+                            <td>₱@bill.Amount.ToString("N2")</td>
+                            <td class="text-muted">@(bill.Description ?? "—")</td>
+                            <td class="text-muted">@(bill.DueDate?.ToString("MMM dd, yyyy") ?? "—")</td>
+                            <td>
+                                <span class="status-badge @GetStatusClass(bill.Status)">@bill.Status</span>
+                            </td>
+                            <td class="text-muted">@(bill.PaidAt?.ToString("MMM dd, yyyy") ?? "—")</td>
+                            <td>
+                                @if (bill.Status == "Pending" || bill.Status == "Overdue")
+                                {
+                                    <button class="btn-pay" @onclick="() => OpenPayForm(bill)">
+                                        <i class="bi bi-credit-card-fill"></i> Pay Now
+                                    </button>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">—</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    @if (!billings.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">No billing records found.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- PAY MODAL -->
+@if (showPayForm && selectedBill != null)
+{
+    <div class="modal-backdrop-custom" @onclick="CancelPay"></div>
+    <div class="modal-box shadow-lg">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">Pay Bill</h5>
+            <button class="btn-close" @onclick="CancelPay"></button>
+        </div>
+
+        <div class="mb-3 p-3" style="background:#f8f9fa; border-radius:10px;">
+            <div class="d-flex justify-content-between">
+                <span class="text-muted">Billing ID</span>
+                <strong>@selectedBill.BillingId</strong>
+            </div>
+            <div class="d-flex justify-content-between mt-2">
+                <span class="text-muted">Amount</span>
+                <strong class="text-success">₱@selectedBill.Amount.ToString("N2")</strong>
+            </div>
+            <div class="d-flex justify-content-between mt-2">
+                <span class="text-muted">Description</span>
+                <span>@(selectedBill.Description ?? "—")</span>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Payment Method <span class="text-danger">*</span></label>
+            <select class="form-select" @bind="paymentMethod">
+                <option value="">Select Method</option>
+                <option value="GCash">GCash</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+                <option value="Cash">Cash</option>
+                <option value="Maya">Maya</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Reference Number <span class="text-danger">*</span></label>
+            <input class="form-control" placeholder="e.g. GCash ref: 1234567890" @bind="referenceNo" />
+            <small class="text-muted">Enter your payment reference number for verification.</small>
+        </div>
+
+        @if (!string.IsNullOrEmpty(formError))
+        {
+            <div class="alert alert-danger">@formError</div>
+        }
+
+        <div class="d-flex gap-2 mt-4 justify-content-end">
+            <button class="btn btn-secondary" @onclick="CancelPay">Cancel</button>
+            <button class="btn btn-primary" @onclick="SubmitPayment" disabled="@isSubmitting">
+                @(isSubmitting ? "Submitting..." : "Submit Payment")
+            </button>
+        </div>
+    </div>
+}
+
+<style>
+    .billing-wrapper { padding: 32px; background: #f5f6fa; min-height: 100vh; }
+    .billing-header { margin-bottom: 24px; }
+    .billing-header h3 { color: #111; }
+
+    .summary-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .summary-card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.05); border-left: 4px solid #4f46e5; }
+    .summary-card.green { border-left-color: #22c55e; }
+    .summary-card.orange { border-left-color: #f59e0b; }
+    .summary-card.red { border-left-color: #ef4444; }
+    .summary-label { font-size: .8rem; color: #888; margin-bottom: 4px; }
+    .summary-value { font-size: 1.5rem; font-weight: 800; color: #111; }
+
+    .table-card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 12px rgba(0,0,0,.06); }
+    .sub-table { width: 100%; border-collapse: collapse; }
+    .sub-table thead tr { border-bottom: 2px solid #f3f4f6; }
+    .sub-table th { text-align: left; padding: 10px 12px; font-size: .82rem; color: #888; font-weight: 600; white-space: nowrap; }
+    .sub-table td { padding: 14px 12px; border-bottom: 1px solid #f3f4f6; font-size: .9rem; color: #333; }
+    .sub-table tbody tr:hover { background: #fafafa; }
+
+    .status-badge { padding: 5px 14px; border-radius: 20px; font-size: .75rem; font-weight: 600; }
+    .badge-paid { background: #d1fae5; color: #059669; }
+    .badge-pending { background: #fef3c7; color: #d97706; }
+    .badge-overdue { background: #fee2e2; color: #dc2626; }
+
+    .btn-pay {
+        background: linear-gradient(90deg, #4f46e5, #7367f0);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 7px 16px;
+        font-size: .85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: .2s;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .btn-pay:hover { opacity: 0.88; transform: translateY(-1px); }
+
+    .modal-backdrop-custom { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1040; }
+    .modal-box { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 16px; padding: 2rem; width: 500px; max-width: 95vw; z-index: 1050; max-height: 90vh; overflow-y: auto; }
+
+    @@media (max-width: 800px) {
+        .billing-wrapper { padding: 70px 16px 16px 16px; }
+        .summary-cards { grid-template-columns: repeat(2, 1fr); }
+    }
+</style>
+
+@code {
+    private List<Billing> billings = new();
+    private string userId = string.Empty;
+    private string message = string.Empty;
+    private bool isError = false;
+    private bool showPayForm = false;
+    private bool isSubmitting = false;
+    private Billing? selectedBill;
+    private string paymentMethod = string.Empty;
+    private string referenceNo = string.Empty;
+    private string formError = string.Empty;
+
+    string GetStatusClass(string? status) => status switch
+    {
+        "Paid"    => "badge-paid",
+        "Pending" => "badge-pending",
+        "Overdue" => "badge-overdue",
+        _         => "badge-pending"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var username = user.Identity.Name ?? "";
+            var users = await getAll.ExecuteAsync();
+            var currentUser = users?.FirstOrDefault(x => x.Username == username);
+
+            if (currentUser != null)
+            {
+                userId = currentUser.UserId ?? "";
+                await LoadBillings();
+            }
+        }
+    }
+
+    async Task LoadBillings()
+    {
+        var result = await getBillings.ExecuteAsync(userId);
+        billings = result?.ToList() ?? new();
+    }
+
+    void OpenPayForm(Billing bill)
+    {
+        selectedBill = bill;
+        paymentMethod = string.Empty;
+        referenceNo = string.Empty;
+        formError = string.Empty;
+        showPayForm = true;
+    }
+
+    void CancelPay()
+    {
+        showPayForm = false;
+        selectedBill = null;
+        formError = string.Empty;
+    }
+
+    async Task SubmitPayment()
+    {
+        if (string.IsNullOrWhiteSpace(paymentMethod))
+        {
+            formError = "Please select a payment method.";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(referenceNo))
+        {
+            formError = "Reference number is required.";
+            return;
+        }
+
+        isSubmitting = true;
+        formError = string.Empty;
+
+        try
+        {
+            // Update billing — status Pending (waiting for admin confirmation)
+            selectedBill!.PaymentMethod = $"{paymentMethod} - Ref: {referenceNo}";
+            selectedBill.Status = "Pending";
+            await updateBilling.ExecuteAsync(selectedBill);
+
+            await LoadBillings();
+            showPayForm = false;
+            selectedBill = null;
+            message = "Payment submitted! Please wait for admin confirmation.";
+            isError = false;
+        }
+        catch (Exception ex)
+        {
+            formError = $"Error: {ex.Message}";
+        }
+
+        isSubmitting = false;
+    }
+}

@@ -41,6 +41,7 @@ builder.Services.AddScoped<IGetAll_InternetPlan, GetAll_InternetPlan>();
 builder.Services.AddScoped<ICreate_UpgradeRequest, Create_UpgradeRequest>();
 builder.Services.AddScoped<IUpdate_UpgradeRequest, Update_UpgradeRequest>();
 builder.Services.AddScoped<IGetAll_UpgradeRequest, GetAll_UpgradeRequest>();
+builder.Services.AddScoped<IDelete_UpgradeRequest, Delete_UpgradeRequest>();
 
 // Razor Components
 builder.Services.AddRazorComponents()

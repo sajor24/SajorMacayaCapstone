@@ -93,6 +93,7 @@
     <Build Include="StoredProcedure\UpgradeRequests\CreateUpgradeRequest.sql" />
     <Build Include="StoredProcedure\UpgradeRequests\GetAllUpgradeRequests.sql" />
     <Build Include="StoredProcedure\UpgradeRequests\UpdateUpgradeRequest.sql" />
+    <Build Include="StoredProcedure\UpgradeRequests\DeleteUpgradeRequest.sql" />
   </ItemGroup>
   <ItemGroup>
     <None Include="BillTixDB.publish.xml" />

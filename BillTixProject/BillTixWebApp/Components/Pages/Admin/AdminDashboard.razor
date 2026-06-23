@@ -29,12 +29,6 @@
                 <span class="notif-dot"></span>
             </button>
             <div class="avatar">👤</div>
-            <button type="button"
-                    class="btn btn-primary btn-sm logout-btn"
-                    @onclick="Logout">
-                Logout
-            </button>
-
         </div>
     </div>
 
@@ -53,15 +47,15 @@
             <div class="stat-card">
                 <div>
                     <div class="label">Total Revenue</div>
-                    <div class="value">@getAllBilling</div>
-                    <div class="trend">↑ 8% from last month</div>
+                    <div class="value">₱@totalRevenue.ToString("N2")</div>
+                    <div class="trend">Paid billing total</div>
                 </div>
                 <div class="stat-icon icon-green">💲</div>
             </div>
             <div class="stat-card">
                 <div>
                     <div class="label">Pending Bills</div>
-                    <div class="value">3</div>
+                    <div class="value">@pendingBills</div>
                 </div>
                 <div class="stat-icon icon-orange">🪪</div>
             </div>
@@ -119,6 +113,9 @@
 @code {
     private string username = "Admin";
     private int totalSubscribers = 0;
+    private decimal totalRevenue = 0;
+    private int pendingBills = 0;
+    private List<Billing> recentBillings = new();
 
     private record Transaction(string Id, string Subscriber, string Amount, string Method, string Status);
     private record Notification(string Message, string Time);
@@ -148,20 +145,24 @@
 
         var users = await getAll.ExecuteAsync();
         totalSubscribers = users?.Count(x => x.Role == "Subscriber") ?? 0;
+
+        try
+        {
+            var allBillings = await getAllBilling.ExecuteAsync();
+            if (allBillings != null)
+            {
+                totalRevenue = allBillings.Where(x => x.Status == "Paid").Sum(x => x.Amount);
+                pendingBills = allBillings.Count(x => x.Status == "Pending");
+            }
+
+            var recent = await getRecentBilling.ExecuteAsync(5);
+            recentBillings = recent?.ToList() ?? new();
+        }
+        catch
+        {
+            // Billing table may not have data yet
+        }
     }
 
-private async Task Logout()
-{
-    bool confirmLogout = await JS.InvokeAsync<bool>(
-        "confirm",
-        "Are you sure you want to logout?"
-    );
 
-    if (confirmLogout)
-    {
-        await JS.InvokeVoidAsync("alert", "Logout Successfully!");
-
-        _Nav.NavigateTo("/account/logout", forceLoad: true);
-    }
-}
 }

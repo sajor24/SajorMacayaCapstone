@@ -1,0 +1,370 @@
+@page "/admin-billing"
+@layout AdminLayout
+@using Microsoft.AspNetCore.Authorization
+@using Domain.ICommands
+@using Domain.Models
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin")]
+@inject IGetAll_Billing getAll
+@inject ICreate_Billing create
+@inject IUpdate_Billing update
+@inject IDelete_Billing delete
+@inject IGetAll_User getUsers
+
+<div class="sub-wrapper">
+
+    <div class="topnav">
+        <div class="topnav-left">
+            <h2>Billing</h2>
+            <p>Manage subscriber billing records</p>
+        </div>
+        <div class="topnav-right">
+            <button class="btn btn-primary d-flex align-items-center gap-2" @onclick="OpenAddForm">
+                <i class="bi bi-plus-circle-fill"></i> Add Bill
+            </button>
+        </div>
+    </div>
+
+    <div class="page-content">
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger alert-dismissible mb-3">
+                @errorMessage
+                <button type="button" class="btn-close" @onclick="() => errorMessage = string.Empty"></button>
+            </div>
+        }
+
+        <!-- SUMMARY CARDS -->
+        <div class="summary-cards mb-4">
+            <div class="summary-card">
+                <div class="summary-label">Total Bills</div>
+                <div class="summary-value">@billings.Count</div>
+            </div>
+            <div class="summary-card green">
+                <div class="summary-label">Paid</div>
+                <div class="summary-value">@billings.Count(x => x.Status == "Paid")</div>
+            </div>
+            <div class="summary-card orange">
+                <div class="summary-label">Pending</div>
+                <div class="summary-value">@billings.Count(x => x.Status == "Pending")</div>
+            </div>
+            <div class="summary-card blue">
+                <div class="summary-label">Total Revenue</div>
+                <div class="summary-value">₱@billings.Where(x => x.Status == "Paid").Sum(x => x.Amount).ToString("N2")</div>
+            </div>
+        </div>
+
+        <!-- TABLE -->
+        <div class="table-card">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <div class="fw-semibold" style="color:#111;">All Bills</div>
+                </div>
+                <div class="search-box">
+                    <i class="bi bi-search text-muted"></i>
+                    <input placeholder="Search..." @bind="searchText" @bind:event="oninput" />
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="sub-table">
+                    <thead>
+                        <tr>
+                            <th>Billing ID</th>
+                            <th>Subscriber</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Status</th>
+                            <th>Due Date</th>
+                            <th>Paid At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in filteredBillings)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@item.BillingId</td>
+                                <td>@item.FirstName @item.LastName</td>
+                                <td>₱@item.Amount.ToString("N2")</td>
+                                <td class="text-muted">@(item.PaymentMethod ?? "—")</td>
+                                <td>
+                                    <span class="status-badge @GetStatusClass(item.Status)">@item.Status</span>
+                                </td>
+                                <td class="text-muted">@(item.DueDate?.ToString("MMM dd, yyyy") ?? "—")</td>
+                                <td class="text-muted">@(item.PaidAt?.ToString("MMM dd, yyyy") ?? "—")</td>
+                                <td>
+                                    <div class="d-flex gap-2">
+                                        <button class="action-btn edit-btn" title="Edit" @onclick="() => EditBilling(item)">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </button>
+                                        <button class="action-btn delete-btn" title="Delete" @onclick="() => DeleteBill(item)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        @if (!filteredBillings.Any())
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">No billing records found.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- DELETE CONFIRM -->
+@if (showDeleteConfirm)
+{
+    <div class="modal-backdrop-custom" @onclick="() => showDeleteConfirm = false"></div>
+    <div class="modal-box shadow-lg" style="width:420px;">
+        <div class="text-center py-2">
+            <div style="font-size:3rem;">⚠️</div>
+            <h5 class="fw-bold mt-2">Delete Bill?</h5>
+            <p class="text-muted mt-1">Are you sure you want to delete <strong>@deleteTarget?.BillingId</strong>?</p>
+        </div>
+        <div class="d-flex gap-2 mt-3 justify-content-center">
+            <button class="btn btn-secondary px-4" @onclick="() => showDeleteConfirm = false">Cancel</button>
+            <button class="btn btn-danger px-4" @onclick="ConfirmDelete">Yes, Delete</button>
+        </div>
+    </div>
+}
+
+<!-- ADD / EDIT MODAL -->
+@if (showForm)
+{
+    <div class="modal-backdrop-custom" @onclick="CancelForm"></div>
+    <div class="modal-box shadow-lg">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">@(isEditing ? "Edit Bill" : "Add Bill")</h5>
+            <button class="btn-close" @onclick="CancelForm"></button>
+        </div>
+        <div class="row g-3">
+            @if (!isEditing)
+            {
+                <div class="col-12">
+                    <label class="form-label">Subscriber <span class="text-danger">*</span></label>
+                    <select class="form-select" @bind="billing.UserId">
+                        <option value="">Select Subscriber</option>
+                        @foreach (var sub in subscribers)
+                        {
+                            <option value="@sub.UserId">@sub.FirstName @sub.LastName (@sub.UserId)</option>
+                        }
+                    </select>
+                </div>
+            }
+            <div class="col-md-6">
+                <label class="form-label">Amount <span class="text-danger">*</span></label>
+                <input type="number" class="form-control" placeholder="0.00" @bind="billing.Amount" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Payment Method</label>
+                <select class="form-select" @bind="billing.PaymentMethod">
+                    <option value="">Select Method</option>
+                    <option value="GCash">GCash</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                    <option value="Cash">Cash</option>
+                    <option value="Maya">Maya</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Status</label>
+                <select class="form-select" @bind="billing.Status">
+                    <option value="Pending">Pending</option>
+                    <option value="Paid">Paid</option>
+                    <option value="Overdue">Overdue</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Due Date</label>
+                <input type="date" class="form-control" @bind="billing.DueDate" />
+            </div>
+            <div class="col-12">
+                <label class="form-label">Description</label>
+                <input class="form-control" placeholder="e.g. Monthly subscription fee" @bind="billing.Description" />
+            </div>
+        </div>
+        <div class="d-flex gap-2 mt-4 justify-content-end">
+            <button class="btn btn-secondary" @onclick="CancelForm">Cancel</button>
+            <button class="btn btn-primary" @onclick="SaveBilling">
+                @(isEditing ? "Update" : "Add Bill")
+            </button>
+        </div>
+    </div>
+}
+
+<style>
+    .sub-wrapper { min-height: 100vh; background: #f5f6fa; display: flex; flex-direction: column; }
+    .topnav { background: white; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4f46e5; }
+    .topnav-left h2 { font-size: 1.2rem; font-weight: 700; color: #111; margin: 0; }
+    .topnav-left p { font-size: .82rem; color: #4f46e5; margin: 0; }
+    .topnav-right { display: flex; align-items: center; }
+    .page-content { padding: 32px; flex: 1; }
+
+    .summary-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .summary-card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.05); border-left: 4px solid #4f46e5; }
+    .summary-card.green { border-left-color: #22c55e; }
+    .summary-card.orange { border-left-color: #f59e0b; }
+    .summary-card.blue { border-left-color: #3b82f6; }
+    .summary-label { font-size: .8rem; color: #888; margin-bottom: 4px; }
+    .summary-value { font-size: 1.5rem; font-weight: 800; color: #111; }
+
+    .table-card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 12px rgba(0,0,0,.06); }
+    .search-box { display: flex; align-items: center; gap: 8px; border: 1px solid #e5e7eb; border-radius: 10px; padding: 8px 14px; width: 260px; background: white; }
+    .search-box input { border: none; outline: none; font-size: .9rem; width: 100%; }
+    .sub-table { width: 100%; border-collapse: collapse; }
+    .sub-table thead tr { border-bottom: 2px solid #f3f4f6; }
+    .sub-table th { text-align: left; padding: 10px 12px; font-size: .82rem; color: #888; font-weight: 600; white-space: nowrap; }
+    .sub-table td { padding: 14px 12px; border-bottom: 1px solid #f3f4f6; font-size: .9rem; color: #333; }
+    .sub-table tbody tr:hover { background: #fafafa; }
+    .status-badge { padding: 5px 14px; border-radius: 20px; font-size: .75rem; font-weight: 600; }
+    .badge-paid { background: #d1fae5; color: #059669; }
+    .badge-pending { background: #fef3c7; color: #d97706; }
+    .badge-overdue { background: #fee2e2; color: #dc2626; }
+    .action-btn { border: 1px solid #e5e7eb; background: white; border-radius: 8px; padding: 6px 10px; cursor: pointer; transition: .2s; font-size: .9rem; }
+    .edit-btn:hover { background: #f0f0ff; border-color: #4f46e5; color: #4f46e5; }
+    .delete-btn:hover { background: #fff0f0; border-color: #ef4444; color: #ef4444; }
+    .modal-backdrop-custom { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1040; }
+    .modal-box { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 16px; padding: 2rem; width: 620px; max-width: 95vw; z-index: 1050; max-height: 90vh; overflow-y: auto; }
+
+    @@media (max-width: 800px) {
+        .summary-cards { grid-template-columns: repeat(2, 1fr); }
+        .page-content { padding: 70px 12px 12px 12px; }
+    }
+</style>
+
+@code {
+    private List<Billing> billings = new();
+    private List<Users> subscribers = new();
+    private Billing billing = new() { Status = "Pending" };
+    private bool isEditing = false;
+    private bool showForm = false;
+    private bool showDeleteConfirm = false;
+    private Billing? deleteTarget;
+    private string searchText = string.Empty;
+    private string errorMessage = string.Empty;
+
+    private IEnumerable<Billing> filteredBillings =>
+        string.IsNullOrWhiteSpace(searchText)
+        ? billings
+        : billings.Where(x =>
+            (x.BillingId != null && x.BillingId.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            || (x.FirstName != null && x.FirstName.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            || (x.LastName != null && x.LastName.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            || (x.Status != null && x.Status.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+        );
+
+    string GetStatusClass(string? status) => status switch
+    {
+        "Paid"    => "badge-paid",
+        "Pending" => "badge-pending",
+        "Overdue" => "badge-overdue",
+        _         => "badge-pending"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBillings();
+        var users = await getUsers.ExecuteAsync();
+        subscribers = users?.Where(x => x.Role == "Subscriber").ToList() ?? new();
+    }
+
+    async Task LoadBillings()
+    {
+        var result = await getAll.ExecuteAsync();
+        billings = result?.ToList() ?? new();
+    }
+
+    void OpenAddForm()
+    {
+        billing = new Billing { Status = "Pending" };
+        isEditing = false;
+        errorMessage = string.Empty;
+        showForm = true;
+    }
+
+    void EditBilling(Billing item)
+    {
+        billing = new Billing
+        {
+            BillingId     = item.BillingId,
+            UserId        = item.UserId,
+            Amount        = item.Amount,
+            PaymentMethod = item.PaymentMethod,
+            Status        = item.Status,
+            DueDate       = item.DueDate,
+            PaidAt        = item.Status == "Paid" ? (item.PaidAt ?? DateTime.Now) : null,
+            Description   = item.Description
+        };
+        isEditing = true;
+        errorMessage = string.Empty;
+        showForm = true;
+    }
+
+    async Task SaveBilling()
+    {
+        if (string.IsNullOrWhiteSpace(billing.UserId) || billing.Amount <= 0)
+        {
+            errorMessage = "Subscriber and Amount are required.";
+            return;
+        }
+
+        if (billing.Status == "Paid" && billing.PaidAt == null)
+            billing.PaidAt = DateTime.Now;
+
+        errorMessage = string.Empty;
+        try
+        {
+            if (isEditing)
+                await update.ExecuteAsync(billing);
+            else
+                await create.ExecuteAsync(billing);
+
+            billing = new Billing { Status = "Pending" };
+            isEditing = false;
+            showForm = false;
+            await LoadBillings();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
+    }
+
+    void CancelForm()
+    {
+        billing = new Billing { Status = "Pending" };
+        isEditing = false;
+        showForm = false;
+        errorMessage = string.Empty;
+    }
+
+    void DeleteBill(Billing item)
+    {
+        deleteTarget = item;
+        showDeleteConfirm = true;
+    }
+
+    async Task ConfirmDelete()
+    {
+        if (deleteTarget == null) return;
+        try
+        {
+            await delete.ExecuteAsync(deleteTarget);
+            showDeleteConfirm = false;
+            deleteTarget = null;
+            await LoadBillings();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+            showDeleteConfirm = false;
+        }
+    }
+}
