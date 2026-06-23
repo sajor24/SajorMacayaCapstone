@@ -31,6 +31,12 @@ builder.Services.AddScoped<IDelete_Subscription, Delete_Subscription>();
 builder.Services.AddScoped<IGetAll_Subscription, GetAll_Subscription>();
 builder.Services.AddScoped<IGetByUser_Subscription, GetByUser_Subscription>();
 
+// InternetPlans
+builder.Services.AddScoped<ICreate_InternetPlan, Create_InternetPlan>();
+builder.Services.AddScoped<IUpdate_InternetPlan, Update_InternetPlan>();
+builder.Services.AddScoped<IDelete_InternetPlan, Delete_InternetPlan>();
+builder.Services.AddScoped<IGetAll_InternetPlan, GetAll_InternetPlan>();
+
 // Razor Components
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();

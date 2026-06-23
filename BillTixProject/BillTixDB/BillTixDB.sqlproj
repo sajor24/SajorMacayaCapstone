@@ -59,16 +59,20 @@
     <Folder Include="StoredProcedure\User\" />
     <Folder Include="StoredProcedure\Billing\" />
     <Folder Include="StoredProcedure\Subscription\" />
+    <Folder Include="StoredProcedure\InternetPlans\" />
+    <Folder Include="Tables" />
   </ItemGroup>
   <ItemGroup>
     <Build Include="Tables\Users.sql" />
     <Build Include="Tables\Billing.sql" />
     <Build Include="Tables\Subscription.sql" />
+    <Build Include="Tables\InternetPlans.sql" />
     <Build Include="StoredProcedure\User\CreateUser.sql" />
     <Build Include="StoredProcedure\User\LoginUser.sql" />
     <Build Include="StoredProcedure\User\UpdateUser.sql" />
     <Build Include="StoredProcedure\User\DeleteUser.sql" />
     <Build Include="StoredProcedure\User\GetAllUser.sql" />
+    <Build Include="StoredProcedure\User\GetUserByUsername.sql" />
     <Build Include="StoredProcedure\Billing\CreateBilling.sql" />
     <Build Include="StoredProcedure\Billing\UpdateBilling.sql" />
     <Build Include="StoredProcedure\Billing\DeleteBilling.sql" />
@@ -80,7 +84,10 @@
     <Build Include="StoredProcedure\Subscription\DeleteSubscription.sql" />
     <Build Include="StoredProcedure\Subscription\GetAllSubscription.sql" />
     <Build Include="StoredProcedure\Subscription\GetSubscriptionByUser.sql" />
-    <Build Include="StoredProcedure\User\GetUserByUsername.sql" />
+    <Build Include="StoredProcedure\InternetPlans\CreateInternetPlan.sql" />
+    <Build Include="StoredProcedure\InternetPlans\UpdateInternetPlan.sql" />
+    <Build Include="StoredProcedure\InternetPlans\DeleteInternetPlan.sql" />
+    <Build Include="StoredProcedure\InternetPlans\GetAllInternetPlans.sql" />
   </ItemGroup>
   <ItemGroup>
     <None Include="BillTixDB.publish.xml" />

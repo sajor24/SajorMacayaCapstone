@@ -1,63 +1,68 @@
 ﻿@inherits LayoutComponentBase
 
-<div class="sub-container">
+<div class="admin-container">
 
     <!-- HAMBURGER BUTTON (mobile only) -->
-    <button class="sub-hamburger" @onclick="ToggleSidebar">☰</button>
+    <button class="hamburger" @onclick="ToggleSidebar">☰</button>
 
     <!-- OVERLAY -->
     @if (sidebarOpen)
     {
-        <div class="sub-overlay" @onclick="ToggleSidebar"></div>
+        <div class="sidebar-overlay" @onclick="ToggleSidebar"></div>
     }
 
     <!-- SIDEBAR -->
-    <div class="sub-sidebar @(sidebarOpen ? "sub-sidebar-open" : "")">
-        <div class="sub-brand">BILLTIX</div>
+    <div class="sidebar @(sidebarOpen ? "sidebar-open" : "")">
+        <div class="sidebar-brand">BILLTIX</div>
 
-        <nav class="sub-nav">
-            <NavLink href="/sub-dashboard" Match="NavLinkMatch.All" class="sub-nav-item" ActiveClass="sub-nav-active" @onclick="CloseSidebar">
-                <i class="bi bi-grid-fill"></i> Dashboard
+        <nav class="sidebar-nav">
+            <NavLink href="/sub-dashboard" Match="NavLinkMatch.All" class="nav-item" ActiveClass="nav-active" @onclick="CloseSidebar">
+                <span>⊞</span> Dashboard
             </NavLink>
-            <NavLink href="/sub-myaccount" class="sub-nav-item" ActiveClass="sub-nav-active" @onclick="CloseSidebar">
-                <i class="bi bi-person-fill"></i> My Account
+            <NavLink href="/sub-myaccount" class="nav-item" ActiveClass="nav-active" @onclick="CloseSidebar">
+                <span>👤</span> My Account
             </NavLink>
-            <NavLink href="/sub-internetplans" class="sub-nav-item" ActiveClass="sub-nav-active" @onclick="CloseSidebar">
-                <i class="bi bi-globe"></i> Internet Plans
+            <NavLink href="/sub-internetplans" class="nav-item" ActiveClass="nav-active" @onclick="CloseSidebar">
+                <span>🌐</span> Internet Plans
             </NavLink>
-            <NavLink href="/sub-billing" class="sub-nav-item" ActiveClass="sub-nav-active" @onclick="CloseSidebar">
-                <i class="bi bi-credit-card-fill"></i> Billing
+            <NavLink href="/sub-billing" class="nav-item" ActiveClass="nav-active" @onclick="CloseSidebar">
+                <span>🪪</span> Billing
             </NavLink>
-            <NavLink href="/sub-support" class="sub-nav-item" ActiveClass="sub-nav-active" @onclick="CloseSidebar">
-                <i class="bi bi-headset"></i> Support
+            <NavLink href="/sub-support" class="nav-item" ActiveClass="nav-active" @onclick="CloseSidebar">
+                <span>🎧</span> Support
             </NavLink>
-            <NavLink href="/sub-notification" class="sub-nav-item" ActiveClass="sub-nav-active" @onclick="CloseSidebar">
-                <i class="bi bi-bell-fill"></i> Notification
+            <NavLink href="/sub-notification" class="nav-item" ActiveClass="nav-active" @onclick="CloseSidebar">
+                <span>🔔</span> Notification
             </NavLink>
         </nav>
     </div>
 
     <!-- MAIN CONTENT -->
-    <div class="sub-main">
+    <div class="main-content">
         @Body
     </div>
 
 </div>
 
 <style>
-    .sub-container {
-        display: flex;
-        min-height: 100vh;
-        background: #f5f6fa;
+    html, body, *, *::before, *::after {
+        font-family: 'Segoe UI', Arial, sans-serif !important;
+        box-sizing: border-box;
     }
 
-    .sub-hamburger {
+    .admin-container {
+        display: flex;
+        min-height: 100vh;
+        background: #181825;
+    }
+
+    .hamburger {
         display: none;
         position: fixed;
         top: 12px;
         left: 12px;
         z-index: 2000;
-        background: #0a0a5c;
+        background: #7367f0;
         color: white;
         border: none;
         border-radius: 8px;
@@ -68,7 +73,7 @@
         box-shadow: 0 2px 12px rgba(0,0,0,0.3);
     }
 
-    .sub-overlay {
+    .sidebar-overlay {
         display: none;
         position: fixed;
         inset: 0;
@@ -76,15 +81,17 @@
         z-index: 1500;
     }
 
-    .sub-sidebar {
-        width: 220px;
-        min-width: 220px;
+    .sidebar {
+        width: 260px;
+        min-width: 260px;
         height: 100vh;
-        background: linear-gradient(150deg, #0a0a5c 77%, #1a1a8c 100%);
-        padding: 30px 16px;
+        background: linear-gradient(150deg, #1f1f38 77%, #302b63 100%);
+        padding: 30px 20px;
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 12px;
+        border-radius: 0 22px 22px 0;
+        box-shadow: 4px 0 24px rgba(0,0,0,0.23);
         position: sticky;
         top: 0;
         left: 0;
@@ -92,80 +99,85 @@
         transition: transform 0.3s ease;
     }
 
-    .sub-brand {
-        font-size: 1.6rem;
+    .sidebar-brand {
+        font-size: 2rem;
         font-weight: 900;
-        color: white;
-        letter-spacing: 2px;
-        margin-bottom: 32px;
+        color: #fff;
+        margin-bottom: 36px;
         padding-left: 8px;
+        letter-spacing: 1.6px;
     }
 
-    .sub-nav {
+    .sidebar-nav {
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 12px;
     }
 
-    .sub-nav-item {
+    .nav-item,
+    .sidebar a {
         display: flex;
         align-items: center;
-        gap: 10px;
-        color: rgba(255,255,255,0.75);
-        padding: 12px 16px;
-        border-radius: 10px;
+        gap: 12px;
+        background: rgba(33,37,70,0.91);
+        color: #f1efff;
+        padding: 14px 16px;
+        border-radius: 12px;
         text-decoration: none;
-        font-size: .92rem;
-        font-weight: 500;
-        transition: .2s;
-        background: rgba(255,255,255,0.05);
+        font-size: 1rem;
+        font-weight: 600;
+        transition: background 0.18s, color 0.16s, transform 0.2s;
     }
 
-    .sub-nav-item:hover {
-        background: rgba(255,255,255,0.12);
-        color: white;
+    .nav-item:hover, .sidebar a:hover {
+        background: linear-gradient(90deg,#282855 40%,#4e418b 100%);
+        color: #fffaac;
+        transform: translateX(7px);
     }
 
-    .sub-nav-item.sub-nav-active {
-        background: rgba(255,255,255,0.2);
-        color: white;
-        font-weight: 700;
+    .nav-item.active, .nav-item.nav-active, .sidebar a.active {
+        background: linear-gradient(90deg,#ae84ff 52%,#7367f0 100%);
+        color: #262248 !important;
+        font-weight: bold !important;
     }
 
-    .sub-main {
+    .main-content {
         flex: 1;
+        background: #20203a;
         overflow-y: auto;
-        background: #f5f6fa;
+        padding: 22px;
+        border-radius: 22px 0 0 0;
         min-width: 0;
     }
 
-    /* MOBILE */
     @@media (max-width: 800px) {
-        .sub-hamburger {
+        .hamburger {
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        .sub-overlay {
+        .sidebar-overlay {
             display: block;
         }
 
-        .sub-sidebar {
+        .sidebar {
             position: fixed;
             top: 0;
             left: 0;
             height: 100vh;
             transform: translateX(-100%);
+            border-radius: 0 22px 22px 0;
         }
 
-        .sub-sidebar.sub-sidebar-open {
+        .sidebar.sidebar-open {
             transform: translateX(0);
         }
 
-        .sub-main {
+        .main-content {
             width: 100%;
-            padding-top: 60px;
+            padding: 60px 12px 12px 12px;
+            border-radius: 0;
         }
     }
 </style>

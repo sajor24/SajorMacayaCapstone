@@ -163,5 +163,44 @@
     z-index: 1050;
     max-height: 90vh;
     overflow-y: auto;
+
+    
 }
+/* MOBILE TABLE FIX */
+.table-card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06);
+    overflow-x: auto;
+}
+
+.sub-table {
+    width: 100%;
+    min-width: 800px;
+    border-collapse: collapse;
+}
+
+@media (max-width: 768px) {
+    .page-content {
+        padding: 16px;
+    }
+
+    .search-box {
+        width: 100%;
+    }
+
+    .sub-table th,
+    .sub-table td {
+        white-space: nowrap;
+        padding: 10px 8px;
+        font-size: 0.8rem;
+    }
+
+    .modal-box {
+        width: 95%;
+        padding: 1rem;
+    }
+}
+
 
