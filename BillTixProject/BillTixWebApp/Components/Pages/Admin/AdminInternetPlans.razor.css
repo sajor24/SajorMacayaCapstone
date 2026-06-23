@@ -1,5 +1,4 @@
-﻿<style >
-.sub-wrapper {
+﻿.sub-wrapper {
     min-height: 100vh;
     background: #f5f6fa;
     display: flex;
@@ -135,4 +134,3 @@
     overflow-y: auto;
 }
 
-</style >
