@@ -166,3 +166,42 @@
         grid-template-columns: 1fr;
     }
 }
+
+.pending-badge {
+    background: linear-gradient(90deg, #f59e0b, #d97706);
+    color: white;
+}
+
+.btn-pending {
+    width: 100%;
+    padding: 12px;
+    background: rgba(245,158,11,0.1);
+    color: #f59e0b;
+    border: 1px solid #f59e0b;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: .95rem;
+    cursor: default;
+}
+
+.modal-backdrop-custom {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1040;
+}
+
+.modal-box {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    width: 500px;
+    max-width: 95vw;
+    z-index: 1050;
+    max-height: 90vh;
+    overflow-y: auto;
+}

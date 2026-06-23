@@ -14,6 +14,7 @@ namespace Domain.Models
         // Joined from Users
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
+        public string? Username { get; set; }
     }
 
     public enum UpgradeRequestStatus

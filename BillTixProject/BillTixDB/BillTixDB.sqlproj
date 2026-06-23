@@ -61,6 +61,7 @@
     <Folder Include="StoredProcedure\Subscription\" />
     <Folder Include="StoredProcedure\InternetPlans\" />
     <Folder Include="Tables" />
+    <Folder Include="StoredProcedure\UpgradeRequests\" />
   </ItemGroup>
   <ItemGroup>
     <Build Include="Tables\Users.sql" />
@@ -88,6 +89,10 @@
     <Build Include="StoredProcedure\InternetPlans\UpdateInternetPlan.sql" />
     <Build Include="StoredProcedure\InternetPlans\DeleteInternetPlan.sql" />
     <Build Include="StoredProcedure\InternetPlans\GetAllInternetPlans.sql" />
+    <Build Include="Tables\UpgradeRequests.sql" />
+    <Build Include="StoredProcedure\UpgradeRequests\CreateUpgradeRequest.sql" />
+    <Build Include="StoredProcedure\UpgradeRequests\GetAllUpgradeRequests.sql" />
+    <Build Include="StoredProcedure\UpgradeRequests\UpdateUpgradeRequest.sql" />
   </ItemGroup>
   <ItemGroup>
     <None Include="BillTixDB.publish.xml" />

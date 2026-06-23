@@ -9,10 +9,10 @@ namespace Framework.Extensions
         public static DynamicParameters ToCreateParameters(this UpgradeRequest model)
         {
             var param = new DynamicParameters();
-            param.Add("@UserId",      model.UserId,      DbType.String, ParameterDirection.Input);
-            param.Add("@PlanId",      model.PlanId,      DbType.String, ParameterDirection.Input);
-            param.Add("@PlanName",    model.PlanName,    DbType.String, ParameterDirection.Input);
-            param.Add("@ReferenceNo", model.ReferenceNo, DbType.String, ParameterDirection.Input);
+            param.Add("@UserId",      model.UserId,      DbType.String,   ParameterDirection.Input);
+            param.Add("@PlanId",      model.PlanId,      DbType.String,   ParameterDirection.Input);
+            param.Add("@PlanName",    model.PlanName,    DbType.String,   ParameterDirection.Input);
+            param.Add("@ReferenceNo", model.ReferenceNo, DbType.String,   ParameterDirection.Input);
             return param;
         }
 

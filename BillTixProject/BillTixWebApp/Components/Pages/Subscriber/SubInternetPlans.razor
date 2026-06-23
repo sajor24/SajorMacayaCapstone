@@ -8,14 +8,12 @@
 @attribute [Authorize(Roles = "Subscriber")]
 @inject IGetAll_InternetPlan getPlans
 @inject IGetByUser_Subscription getSubscription
-@inject ICreate_Subscription createSub
-@inject IUpdate_Subscription updateSub
+@inject ICreate_UpgradeRequest createRequest
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IGetAll_User getAll
 
 <div class="plans-wrapper">
 
-    <!-- HEADER -->
     <div class="plans-header">
         <h3 class="fw-bold mb-0">Internet Plans</h3>
         <p class="text-muted">Choose the perfect plan for your needs. No hidden fees, cancel anytime.</p>
@@ -29,17 +27,21 @@
         </div>
     }
 
-    <!-- CARDS -->
     <div class="plans-grid">
         @foreach (var plan in plans)
         {
             var features = plan.FeatureList;
             var isCurrent = currentSub?.PlanName == plan.PlanName && currentSub?.Status == "Active";
+            var hasPending = pendingRequests.Any(x => x.PlanName == plan.PlanName && x.Status == "Pending");
 
             <div class="plan-card @(isCurrent ? "plan-current" : "")">
                 @if (isCurrent)
                 {
                     <div class="plan-badge current-badge">Current Plan</div>
+                }
+                else if (hasPending)
+                {
+                    <div class="plan-badge pending-badge">Pending Approval</div>
                 }
 
                 <div class="plan-name">@plan.PlanName</div>
@@ -53,15 +55,19 @@
                     }
                 </ul>
 
-                @if (!isCurrent)
+                @if (isCurrent)
                 {
-                    <button class="btn-upgrade" @onclick="() => UpgradePlan(plan)" disabled="@isUpgrading">
-                        @(isUpgrading && selectedPlanName == plan.PlanName ? "Upgrading..." : "Upgrade to @plan.PlanName")
-                    </button>
+                    <button class="btn-current" disabled>Active Plan</button>
+                }
+                else if (hasPending)
+                {
+                    <button class="btn-pending" disabled>Waiting for Approval</button>
                 }
                 else
                 {
-                    <button class="btn-current" disabled>Active Plan</button>
+                    <button class="btn-upgrade" @onclick="() => OpenUpgradeForm(plan)">
+                        Upgrade to @plan.PlanName
+                    </button>
                 }
             </div>
         }
@@ -71,23 +77,39 @@
             <p class="text-muted">No plans available.</p>
         }
     </div>
-
 </div>
 
-<!-- CONFIRM UPGRADE MODAL -->
-@if (showConfirm)
+<!-- UPGRADE REQUEST MODAL -->
+@if (showUpgradeForm)
 {
     <div class="modal-backdrop-custom" @onclick="CancelUpgrade"></div>
-    <div class="modal-box shadow-lg" style="width:420px;">
-        <div class="text-center py-2">
-            <div style="font-size:3rem;">🚀</div>
-            <h5 class="fw-bold mt-2">Upgrade Plan?</h5>
-            <p class="text-muted mt-1">Are you sure you want to upgrade to <strong>@selectedPlanName</strong>?</p>
-            <p class="text-muted">₱@selectedPlanPrice.ToString("N2")/Month</p>
+    <div class="modal-box shadow-lg">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">Upgrade to @selectedPlan?.PlanName</h5>
+            <button class="btn-close" @onclick="CancelUpgrade"></button>
         </div>
-        <div class="d-flex gap-2 mt-3 justify-content-center">
-            <button class="btn btn-secondary px-4" @onclick="CancelUpgrade">Cancel</button>
-            <button class="btn btn-primary px-4" @onclick="ConfirmUpgrade">Yes, Upgrade</button>
+
+        <div class="mb-3">
+            <p class="text-muted">Price: <strong>₱@selectedPlan?.Price.ToString("N2")/Month</strong></p>
+            <p class="text-muted small">Your plan will be upgraded after admin approval. Please provide your payment reference number.</p>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Reference Number <span class="text-danger">*</span></label>
+            <input class="form-control" placeholder="e.g. GCash ref: 1234567890" @bind="referenceNo" />
+            <small class="text-muted">Enter your GCash, bank transfer, or payment reference number.</small>
+        </div>
+
+        @if (!string.IsNullOrEmpty(formError))
+        {
+            <div class="alert alert-danger">@formError</div>
+        }
+
+        <div class="d-flex gap-2 mt-4 justify-content-end">
+            <button class="btn btn-secondary" @onclick="CancelUpgrade">Cancel</button>
+            <button class="btn btn-primary" @onclick="SubmitUpgradeRequest" disabled="@isSubmitting">
+                @(isSubmitting ? "Submitting..." : "Submit Request")
+            </button>
         </div>
     </div>
 }
@@ -95,13 +117,14 @@
 @code {
     private List<InternetPlan> plans = new();
     private Subscription? currentSub;
+    private List<UpgradeRequest> pendingRequests = new();
     private string userId = string.Empty;
     private string message = string.Empty;
     private bool isError = false;
-    private bool isUpgrading = false;
-    private bool showConfirm = false;
-    private string selectedPlanName = string.Empty;
-    private decimal selectedPlanPrice = 0;
+    private bool showUpgradeForm = false;
+    private bool isSubmitting = false;
+    private string referenceNo = string.Empty;
+    private string formError = string.Empty;
     private InternetPlan? selectedPlan;
 
     protected override async Task OnInitializedAsync()
@@ -127,67 +150,63 @@
         plans = result?.Where(x => x.IsActive).ToList() ?? new();
     }
 
-    void UpgradePlan(InternetPlan plan)
+    void OpenUpgradeForm(InternetPlan plan)
     {
         selectedPlan = plan;
-        selectedPlanName = plan.PlanName ?? "";
-        selectedPlanPrice = plan.Price;
-        showConfirm = true;
+        referenceNo = string.Empty;
+        formError = string.Empty;
+        showUpgradeForm = true;
     }
 
     void CancelUpgrade()
     {
-        showConfirm = false;
+        showUpgradeForm = false;
         selectedPlan = null;
+        referenceNo = string.Empty;
+        formError = string.Empty;
     }
 
-    async Task ConfirmUpgrade()
+    async Task SubmitUpgradeRequest()
     {
+        if (string.IsNullOrWhiteSpace(referenceNo))
+        {
+            formError = "Reference number is required.";
+            return;
+        }
+
         if (selectedPlan == null) return;
 
-        isUpgrading = true;
-        showConfirm = false;
+        isSubmitting = true;
+        formError = string.Empty;
 
         try
         {
-            if (currentSub != null)
+            var request = new UpgradeRequest
             {
-                // Update existing subscription
-                currentSub.PlanName = selectedPlan.PlanName;
-                currentSub.PlanPrice = selectedPlan.Price;
-                currentSub.StartDate = DateTime.Now;
-                currentSub.EndDate = DateTime.Now.AddMonths(1);
-                currentSub.Status = "Active";
-                await updateSub.ExecuteAsync(currentSub);
-            }
-            else
-            {
-                // Create new subscription
-                var newSub = new Subscription
-                {
-                    UserId = userId,
-                    PlanName = selectedPlan.PlanName,
-                    PlanPrice = selectedPlan.Price,
-                    StartDate = DateTime.Now,
-                    EndDate = DateTime.Now.AddMonths(1),
-                    Status = "Active"
-                };
-                await createSub.ExecuteAsync(newSub);
-            }
+                UserId = userId,
+                PlanId = selectedPlan.PlanId,
+                PlanName = selectedPlan.PlanName,
+                ReferenceNo = referenceNo,
+                Status = "Pending"
+            };
 
-            var subs = await getSubscription.ExecuteAsync(userId);
-            currentSub = subs?.FirstOrDefault(x => x.Status == "Active");
+            await createRequest.ExecuteAsync(request);
 
-            message = $"Successfully upgraded to {selectedPlan.PlanName}!";
+            // Refresh pending requests
+            pendingRequests.Add(request);
+
+            showUpgradeForm = false;
+            selectedPlan = null;
+            referenceNo = string.Empty;
+
+            message = "Upgrade request submitted! Please wait for admin approval.";
             isError = false;
         }
         catch (Exception ex)
         {
-            message = $"Error: {ex.Message}";
-            isError = true;
+            formError = $"Error: {ex.Message}";
         }
 
-        isUpgrading = false;
-        selectedPlan = null;
+        isSubmitting = false;
     }
 }

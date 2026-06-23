@@ -1,7 +1,7 @@
 CREATE PROCEDURE [dbo].[UpdateUpgradeRequest]
     @RequestId   NVARCHAR(20),
     @Status      NVARCHAR(20),
-    @ProcessedAt DATETIME
+    @ProcessedAt DATETIME = NULL
 AS
 BEGIN
     UPDATE [dbo].[UpgradeRequests]

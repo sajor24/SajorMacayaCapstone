@@ -1,0 +1,208 @@
+@page "/admin-upgrade-requests"
+@layout AdminLayout
+@using Microsoft.AspNetCore.Authorization
+@using Domain.ICommands
+@using Domain.Models
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin")]
+@inject IGetAll_UpgradeRequest getAll
+@inject IUpdate_UpgradeRequest updateRequest
+@inject IGetAll_Subscription getAllSubs
+@inject IUpdate_Subscription updateSub
+@inject ICreate_Subscription createSub
+
+<div class="sub-wrapper">
+
+    <div class="topnav">
+        <div class="topnav-left">
+            <h2>Upgrade Requests</h2>
+            <p>Review and approve subscriber plan upgrades</p>
+        </div>
+    </div>
+
+    <div class="page-content">
+
+        @if (!string.IsNullOrEmpty(message))
+        {
+            <div class="alert @(isError ? "alert-danger" : "alert-success") alert-dismissible mb-3">
+                @message
+                <button type="button" class="btn-close" @onclick="() => message = string.Empty"></button>
+            </div>
+        }
+
+        <div class="table-card">
+            <div class="mb-3">
+                <div class="fw-semibold" style="color:#111;">All Upgrade Requests</div>
+                <small class="text-muted">Pending: @requests.Count(x => x.Status == "Pending")</small>
+            </div>
+
+            <div class="table-responsive">
+                <table class="sub-table">
+                    <thead>
+                        <tr>
+                            <th>Request ID</th>
+                            <th>Subscriber</th>
+                            <th>Requested Plan</th>
+                            <th>Reference No.</th>
+                            <th>Status</th>
+                            <th>Requested At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var req in requests)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@req.RequestId</td>
+                                <td>@req.FirstName @req.LastName<br/><small class="text-muted">@req.Username</small></td>
+                                <td>@req.PlanName</td>
+                                <td>@req.ReferenceNo</td>
+                                <td>
+                                    <span class="status-badge @GetStatusClass(req.Status)">@req.Status</span>
+                                </td>
+                                <td class="text-muted">@req.RequestedAt.ToString("MMM dd, yyyy hh:mm tt")</td>
+                                <td>
+                                    @if (req.Status == "Pending")
+                                    {
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-success btn-sm" @onclick="() => Approve(req)">
+                                                <i class="bi bi-check-lg"></i> Approve
+                                            </button>
+                                            <button class="btn btn-danger btn-sm" @onclick="() => Reject(req)">
+                                                <i class="bi bi-x-lg"></i> Reject
+                                            </button>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <small class="text-muted">@req.ProcessedAt?.ToString("MMM dd, yyyy")</small>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        @if (!requests.Any())
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">No upgrade requests.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .sub-wrapper { min-height: 100vh; background: #f5f6fa; display: flex; flex-direction: column; }
+    .topnav { background: white; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4f46e5; }
+    .topnav-left h2 { font-size: 1.2rem; font-weight: 700; color: #111; margin: 0; }
+    .topnav-left p { font-size: .82rem; color: #4f46e5; margin: 0; }
+    .page-content { padding: 32px; flex: 1; }
+    .table-card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 12px rgba(0,0,0,.06); }
+    .sub-table { width: 100%; border-collapse: collapse; }
+    .sub-table thead tr { border-bottom: 2px solid #f3f4f6; }
+    .sub-table th { text-align: left; padding: 10px 12px; font-size: .82rem; color: #888; font-weight: 600; white-space: nowrap; }
+    .sub-table td { padding: 14px 12px; border-bottom: 1px solid #f3f4f6; font-size: .9rem; color: #333; vertical-align: middle; }
+    .sub-table tbody tr:hover { background: #fafafa; }
+    .status-badge { padding: 5px 14px; border-radius: 20px; font-size: .75rem; font-weight: 600; }
+    .badge-pending { background: #fef3c7; color: #d97706; }
+    .badge-approved { background: #d1fae5; color: #059669; }
+    .badge-rejected { background: #fee2e2; color: #dc2626; }
+</style>
+
+@code {
+    private List<UpgradeRequest> requests = new();
+    private string message = string.Empty;
+    private bool isError = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRequests();
+    }
+
+    async Task LoadRequests()
+    {
+        var result = await getAll.ExecuteAsync();
+        requests = result?.ToList() ?? new();
+    }
+
+    string GetStatusClass(string? status) => status switch
+    {
+        "Pending"  => "badge-pending",
+        "Approved" => "badge-approved",
+        "Rejected" => "badge-rejected",
+        _          => ""
+    };
+
+    async Task Approve(UpgradeRequest req)
+    {
+        try
+        {
+            // Update request status
+            req.Status = "Approved";
+            req.ProcessedAt = DateTime.Now;
+            await updateRequest.ExecuteAsync(req);
+
+            // Update subscription — keep current EndDate + add 1 month from EndDate
+            var allSubs = await getAllSubs.ExecuteAsync();
+            var currentSub = allSubs?.FirstOrDefault(x => x.UserId == req.UserId && x.Status == "Active");
+
+            if (currentSub != null)
+            {
+                // If EndDate is in the future, add 1 month from EndDate (subscriber finishes current plan)
+                var baseDate = currentSub.EndDate.HasValue && currentSub.EndDate > DateTime.Now
+                    ? currentSub.EndDate.Value
+                    : DateTime.Now;
+
+                currentSub.PlanName = req.PlanName;
+                currentSub.StartDate = baseDate;
+                currentSub.EndDate = baseDate.AddMonths(1);
+                currentSub.Status = "Active";
+                await updateSub.ExecuteAsync(currentSub);
+            }
+            else
+            {
+                // No existing subscription — create new
+                var newSub = new Subscription
+                {
+                    UserId = req.UserId,
+                    PlanName = req.PlanName,
+                    PlanPrice = 0,
+                    StartDate = DateTime.Now,
+                    EndDate = DateTime.Now.AddMonths(1),
+                    Status = "Active"
+                };
+                await createSub.ExecuteAsync(newSub);
+            }
+
+            message = $"Approved! {req.FirstName}'s plan upgraded to {req.PlanName}.";
+            isError = false;
+            await LoadRequests();
+        }
+        catch (Exception ex)
+        {
+            message = $"Error: {ex.Message}";
+            isError = true;
+        }
+    }
+
+    async Task Reject(UpgradeRequest req)
+    {
+        try
+        {
+            req.Status = "Rejected";
+            req.ProcessedAt = DateTime.Now;
+            await updateRequest.ExecuteAsync(req);
+
+            message = $"Request rejected for {req.FirstName}.";
+            isError = false;
+            await LoadRequests();
+        }
+        catch (Exception ex)
+        {
+            message = $"Error: {ex.Message}";
+            isError = true;
+        }
+    }
+}
