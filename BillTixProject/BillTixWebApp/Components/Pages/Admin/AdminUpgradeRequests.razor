@@ -166,14 +166,10 @@
 
             if (currentSub != null)
             {
-                var baseDate = currentSub.EndDate.HasValue && currentSub.EndDate > DateTime.Now
-                    ? currentSub.EndDate.Value
-                    : DateTime.Now;
-
                 currentSub.PlanName = req.PlanName;
                 currentSub.PlanPrice = planPrice;
-                currentSub.StartDate = baseDate;
-                currentSub.EndDate = baseDate.AddMonths(1);
+                currentSub.StartDate = DateTime.Now;
+                currentSub.EndDate = DateTime.Now.AddMonths(1);
                 currentSub.Status = "Active";
                 await updateSub.ExecuteAsync(currentSub);
             }
@@ -201,8 +197,7 @@
                 DueDate       = DateTime.Now,
                 PaidAt        = DateTime.Now,
                 Description   = $"Plan upgrade to {req.PlanName}"
-            };
-            await createBilling.ExecuteAsync(newBilling);
+            };            await createBilling.ExecuteAsync(newBilling);
 
             message = $"Approved! {req.FirstName}'s plan upgraded to {req.PlanName}. Billing record created.";
             isError = false;

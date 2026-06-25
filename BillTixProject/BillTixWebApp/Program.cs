@@ -109,7 +109,7 @@ app.MapPost("/account/login", async (
     var user = await loginUser.ExecuteAsync(username, password);
 
     if (user == null)
-        return Results.Redirect("/login?error=1");
+        return Results.Redirect($"/login?role={returnRole}&error=1");
 
     // Role check if portal-specific login
     if (!string.IsNullOrEmpty(returnRole) &&

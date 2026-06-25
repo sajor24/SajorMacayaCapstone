@@ -10,6 +10,7 @@
 @inject IUpdate_Billing update
 @inject IDelete_Billing delete
 @inject IGetAll_User getUsers
+@inject IGetAll_Subscription getSubscription
 
 <div class="sub-wrapper">
 
@@ -249,6 +250,7 @@
     private Billing? deleteTarget;
     private string searchText = string.Empty;
     private string errorMessage = string.Empty;
+    private Subscription subs = new();
 
     private IEnumerable<Billing> filteredBillings =>
         string.IsNullOrWhiteSpace(searchText)
@@ -291,6 +293,7 @@
 
     void EditBilling(Billing item)
     {
+        item.DueDate = subs.EndDate;
         billing = new Billing
         {
             BillingId     = item.BillingId,
@@ -315,26 +318,24 @@
             return;
         }
 
+        // Kunin active subscription
+        var userSubs = await getSubscription.ExecuteAsync();
+        var activeSub = userSubs?.FirstOrDefault(x => x.Status == "Active");
+
+        if (activeSub != null)
+        {
+            billing.DueDate = activeSub.EndDate;
+        }
+
         if (billing.Status == "Paid" && billing.PaidAt == null)
             billing.PaidAt = DateTime.Now;
 
-        errorMessage = string.Empty;
-        try
-        {
-            if (isEditing)
-                await update.ExecuteAsync(billing);
-            else
-                await create.ExecuteAsync(billing);
+        if (isEditing)
+            await update.ExecuteAsync(billing);
+        else
+            await create.ExecuteAsync(billing);
 
-            billing = new Billing { Status = "Pending" };
-            isEditing = false;
-            showForm = false;
-            await LoadBillings();
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Error: {ex.Message}";
-        }
+        await LoadBillings();
     }
 
     void CancelForm()
