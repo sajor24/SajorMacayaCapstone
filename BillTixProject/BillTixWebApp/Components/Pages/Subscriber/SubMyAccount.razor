@@ -1,36 +1,203 @@
 ﻿@page "/sub-myaccount"
 @layout SubscriberLayout
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Domain.ICommands
+@using Domain.Models
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Subscriber")]
+@inject IGetAll_User getAll
+@inject IUpdate_User update
+@inject IGetByUser_Subscription getSubscription
+@inject AuthenticationStateProvider AuthStateProvider
 
-<div class="dashboard-header">
-    <div>
-        <h2>Welcome Back,  👋</h2>
-        <p class="sub-text">Manage your internet subscription and billing.</p>
+<div class="account-page">
+
+    <div class="account-header">
+        <h2>My Account</h2>
+        <p>Manage your personal information</p>
     </div>
 
-    <button class="logout-btn">
-        Logout
-    </button>
-    </div>
-<div class="mb-3">
-	<input type="text" class="form-control" id="formGroupExampleInput" placeholder="Example input placeholder">
-</div>
+    @if (!string.IsNullOrEmpty(message))
+    {
+        <div class="alert @(isError ? "alert-danger" : "alert-success") alert-dismissible mb-3">
+            @message
+            <button type="button" class="btn-close" @onclick="() => message = string.Empty"></button>
+        </div>
+    }
 
-<div class="mb-3">
-	<label for="formGroupExampleInput2" class="form-label">Another label</label>
-	<input type="text" class="form-control" id="formGroupExampleInput2" placeholder="Another input placeholder">
-</div>
-<div class="mb-3">
-	<label for="formGroupExampleInput2" class="form-label">Another label</label>
-	<input type="text" class="form-control" id="formGroupExampleInput2" placeholder="Another input placeholder">
+    <div class="account-grid">
+
+        <!-- LEFT -->
+        <div class="left-col">
+            <div class="card">
+                <h4>Profile Information</h4>
+                <p class="muted">Update your personal details</p>
+
+                <div class="form-grid">
+                    <div>
+                        <label>First Name</label>
+                        <input class="input" @bind="user.FirstName" />
+                    </div>
+                    <div>
+                        <label>Last Name</label>
+                        <input class="input" @bind="user.LastName" />
+                    </div>
+                    <div>
+                        <label>Email Address</label>
+                        <input class="input" @bind="user.Email" />
+                    </div>
+                    <div>
+                        <label>Phone Number</label>
+                        <input class="input" @bind="user.ContactNumber" />
+                    </div>
+                    <div class="full">
+                        <label>Address</label>
+                        <input class="input" @bind="user.Address" />
+                    </div>
+                </div>
+
+                <button class="btn btn-primary mt-3" @onclick="SaveProfile">Save Changes</button>
+            </div>
+
+            <div class="card">
+                <h4>Change Password</h4>
+                <p class="muted">Leave blank if you don't want to change</p>
+
+                <div class="form-grid">
+                    <div class="full">
+                        <label>New Password</label>
+                        <input type="password" class="input" placeholder="Enter new password" @bind="newPassword" />
+                    </div>
+                    <div class="full">
+                        <label>Confirm Password</label>
+                        <input type="password" class="input" placeholder="Confirm new password" @bind="confirmPassword" />
+                    </div>
+                </div>
+
+                <button class="btn btn-outline-secondary mt-3" @onclick="ChangePassword">Update Password</button>
+            </div>
+        </div>
+
+        <!-- RIGHT -->
+        <div class="right-col">
+            <div class="card">
+                <h4>Account Summary</h4>
+                <div class="summary-list">
+                    <div><span>Account ID</span><strong>@user.UserId</strong></div>
+                    <div><span>Username</span><strong>@user.Username</strong></div>
+                    <div><span>Status</span><span class="badge-active">Active</span></div>
+                    <div><span>Current Plan</span><strong>@(currentSub?.PlanName ?? "No Plan")</strong></div>
+                    <div><span>Member Since</span><strong>@user.CreatedAt.ToString("MMM dd, yyyy")</strong></div>
+                    <div><span>Next Billing</span><strong>@(currentSub?.EndDate?.ToString("MMM dd, yyyy") ?? "—")</strong></div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <style>
-    .dashboard-header
-    {
-        background: white
+    .account-page { padding: 32px; background: #f5f6fa; min-height: 100vh; }
+    .account-header { margin-bottom: 24px; }
+    .account-header h2 { font-size: 1.6rem; font-weight: 700; color: #111; }
+    .account-header p { color: #888; margin: 0; }
+
+    .account-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+
+    .card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 12px rgba(0,0,0,.06); margin-bottom: 20px; }
+    .card h4 { font-size: 1rem; font-weight: 700; color: #111; margin-bottom: 4px; }
+    .muted { font-size: .82rem; color: #aaa; margin-bottom: 20px; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-grid .full { grid-column: 1 / -1; }
+    .form-grid label { display: block; font-size: .82rem; font-weight: 600; color: #555; margin-bottom: 6px; }
+    .input { width: 100%; padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: .9rem; outline: none; transition: border .2s; }
+    .input:focus { border-color: #4f46e5; }
+
+    .summary-list { display: flex; flex-direction: column; gap: 14px; }
+    .summary-list div { display: flex; justify-content: space-between; align-items: center; padding-bottom: 14px; border-bottom: 1px solid #f3f4f6; }
+    .summary-list div:last-child { border-bottom: none; padding-bottom: 0; }
+    .summary-list span:first-child { color: #888; font-size: .88rem; }
+    .badge-active { background: #d1fae5; color: #059669; padding: 4px 12px; border-radius: 20px; font-size: .75rem; font-weight: 600; }
+
+    @@media (max-width: 800px) {
+        .account-page { padding: 70px 16px 16px 16px; }
+        .account-grid { grid-template-columns: 1fr; }
+        .form-grid { grid-template-columns: 1fr; }
     }
 </style>
-@code {
 
-    
+@code {
+    private Users user = new();
+    private Subscription? currentSub;
+    private string message = string.Empty;
+    private bool isError = false;
+    private string newPassword = string.Empty;
+    private string confirmPassword = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var authUser = authState.User;
+
+        if (authUser.Identity?.IsAuthenticated == true)
+        {
+            var username = authUser.Identity.Name ?? "";
+            var users = await getAll.ExecuteAsync();
+            var found = users?.FirstOrDefault(x => x.Username == username);
+
+            if (found != null)
+            {
+                user = found;
+                var subs = await getSubscription.ExecuteAsync(user.UserId ?? "");
+                currentSub = subs?.FirstOrDefault(x => x.Status == "Active");
+            }
+        }
+    }
+
+    async Task SaveProfile()
+    {
+        try
+        {
+            await update.ExecuteAsync(user);
+            message = "Profile updated successfully!";
+            isError = false;
+        }
+        catch (Exception ex)
+        {
+            message = $"Error: {ex.Message}";
+            isError = true;
+        }
+    }
+
+    async Task ChangePassword()
+    {
+        if (string.IsNullOrWhiteSpace(newPassword))
+        {
+            message = "Please enter a new password.";
+            isError = true;
+            return;
+        }
+        if (newPassword != confirmPassword)
+        {
+            message = "Passwords do not match.";
+            isError = true;
+            return;
+        }
+
+        try
+        {
+            user.Password = newPassword;
+            await update.ExecuteAsync(user);
+            newPassword = string.Empty;
+            confirmPassword = string.Empty;
+            message = "Password updated successfully!";
+            isError = false;
+        }
+        catch (Exception ex)
+        {
+            message = $"Error: {ex.Message}";
+            isError = true;
+        }
+    }
 }

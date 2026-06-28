@@ -1,19 +1,15 @@
 ﻿@inherits LayoutComponentBase
 @inject NavigationManager NavigationManager
-@inject IJSRuntime JS
 
 <div class="admin-container">
 
-    <!-- HAMBURGER BUTTON (mobile only) -->
     <button class="hamburger" @onclick="ToggleSidebar">☰</button>
 
-    <!-- OVERLAY -->
     @if (sidebarOpen)
     {
         <div class="sidebar-overlay" @onclick="ToggleSidebar"></div>
     }
 
-    <!-- SIDEBAR -->
     <div class="sidebar @(sidebarOpen ? "sidebar-open" : "")">
         <div class="sidebar-brand">BILLTIX</div>
 
@@ -37,21 +33,17 @@
                 <span>🔔</span> Notification
             </NavLink>
         </nav>
+
         <div class="sidebar-footer">
             <button class="nav-item logout-item" @onclick="ConfirmLogout">
                 <span>🚪</span> Logout
             </button>
         </div>
-
     </div>
 
-   
-
-    <!-- MAIN CONTENT -->
     <div class="main-content">
         @Body
     </div>
-
 </div>
 
 @if (showLogoutConfirm)
@@ -71,192 +63,44 @@
 }
 
 <style>
-    html, body, *, *::before, *::after {
-        font-family: 'Segoe UI', Arial, sans-serif !important;
-        box-sizing: border-box;
-    }
+    html, body, *, *::before, *::after { font-family: 'Segoe UI', Arial, sans-serif !important; box-sizing: border-box; }
 
-    .admin-container {
-        display: flex;
-        min-height: 100vh;
-        background: #181825;
-    }
+    .admin-container { display: flex; min-height: 100vh; background: #181825; }
 
-    .hamburger {
-        display: none;
-        position: fixed;
-        top: 12px;
-        left: 12px;
-        z-index: 2000;
-        background: #7367f0;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        width: 42px;
-        height: 42px;
-        font-size: 1.3rem;
-        cursor: pointer;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.3);
-    }
+    .hamburger { display: none; position: fixed; top: 12px; left: 12px; z-index: 2000; background: #7367f0; color: white; border: none; border-radius: 8px; width: 42px; height: 42px; font-size: 1.3rem; cursor: pointer; box-shadow: 0 2px 12px rgba(0,0,0,0.3); }
 
-    .sidebar-overlay {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.5);
-        z-index: 1500;
-    }
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1500; }
 
-    .sidebar {
-        width: 260px;
-        min-width: 260px;
-        height: 100vh;
-        background: linear-gradient(150deg, #1f1f38 77%, #302b63 100%);
-        padding: 30px 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        border-radius: 0 22px 22px 0;
-        box-shadow: 4px 0 24px rgba(0,0,0,0.23);
-        position: sticky;
-        top: 0;
-        left: 0;
-        z-index: 1600;
-        transition: transform 0.3s ease;
-    }
+    .sidebar { width: 260px; min-width: 260px; height: 100vh; background: linear-gradient(150deg, #1f1f38 77%, #302b63 100%); padding: 30px 20px 20px 20px; display: flex; flex-direction: column; border-radius: 0 22px 22px 0; box-shadow: 4px 0 24px rgba(0,0,0,0.23); position: sticky; top: 0; left: 0; z-index: 1600; transition: transform 0.3s ease; overflow: hidden; }
 
-    .sidebar-brand {
-        font-size: 2rem;
-        font-weight: 900;
-        color: #fff;
-        margin-bottom: 36px;
-        padding-left: 8px;
-        letter-spacing: 1.6px;
-    }
+    .sidebar-brand { font-size: 2rem; font-weight: 900; color: #fff; margin-bottom: 36px; padding-left: 8px; letter-spacing: 1.6px; }
 
-    .sidebar-nav {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
+    .sidebar-nav { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; flex: 1; padding-right: 4px; }
+    .sidebar-nav::-webkit-scrollbar { width: 4px; }
+    .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
 
-    .nav-item,
-    .sidebar a {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        background: rgba(33,37,70,0.91);
-        color: #f1efff;
-        padding: 14px 16px;
-        border-radius: 12px;
-        text-decoration: none;
-        font-size: 1rem;
-        font-weight: 600;
-        transition: background 0.18s, color 0.16s, transform 0.2s;
-    }
+    .nav-item, .sidebar a { display: flex; align-items: center; gap: 12px; background: rgba(33,37,70,0.91); color: #f1efff; padding: 14px 16px; border-radius: 12px; text-decoration: none; font-size: 1rem; font-weight: 600; transition: background 0.18s, color 0.16s, transform 0.2s; }
 
-    .nav-item:hover, .sidebar a:hover {
-        background: linear-gradient(90deg,#282855 40%,#4e418b 100%);
-        color: #fffaac;
-        transform: translateX(7px);
-    }
+    .nav-item:hover, .sidebar a:hover { background: linear-gradient(90deg,#282855 40%,#4e418b 100%); color: #fffaac; transform: translateX(7px); }
 
-    .nav-item.active, .nav-item.nav-active, .sidebar a.active {
-        background: linear-gradient(90deg,#ae84ff 52%,#7367f0 100%);
-        color: #262248 !important;
-        font-weight: bold !important;
-    }
+    .nav-item.active, .nav-item.nav-active, .sidebar a.active { background: linear-gradient(90deg,#ae84ff 52%,#7367f0 100%); color: #262248 !important; font-weight: bold !important; }
 
-    .sidebar-footer {
-        margin-top: 16px;
-        padding-top: 16px;
-        border-top: 1px solid rgba(255,255,255,0.1);
-    }
+    .sidebar-footer { padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; }
 
-    .logout-item {
-        color: #ff8080 !important;
-        background: rgba(255,80,80,0.08) !important;
-    }
+    .logout-item { color: #ff8080 !important; background: rgba(255,80,80,0.08) !important; border: none; width: 100%; text-align: left; cursor: pointer; }
+    .logout-item:hover { background: rgba(255,80,80,0.18) !important; color: #ff6060 !important; }
 
-    .logout-item:hover {
-        background: rgba(255,80,80,0.18) !important;
-        color: #ff6060 !important;
-        transform: translateX(7px);
-    }
+    .main-content { flex: 1; background: #f5f6fa; overflow-y: auto; min-width: 0; }
 
-    .main-content {
-        flex: 1;
-        background: #20203a;
-        overflow-y: auto;
-        padding: 22px;
-        border-radius: 22px 0 0 0;
-        min-width: 0;
-    }
+    .logout-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000; }
+    .logout-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 16px; padding: 2rem; width: 360px; max-width: 95vw; z-index: 2001; }
 
     @@media (max-width: 800px) {
-        .hamburger {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .sidebar-overlay {
-            display: block;
-        }
-
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            transform: translateX(-100%);
-            border-radius: 0 22px 22px 0;
-        }
-
-        .sidebar.sidebar-open {
-            transform: translateX(0);
-        }
-
-        .main-content {
-            width: 100%;
-            padding: 60px 12px 12px 12px;
-            border-radius: 0;
-        }
-    }
-
-    .logout-item {
-        color: #ff8080 !important;
-        background: rgba(255,80,80,0.08) !important;
-        border: none;
-        width: 100%;
-        text-align: left;
-        cursor: pointer;
-    }
-
-        .logout-item:hover {
-            background: rgba(255,80,80,0.18) !important;
-            color: #ff6060 !important;
-            transform: translateX(7px);
-        }
-
-    .logout-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.5);
-        z-index: 2000;
-    }
-
-    .logout-modal {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: white;
-        border-radius: 16px;
-        padding: 2rem;
-        width: 360px;
-        max-width: 95vw;
-        z-index: 2001;
+        .hamburger { display: flex; align-items: center; justify-content: center; }
+        .sidebar-overlay { display: block; }
+        .sidebar { position: fixed; top: 0; left: 0; height: 100vh; transform: translateX(-100%); }
+        .sidebar.sidebar-open { transform: translateX(0); }
+        .main-content { width: 100%; }
     }
 </style>
 

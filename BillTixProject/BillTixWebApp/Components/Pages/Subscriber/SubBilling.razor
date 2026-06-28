@@ -249,6 +249,25 @@
     {
         var result = await getBillings.ExecuteAsync(userId);
         billings = result?.ToList() ?? new();
+
+        // Auto-mark overdue: Pending bills past their DueDate
+        var overdueBills = billings
+            .Where(x => x.Status == "Pending"
+                     && x.DueDate.HasValue
+                     && x.DueDate.Value.Date < DateTime.Today)
+            .ToList();
+
+        foreach (var bill in overdueBills)
+        {
+            bill.Status = "Overdue";
+            await updateBilling.ExecuteAsync(bill);
+        }
+
+        if (overdueBills.Any())
+        {
+            var refreshed = await getBillings.ExecuteAsync(userId);
+            billings = refreshed?.ToList() ?? new();
+        }
     }
 
     void OpenPayForm(Billing bill)

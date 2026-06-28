@@ -215,6 +215,22 @@
                         <option value="Premium">Premium 250 Mbps ₱1,500/m</option>
                     </select>
                 </div>
+                <div class="col-md-6">
+                    <label class="form-label">Subscription Status</label>
+                    <select class="form-select" @bind="editSubStatus">
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                        <option value="Expired">Expired</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" class="form-control" @bind="editStartDate" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">End Date</label>
+                    <input type="date" class="form-control" @bind="editEndDate" />
+                </div>
             }
         </div>
         <div class="d-flex gap-2 mt-4 justify-content-end">
@@ -240,6 +256,9 @@
     private string passwordInput = string.Empty;
     private string errorMessage = string.Empty;
     private string selectedPlan = string.Empty;
+    private string editSubStatus = "Active";
+    private DateTime editStartDate = DateTime.Today;
+    private DateTime? editEndDate = null;
 
     private static readonly Dictionary<string, (decimal Price, string Speed)> Plans = new()
     {
@@ -309,6 +328,14 @@
         isEditing = true;
         errorMessage = string.Empty;
         showForm = true;
+
+        // Pre-fill subscription fields
+        var existingSub = subscriptions.FirstOrDefault(x => x.UserId == item.UserId && x.Status == "Active")
+                       ?? subscriptions.FirstOrDefault(x => x.UserId == item.UserId);
+        editSubStatus  = existingSub?.Status ?? "Active";
+        editStartDate  = existingSub?.StartDate ?? DateTime.Today;
+        editEndDate    = existingSub?.EndDate;
+        selectedPlan   = string.Empty;
     }
 
     async Task SaveUser()
@@ -349,25 +376,37 @@
                     var existingSub = subscriptions.FirstOrDefault(x => x.UserId == user.UserId);
                     if (existingSub != null)
                     {
-                        existingSub.PlanName = selectedPlan;
+                        existingSub.PlanName  = selectedPlan;
                         existingSub.PlanPrice = updatedPlan.Price;
-                        existingSub.EndDate = DateTime.Now.AddMonths(1);
-                        existingSub.Status = "Active";
+                        existingSub.StartDate = editStartDate;
+                        existingSub.EndDate   = editEndDate;
+                        existingSub.Status    = editSubStatus;
                         await updateSubscription.ExecuteAsync(existingSub);
                     }
                     else
                     {
-                        // No existing sub — create new one
                         var newSub = new Subscription
                         {
-                            UserId = user.UserId,
-                            PlanName = selectedPlan,
+                            UserId    = user.UserId,
+                            PlanName  = selectedPlan,
                             PlanPrice = updatedPlan.Price,
-                            StartDate = DateTime.Now,
-                            EndDate = DateTime.Now.AddMonths(1),
-                            Status = "Active"
+                            StartDate = editStartDate,
+                            EndDate   = editEndDate,
+                            Status    = editSubStatus
                         };
                         await createSubscription.ExecuteAsync(newSub);
+                    }
+                }
+                else
+                {
+                    // No plan change — just update dates/status if sub exists
+                    var existingSub = subscriptions.FirstOrDefault(x => x.UserId == user.UserId);
+                    if (existingSub != null)
+                    {
+                        existingSub.StartDate = editStartDate;
+                        existingSub.EndDate   = editEndDate;
+                        existingSub.Status    = editSubStatus;
+                        await updateSubscription.ExecuteAsync(existingSub);
                     }
                 }
             }
@@ -416,6 +455,9 @@
         user = new Users();
         passwordInput = string.Empty;
         selectedPlan = string.Empty;
+        editSubStatus = "Active";
+        editStartDate = DateTime.Today;
+        editEndDate = null;
         isEditing = false;
         showForm = false;
         errorMessage = string.Empty;

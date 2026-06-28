@@ -21,9 +21,6 @@
             <p class="sub-text">Manage your internet subscription and billing.</p>
         </div>
 
-        <button class="logout-btn" @onclick="Logout">
-            Logout
-        </button>
     </div>
 
     <!-- CARDS -->
@@ -38,10 +35,9 @@
 
         <!-- PLAN -->
         <div class="dashboard-card">
-            <div class="card-icon">🚀</div>
+            <i class="bi bi-card-checklist card-checklist"></i>
             <h5>Current Plan</h5>
             <h3>@(currentSub?.PlanName ?? "No Plan")</h3>
-            <p>@planSpeed ?? "Wala"</p>
         </div>
 
         <!-- BILLING -->
@@ -130,11 +126,4 @@
         }
     }
 
-    private async Task Logout()
-    {
-        bool confirm = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to logout?");
-
-        if (confirm)
-            Nav.NavigateTo("/account/logout", forceLoad: true);
-    }
 }

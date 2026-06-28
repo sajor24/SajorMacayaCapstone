@@ -11,6 +11,9 @@
 @inject IDelete_Billing delete
 @inject IGetAll_User getUsers
 @inject IGetAll_Subscription getSubscription
+@inject IGetByUser_Subscription getSubByUser
+@inject IUpdate_Subscription updateSubscription
+@inject IGetAll_UpgradeRequest getAllUpgradeRequests
 
 <div class="sub-wrapper">
 
@@ -47,8 +50,12 @@
                 <div class="summary-value">@billings.Count(x => x.Status == "Paid")</div>
             </div>
             <div class="summary-card orange">
-                <div class="summary-label">Pending</div>
-                <div class="summary-value">@billings.Count(x => x.Status == "Pending")</div>
+                <div class="summary-label">Pending Upgrades</div>
+                <div class="summary-value">@pendingUpgradeCount</div>
+            </div>
+            <div class="summary-card red">
+                <div class="summary-label" style="color: #dc2626;">Overdue</div>
+                <div class="summary-value">@billings.Count(x => x.Status == "Overdue")</div>
             </div>
             <div class="summary-card blue">
                 <div class="summary-label">Total Revenue</div>
@@ -59,15 +66,12 @@
         <!-- TABLE -->
         <div class="table-card">
             <div class="d-flex justify-content-between align-items-start mb-3">
-                <div>
-                    <div class="fw-semibold" style="color:#111;">All Bills</div>
-                </div>
+                <div class="fw-semibold" style="color:#111;">All Bills</div>
                 <div class="search-box">
                     <i class="bi bi-search text-muted"></i>
                     <input placeholder="Search..." @bind="searchText" @bind:event="oninput" />
                 </div>
             </div>
-
             <div class="table-responsive">
                 <table class="sub-table">
                     <thead>
@@ -210,7 +214,7 @@
     private Billing? deleteTarget;
     private string searchText = string.Empty;
     private string errorMessage = string.Empty;
-    private Subscription subs = new();
+    private int pendingUpgradeCount = 0;
 
     private IEnumerable<Billing> filteredBillings =>
         string.IsNullOrWhiteSpace(searchText)
@@ -220,37 +224,51 @@
             || (x.FirstName != null && x.FirstName.Contains(searchText, StringComparison.OrdinalIgnoreCase))
             || (x.LastName != null && x.LastName.Contains(searchText, StringComparison.OrdinalIgnoreCase))
             || (x.Status != null && x.Status.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            || (x.DueDate.HasValue && x.DueDate.Value.ToString("MM/dd/yyyy").Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            || (x.DueDate.HasValue && x.DueDate.Value.ToString("MMM dd, yyyy").Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            || (x.PaidAt.HasValue && x.PaidAt.Value.ToString("MM/dd/yyyy").Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            || (x.PaidAt.HasValue && x.PaidAt.Value.ToString("MMM dd, yyyy").Contains(searchText, StringComparison.OrdinalIgnoreCase))
         );
 
-    string GetStatusClass(string? status)
+    string GetStatusClass(string? status) => status switch
     {
-        switch (status)
-        {
-            case "Paid":
-                return "badge-paid";
-
-            case "Pending":
-                return "badge-pending";
-
-            case "Overdue":
-                return "badge-overdue";
-
-            default:
-                return "badge-pending";
-        }
-    }
+        "Paid" => "badge-paid",
+        "Overdue" => "badge-overdue",
+        _ => "badge-pending"
+    };
 
     protected override async Task OnInitializedAsync()
     {
         await LoadBillings();
         var users = await getUsers.ExecuteAsync();
         subscribers = users?.Where(x => x.Role == "Subscriber").ToList() ?? new();
+        var upgradeReqs = await getAllUpgradeRequests.ExecuteAsync();
+        pendingUpgradeCount = upgradeReqs?.Count(x => x.Status == "Pending") ?? 0;
     }
 
     async Task LoadBillings()
     {
         var result = await getAll.ExecuteAsync();
         billings = result?.ToList() ?? new();
+
+        // Auto-mark overdue: Pending bills past their DueDate
+        var overdueBills = billings
+            .Where(x => x.Status == "Pending"
+                     && x.DueDate.HasValue
+                     && x.DueDate.Value.Date < DateTime.Today)
+            .ToList();
+
+        foreach (var bill in overdueBills)
+        {
+            bill.Status = "Overdue";
+            await update.ExecuteAsync(bill);
+        }
+
+        if (overdueBills.Any())
+        {
+            var refreshed = await getAll.ExecuteAsync();
+            billings = refreshed?.ToList() ?? new();
+        }
     }
 
     void OpenAddForm()
@@ -263,17 +281,16 @@
 
     void EditBilling(Billing item)
     {
-        item.DueDate = subs.EndDate;
         billing = new Billing
         {
-            BillingId     = item.BillingId,
-            UserId        = item.UserId,
-            Amount        = item.Amount,
+            BillingId = item.BillingId,
+            UserId = item.UserId,
+            Amount = item.Amount,
             PaymentMethod = item.PaymentMethod,
-            Status        = item.Status,
-            DueDate       = item.DueDate,
-            PaidAt        = item.Status == "Paid" ? (item.PaidAt ?? DateTime.Now) : null,
-            Description   = item.Description
+            Status = item.Status,
+            DueDate = item.DueDate,
+            PaidAt = item.PaidAt,
+            Description = item.Description
         };
         isEditing = true;
         errorMessage = string.Empty;
@@ -288,24 +305,49 @@
             return;
         }
 
-        // Kunin active subscription
-        var userSubs = await getSubscription.ExecuteAsync();
+        var userSubs = await getSubByUser.ExecuteAsync(billing.UserId);
         var activeSub = userSubs?.FirstOrDefault(x => x.Status == "Active");
 
-        if (activeSub != null)
-        {
+        if (!isEditing && activeSub != null)
             billing.DueDate = activeSub.EndDate;
+
+        if (billing.Status == "Paid")
+        {
+            billing.PaidAt ??= DateTime.Now;
+
+            if (activeSub != null)
+            {
+                var baseDate = activeSub.EndDate ?? DateTime.Now;
+                activeSub.EndDate = baseDate.AddMonths(1);
+                await updateSubscription.ExecuteAsync(activeSub);
+            }
+
+            billing.DueDate = billing.DueDate.HasValue
+                ? billing.DueDate.Value.AddMonths(1)
+                : DateTime.Now.AddMonths(1);
+        }
+        else
+        {
+            billing.PaidAt = null;
         }
 
-        if (billing.Status == "Paid" && billing.PaidAt == null)
-            billing.PaidAt = DateTime.Now;
+        try
+        {
+            if (isEditing)
+                await update.ExecuteAsync(billing);
+            else
+                await create.ExecuteAsync(billing);
 
-        if (isEditing)
-            await update.ExecuteAsync(billing);
-        else
-            await create.ExecuteAsync(billing);
-
-        await LoadBillings();
+            await LoadBillings();
+            showForm = false;
+            isEditing = false;
+            billing = new Billing { Status = "Pending" };
+            errorMessage = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error saving billing: {ex.Message}";
+        }
     }
 
     void CancelForm()
