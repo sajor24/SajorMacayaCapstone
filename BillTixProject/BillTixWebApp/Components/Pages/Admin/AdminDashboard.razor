@@ -23,13 +23,6 @@
             <h2>Welcome, @username</h2>
             <p>Manage your internet billing system</p>
         </div>
-        <div class="topnav-right">
-            <button class="notif-btn">
-                🔔
-                <span class="notif-dot"></span>
-            </button>
-            <div class="avatar">👤</div>
-        </div>
     </div>
 
     <div class="content">
@@ -73,38 +66,25 @@
                             <th>Subscriber</th>
                             <th>Amount</th>
                             <th>Method</th>
-                            <th>Status</th>
+                            <th>Paid at</th>
+
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var txn in transactions)
+                        @foreach (var item in bill)
                         {
                             <tr>
-                                <td>@txn.Id</td>
-                                <td>@txn.Subscriber</td>
-                                <td>@txn.Amount</td>
-                                <td>@txn.Method</td>
-                                <td><span class="badge">@txn.Status</span></td>
+                                <td class="fw-semibold">@item.BillingId</td>
+                                <td>@item.FirstName @item.LastName</td>
+                                <td>₱@item.Amount.ToString("N2")</td>
+                                <td class="text-muted">@(item.PaymentMethod ?? "—")</td>
+                                <td class="text-muted">@(item.PaidAt?.ToString("MMM dd, yyyy") ?? "—")</td>
                             </tr>
                         }
                     </tbody>
                 </table>
             </div>
 
-            <div class="card">
-                <div class="card-title">🔔 Notifications</div>
-                <div class="card-sub">Recent system alerts</div>
-
-                @foreach (var notif in notifications)
-                {
-                    <div class="notif-item">
-                        <p>@notif.Message</p>
-                        <span>@notif.Time</span>
-                    </div>
-                }
-
-                <button class="view-all-btn">View All Notifications</button>
-            </div>
 
         </div>
     </div>
@@ -115,35 +95,22 @@
     private int totalSubscribers = 0;
     private decimal totalRevenue = 0;
     private int pendingBills = 0;
-    private List<Billing> recentBillings = new();
+    private IEnumerable<Billing> transactions = new List<Billing>();
+    private List<Billing> bill = new();
 
-    private record Transaction(string Id, string Subscriber, string Amount, string Method, string Status);
-    private record Notification(string Message, string Time);
-
-    private List<Transaction> transactions = new()
-    {
-        new("TXN001", "Juan Dela Cruz",  "₱1,499", "GCash", "completed"),
-        new("TXN002", "Maria Santos",    "₱2,499", "GCash", "completed"),
-        new("TXN003", "Ana Garcia",      "₱3,999", "GCash", "completed"),
-        new("TXN004", "Pedro Reyes",     "₱999",   "GCash", "completed"),
-        new("TXN005", "Juan Dela Cruz",  "₱1,499", "GCash", "completed"),
-    };
-
-    private List<Notification> notifications = new()
-    {
-        new("New subscriber registration",          "2 minutes ago"),
-        new("Payment received from Juan Dela Cruz", "15 minutes ago"),
-        new("Overdue bill for Pedro Reyes",         "1 hour ago"),
-    };
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadBillings();
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
         if (user.Identity?.IsAuthenticated == true)
             username = user.Identity.Name ?? "Admin";
 
         var users = await getAll.ExecuteAsync();
+
+
+
         totalSubscribers = users?.Count(x => x.Role == "Subscriber") ?? 0;
 
         try
@@ -156,13 +123,19 @@
             }
 
             var recent = await getRecentBilling.ExecuteAsync(5);
-            recentBillings = recent?.ToList() ?? new();
         }
         catch
         {
             // Billing table may not have data yet
         }
+
     }
+    async Task LoadBillings()
+    {
+        var result = await getAllBilling.ExecuteAsync();
+        bill = result?.ToList() ?? new();
+    }
+   
 
-
+    
 }
