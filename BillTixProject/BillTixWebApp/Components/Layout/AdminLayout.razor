@@ -177,11 +177,11 @@
         transition: background 0.18s, color 0.16s, transform 0.2s;
     }
 
-    .nav-item:hover, .sidebar a:hover {
-        background: linear-gradient(90deg,#282855 40%,#4e418b 100%);
-        color: #fffaac;
-        transform: translateX(7px);
-    }
+        .nav-item:hover, .sidebar a:hover {
+            background: linear-gradient(90deg,#282855 40%,#4e418b 100%);
+            color: #fffaac;
+            transform: none;
+        }
 
     .nav-item.active, .nav-item.nav-active, .sidebar a.active {
         background: linear-gradient(90deg,#ae84ff 52%,#7367f0 100%);
@@ -245,6 +245,14 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            position: fixed;
+            top: 8px; /* Taasan */
+            left: 12px;
+            width: 36px; /* dating 42px */
+            height: 36px; /* dating 42px */
+            font-size: 18px; /* dating 22px o 24px */
+
+            border-radius: 8px;
         }
 
         .sidebar-overlay {

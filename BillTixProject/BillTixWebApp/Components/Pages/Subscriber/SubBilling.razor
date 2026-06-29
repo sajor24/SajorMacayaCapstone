@@ -27,24 +27,7 @@
     }
 
     <!-- SUMMARY -->
-    <div class="summary-cards mb-4">
-        <div class="summary-card">
-            <div class="summary-label">Total Bills</div>
-            <div class="summary-value">@billings.Count</div>
-        </div>
-        <div class="summary-card green">
-            <div class="summary-label">Paid</div>
-            <div class="summary-value">@billings.Count(x => x.Status == "Paid")</div>
-        </div>
-        <div class="summary-card orange">
-            <div class="summary-label">Pending</div>
-            <div class="summary-value">@billings.Count(x => x.Status == "Pending")</div>
-        </div>
-        <div class="summary-card red">
-            <div class="summary-label">Overdue</div>
-            <div class="summary-value">@billings.Count(x => x.Status == "Overdue")</div>
-        </div>
-    </div>
+    
 
     <!-- TABLE -->
     <div class="table-card">
@@ -156,55 +139,6 @@
     </div>
 }
 
-<style>
-    .billing-wrapper { padding: 32px; background: #f5f6fa; min-height: 100vh; }
-    .billing-header { margin-bottom: 24px; }
-    .billing-header h3 { color: #111; }
-
-    .summary-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-    .summary-card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.05); border-left: 4px solid #4f46e5; }
-    .summary-card.green { border-left-color: #22c55e; }
-    .summary-card.orange { border-left-color: #f59e0b; }
-    .summary-card.red { border-left-color: #ef4444; }
-    .summary-label { font-size: .8rem; color: #888; margin-bottom: 4px; }
-    .summary-value { font-size: 1.5rem; font-weight: 800; color: #111; }
-
-    .table-card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 12px rgba(0,0,0,.06); }
-    .sub-table { width: 100%; border-collapse: collapse; }
-    .sub-table thead tr { border-bottom: 2px solid #f3f4f6; }
-    .sub-table th { text-align: left; padding: 10px 12px; font-size: .82rem; color: #888; font-weight: 600; white-space: nowrap; }
-    .sub-table td { padding: 14px 12px; border-bottom: 1px solid #f3f4f6; font-size: .9rem; color: #333; }
-    .sub-table tbody tr:hover { background: #fafafa; }
-
-    .status-badge { padding: 5px 14px; border-radius: 20px; font-size: .75rem; font-weight: 600; }
-    .badge-paid { background: #d1fae5; color: #059669; }
-    .badge-pending { background: #fef3c7; color: #d97706; }
-    .badge-overdue { background: #fee2e2; color: #dc2626; }
-
-    .btn-pay {
-        background: linear-gradient(90deg, #4f46e5, #7367f0);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 7px 16px;
-        font-size: .85rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: .2s;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-    .btn-pay:hover { opacity: 0.88; transform: translateY(-1px); }
-
-    .modal-backdrop-custom { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1040; }
-    .modal-box { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 16px; padding: 2rem; width: 500px; max-width: 95vw; z-index: 1050; max-height: 90vh; overflow-y: auto; }
-
-    @@media (max-width: 800px) {
-        .billing-wrapper { padding: 70px 16px 16px 16px; }
-        .summary-cards { grid-template-columns: repeat(2, 1fr); }
-    }
-</style>
 
 @code {
     private List<Billing> billings = new();
@@ -218,13 +152,23 @@
     private string referenceNo = string.Empty;
     private string formError = string.Empty;
 
-    string GetStatusClass(string? status) => status switch
+    string GetStatusClass(string? status)
     {
-        "Paid"    => "badge-paid",
-        "Pending" => "badge-pending",
-        "Overdue" => "badge-overdue",
-        _         => "badge-pending"
-    };
+        switch (status)
+        {
+            case "Paid":
+                return "badge-paid";
+
+            case "Pending":
+                return "badge-pending";
+
+            case "Overdue":
+                return "badge-overdue";
+
+            default:
+                return "badge-pending";
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {

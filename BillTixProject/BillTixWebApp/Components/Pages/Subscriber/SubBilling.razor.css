@@ -1,0 +1,124 @@
+﻿
+.billing-wrapper {
+    padding: 32px;
+    background: #f5f6fa;
+    min-height: 100vh;
+}
+
+.billing-header {
+    margin-bottom: 24px;
+}
+
+    .billing-header h3 {
+        color: #111;
+    }
+
+
+
+.table-card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06);
+}
+
+.sub-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+    .sub-table thead tr {
+        border-bottom: 2px solid #f3f4f6;
+    }
+
+    .sub-table th {
+        text-align: left;
+        padding: 10px 12px;
+        font-size: .82rem;
+        color: #888;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .sub-table td {
+        padding: 14px 12px;
+        border-bottom: 1px solid #f3f4f6;
+        font-size: .9rem;
+        color: #333;
+    }
+
+    .sub-table tbody tr:hover {
+        background: #fafafa;
+    }
+
+.status-badge {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: .75rem;
+    font-weight: 600;
+}
+
+.badge-paid {
+    background: #d1fae5;
+    color: #059669;
+}
+
+.badge-pending {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.badge-overdue {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.btn-pay {
+    background: linear-gradient(90deg, #4f46e5, #7367f0);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 7px 16px;
+    font-size: .85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: .2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+    .btn-pay:hover {
+        opacity: 0.88;
+        transform: translateY(-1px);
+    }
+
+.modal-backdrop-custom {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 1040;
+}
+
+.modal-box {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    width: 500px;
+    max-width: 95vw;
+    z-index: 1050;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+@media (max-width: 800px) {
+    .billing-wrapper {
+        padding: 70px 16px 16px 16px;
+    }
+
+}
+
