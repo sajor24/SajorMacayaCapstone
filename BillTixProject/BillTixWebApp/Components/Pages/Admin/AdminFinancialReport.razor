@@ -1,0 +1,201 @@
+@page "/admin-financial-report"
+@layout AdminLayout
+@using Microsoft.AspNetCore.Authorization
+@using Domain.ICommands
+@using Domain.Models
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin")]
+@inject IGetAll_Billing getAll
+@inject IJSRuntime JS
+
+<div class="sub-wrapper">
+
+    <div class="topnav">
+        <div class="topnav-left">
+            <h2>Financial Report</h2>
+            <p>Monthly revenue and billing summary</p>
+        </div>
+        <div class="topnav-right">
+            <button class="btn btn-outline-secondary d-flex align-items-center gap-2" @onclick="PrintReport">
+                <i class="bi bi-printer-fill"></i> Print
+            </button>
+        </div>
+    </div>
+
+    <div class="page-content" id="report-content">
+
+       
+
+        <!-- FILTER -->
+        <div class="table-card mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="fw-semibold" style="color:#111;">Monthly Breakdown</div>
+                <div class="d-flex gap-2 align-items-center">
+                    <label class="text-muted small">Year:</label>
+                    <select class="form-select form-select-sm" style="width:100px;" @bind="selectedYear">
+                        @for (int y = DateTime.Now.Year; y >= DateTime.Now.Year - 3; y--)
+                        {
+                            <option value="@y">@y</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="sub-table">
+                    <thead>
+                        <tr>
+                            <th>Month</th>
+                            <th>Total Bills</th>
+                            <th>Paid</th>
+                            <th>Pending</th>
+                            <th>Overdue</th>
+                            <th>Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in monthlyReport)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@row.Month</td>
+                                <td>@row.Total</td>
+                                <td><span class="status-badge badge-paid">@row.Paid</span></td>
+                                <td><span class="status-badge badge-pending">@row.Pending</span></td>
+                                <td><span class="status-badge badge-overdue">@row.Overdue</span></td>
+                                <td class="fw-semibold text-success">₱@row.Revenue.ToString("N2")</td>
+                            </tr>
+                        }
+                        @if (!monthlyReport.Any())
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">No data for @selectedYear.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            <!-- TOTAL ROW -->
+                            <tr style="border-top: 2px solid #e5e7eb; background:#f9fafb;">
+                                <td class="fw-bold">TOTAL</td>
+                                <td class="fw-bold">@monthlyReport.Sum(x => x.Total)</td>
+                                <td class="fw-bold">@monthlyReport.Sum(x => x.Paid)</td>
+                                <td class="fw-bold">@monthlyReport.Sum(x => x.Pending)</td>
+                                <td class="fw-bold">@monthlyReport.Sum(x => x.Overdue)</td>
+                                <td class="fw-bold text-success">₱@monthlyReport.Sum(x => x.Revenue).ToString("N2")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- DETAILED TRANSACTIONS -->
+        <div class="table-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <div class="fw-semibold" style="color:#111;">All Transactions (@selectedYear)</div>
+                    <small class="text-muted">@yearBillings.Count records</small>
+                </div>
+                <div class="search-box">
+                    <i class="bi bi-search text-muted"></i>
+                    <input placeholder="Search..." @bind="searchText" @bind:event="oninput" />
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="sub-table">
+                    <thead>
+                        <tr>
+                            <th>Billing ID</th>
+                            <th>Subscriber</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Status</th>
+                            <th>Due Date</th>
+                            <th>Paid At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in filteredYearBillings)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@item.BillingId</td>
+                                <td>@item.FirstName @item.LastName</td>
+                                <td>₱@item.Amount.ToString("N2")</td>
+                                <td class="text-muted">@(item.PaymentMethod ?? "—")</td>
+                                <td><span class="status-badge @GetStatusClass(item.Status)">@item.Status</span></td>
+                                <td class="text-muted">@(item.DueDate?.ToString("MMM dd, yyyy") ?? "—")</td>
+                                <td class="text-muted">@(item.PaidAt?.ToString("MMM dd, yyyy") ?? "—")</td>
+                            </tr>
+                        }
+                        @if (!filteredYearBillings.Any())
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">No records found.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@code {
+    private List<Billing> billings = new();
+    private int selectedYear = DateTime.Now.Year;
+    private string searchText = string.Empty;
+
+    private List<Billing> yearBillings =>
+        billings.Where(x => x.CreatedAt.Year == selectedYear).ToList();
+
+    private IEnumerable<Billing> filteredYearBillings =>
+        string.IsNullOrWhiteSpace(searchText)
+        ? yearBillings
+        : yearBillings.Where(x =>
+            (x.BillingId != null && x.BillingId.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            || (x.FirstName != null && x.FirstName.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            || (x.LastName != null && x.LastName.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            || (x.Status != null && x.Status.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+        );
+
+    private List<MonthlyRow> monthlyReport => Enumerable.Range(1, 12)
+        .Select(m => new MonthlyRow
+        {
+            Month    = new DateTime(selectedYear, m, 1).ToString("MMMM"),
+            Total    = yearBillings.Count(x => x.CreatedAt.Month == m),
+            Paid     = yearBillings.Count(x => x.CreatedAt.Month == m && x.Status == "Paid"),
+            Pending  = yearBillings.Count(x => x.CreatedAt.Month == m && x.Status == "Pending"),
+            Overdue  = yearBillings.Count(x => x.CreatedAt.Month == m && x.Status == "Overdue"),
+            Revenue  = yearBillings.Where(x => x.CreatedAt.Month == m && x.Status == "Paid").Sum(x => x.Amount)
+        })
+        .Where(x => x.Total > 0)
+        .ToList();
+
+    string GetStatusClass(string? status) => status switch
+    {
+        "Paid"    => "badge-paid",
+        "Overdue" => "badge-overdue",
+        _         => "badge-pending"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await getAll.ExecuteAsync();
+        billings = result?.ToList() ?? new();
+    }
+
+    async Task PrintReport()
+    {
+        await JS.InvokeVoidAsync("print");
+    }
+
+    private class MonthlyRow
+    {
+        public string Month   { get; set; } = "";
+        public int    Total   { get; set; }
+        public int    Paid    { get; set; }
+        public int    Pending { get; set; }
+        public int    Overdue { get; set; }
+        public decimal Revenue { get; set; }
+    }
+}
