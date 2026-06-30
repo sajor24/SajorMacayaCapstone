@@ -1,4 +1,4 @@
-﻿@page "/admin-accounts"
+@page "/admin-accounts"
 @layout AdminLayout
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
@@ -11,7 +11,7 @@
 @inject IUpdate_User update
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IGetAll_Subscription subscription
-@attribute [Authorize(Roles = "Admin")]
+@attribute [Authorize(Roles = "Admin,Staff")]
 
 <div class="sub-wrapper">
 
@@ -22,7 +22,7 @@
             <p>Manage your internet billing system</p>
         </div>
         <div class="topnav-right">
-            <div class="avatar">👤</div>
+            <div class="avatar">??</div>
         </div>
     </div>
 
@@ -118,7 +118,7 @@
     <div class="modal-backdrop-custom" @onclick="CancelDelete"></div>
     <div class="modal-box shadow-lg" style="width: 420px;">
         <div class="text-center py-2">
-            <div style="font-size: 3rem;">⚠️</div>
+            <div style="font-size: 3rem;">??</div>
             <h5 class="fw-bold mt-2">Delete Subscriber?</h5>
             <p class="text-muted mt-1">Are you sure you want to delete <strong>@deleteTargetName</strong>? This action cannot be undone.</p>
         </div>

@@ -1,8 +1,144 @@
-﻿@layout EmptyLayout
+﻿@page "/staff-dashboard"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Domain.ICommands
+@using Domain.Models
+@attribute [Authorize(Roles = "Staff")]
+@inject NavigationManager _Nav
+@layout StaffLayout
+@using BillTixWebApp.Components.Layout
+@inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IGetAll_User getAll
+@inject IGetRecent_Billing getRecentBilling
+@inject IGetAll_Billing getAllBilling
 
-@page "/staff-dashboard"
-<h1>Staff</h1>
+<PageTitle>Admin Dashboard - BillTix</PageTitle>
+
+
+<div class="wrapper">
+
+    <div class="topnav">
+        <div class="topnav-left">
+            <h2>Welcome, @username</h2>
+            <p>Manage your internet billing system</p>
+        </div>
+    </div>
+
+    <div class="content">
+        <h1>Dashboard</h1>
+
+        <div class="stat-cards">
+            <div class="stat-card">
+                <div>
+                    <div class="label">Total Subscribers</div>
+                    <div class="value">@totalSubscribers</div>
+                    <div class="trend">Active accounts</div>
+                </div>
+                <div class="stat-icon icon-blue">👥</div>
+            </div>
+            <div class="stat-card">
+                <div>
+                    <div class="label">Total Revenue</div>
+                    <div class="value">₱@totalRevenue.ToString("N2")</div>
+                    <div class="trend">Paid billing total</div>
+                </div>
+                <div class="stat-icon icon-green">💲</div>
+            </div>
+            <div class="stat-card">
+                <div>
+                    <div class="label">Pending Bills</div>
+                    <div class="value">@pendingBills</div>
+                </div>
+                <div class="stat-icon icon-orange">🪪</div>
+            </div>
+        </div>
+
+        <div class="bottom-grid">
+
+            <div class="card">
+                <div class="card-title">Recent Transactions</div>
+                <div class="card-sub">Latest payment activities</div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Transaction ID</th>
+                                <th>Subscriber</th>
+                                <th>Amount</th>
+                                <th>Method</th>
+                                <th>Paid at</th>
+
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in bill)
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@item.BillingId</td>
+                                    <td>@item.FirstName @item.LastName</td>
+                                    <td>₱@item.Amount.ToString("N2")</td>
+                                    <td class="text-muted">@(item.PaymentMethod ?? "—")</td>
+                                    <td class="text-muted">@(item.PaidAt?.ToString("MMM dd, yyyy") ?? "—")</td>
+                                </tr>
+                            }
+                        </tbody>
+
+                    </table>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+</div>
 
 @code {
+    private string username = "Admin";
+    private int totalSubscribers = 0;
+    private decimal totalRevenue = 0;
+    private int pendingBills = 0;
+    private IEnumerable<Billing> transactions = new List<Billing>();
+    private List<Billing> bill = new();
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBillings();
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity?.IsAuthenticated == true)
+            username = user.Identity.Name ?? "Admin";
+
+        var users = await getAll.ExecuteAsync();
+
+
+
+        totalSubscribers = users?.Count(x => x.Role == "Subscriber") ?? 0;
+
+        try
+        {
+            var allBillings = await getAllBilling.ExecuteAsync();
+            if (allBillings != null)
+            {
+                totalRevenue = allBillings.Where(x => x.Status == "Paid").Sum(x => x.Amount);
+                pendingBills = allBillings.Count(x => x.Status == "Pending");
+            }
+
+            var recent = await getRecentBilling.ExecuteAsync(5);
+        }
+        catch
+        {
+            // Billing table may not have data yet
+        }
+
+    }
+    async Task LoadBillings()
+    {
+        var result = await getAllBilling.ExecuteAsync();
+        bill = result?.ToList() ?? new();
+    }
+
+   
 
 }

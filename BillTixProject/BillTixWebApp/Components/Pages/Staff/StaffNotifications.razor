@@ -1,0 +1,278 @@
+@page "/staff-notifications"
+@layout StaffLayout
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Domain.ICommands
+@using Domain.Models
+
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Staff")]
+@inject IGetAll_User getUsers
+@inject ICreate_Notification createNotif
+@inject IGetAll_Notification getAllNotifs
+@inject IDelete_Notification deleteNotif
+@inject AuthenticationStateProvider AuthStateProvider
+
+<div class="sub-wrapper">
+
+    <div class="topnav">
+        <div class="topnav-left">
+            <h2>Send Notifications</h2>
+            <p>Send messages to subscribers</p>
+        </div>
+    </div>
+
+    <div class="page-content">
+
+        @if (!string.IsNullOrEmpty(message))
+        {
+            <div class="alert @(isError ? "alert-danger" : "alert-success") alert-dismissible mb-4">
+                @message
+                <button type="button" class="btn-close" @onclick="() => message = string.Empty"></button>
+            </div>
+        }
+
+        <div class="row g-4">
+
+            <!-- SEND FORM -->
+            <div class="col-lg-5">
+                <div class="form-card">
+                    <div class="form-card-title">
+                        <i class="bi bi-send-fill me-2"></i> New Notification
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Send To <span class="text-danger">*</span></label>
+                        <select class="form-select" @bind="selectedUserId">
+                            <option value="">— Select Subscriber —</option>
+                            <option value="ALL">All Subscribers</option>
+                            @foreach (var sub in subscribers)
+                            {
+                                <option value="@sub.UserId">@sub.FirstName @sub.LastName (@sub.UserId)</option>
+                            }
+                        </select>
+                        @if (selectedUserId == "ALL")
+                        {
+                            <small class="text-warning fw-semibold">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                This will send to all @subscribers.Count subscribers.
+                            </small>
+                        }
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+                        <input class="form-control" placeholder="e.g. Payment Reminder" @bind="title" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Message <span class="text-danger">*</span></label>
+                        <textarea class="form-control" rows="4" placeholder="Type your message here..." @bind="messageText"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Quick Templates</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button class="btn-template" @onclick='() => UseTemplate("Payment Reminder", "This is a friendly reminder that your bill is due soon. Please settle your payment to avoid service interruption.")'>
+                                💳 Payment Reminder
+                            </button>
+                            <button class="btn-template" @onclick='() => UseTemplate("Service Maintenance", "We will be conducting scheduled maintenance. You may experience brief service interruptions. We apologize for any inconvenience.")'>
+                                🔧 Maintenance
+                            </button>
+                            <button class="btn-template" @onclick='() => UseTemplate("Account Notice", "Please update your account information to ensure uninterrupted service.")'>
+                                👤 Account Notice
+                            </button>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary w-100 mt-2" @onclick="SendNotification" disabled="@isSending">
+                        @if (isSending)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        <i class="bi bi-send-fill me-1"></i>
+                        @if (isSending)
+                        {
+                            @(selectedUserId == "ALL" ? "Sending to all..." : "Sending...")
+                        }
+                        else
+                        {
+                            @(selectedUserId == "ALL" ? $"Send to All ({subscribers.Count})" : "Send Notification")
+                        }
+                    </button>
+                </div>
+            </div>
+
+            <!-- SENT HISTORY -->
+            <div class="col-lg-7">
+                <div class="table-card">
+                    <div class="fw-semibold mb-3" style="color:#111;">
+                        Sent Notifications
+                        <small class="text-muted fw-normal ms-2">(@notifications.Count total)</small>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="sub-table">
+                            <thead>
+                                <tr>
+                                    <th>Subscriber</th>
+                                    <th>Title</th>
+                                    <th>Message</th>
+                                    <th>Read</th>
+                                    <th>Sent At</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var n in notifications)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold">@n.FirstName @n.LastName</div>
+                                            <small class="text-muted">@n.UserId</small>
+                                        </td>
+                                        <td class="fw-semibold">@n.Title</td>
+                                        <td class="text-muted" style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">@n.Message</td>
+                                        <td>
+                                            @if (n.IsRead)
+                                            {
+                                                <span class="status-badge badge-read">Read</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="status-badge badge-unread">Unread</span>
+                                            }
+                                        </td>
+                                        <td class="text-muted">@n.CreatedAt.ToString("MMM dd, yyyy hh:mm tt")</td>
+                                        <td>
+                                            <button class="btn btn-outline-danger btn-sm" @onclick="() => DeleteNotif(n)" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                                @if (!notifications.Any())
+                                {
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">No notifications sent yet.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+ 
+
+@code {
+    private List<Users> subscribers = new();
+    private List<Notification> notifications = new();
+    private string selectedUserId = string.Empty;
+    private string title = string.Empty;
+    private string messageText = string.Empty;
+    private string message = string.Empty;
+    private bool isError = false;
+    private bool isSending = false;
+    private string staffUsername = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        staffUsername = authState.User.Identity?.Name ?? "Staff";
+
+        var users = await getUsers.ExecuteAsync();
+        subscribers = users?.Where(x => x.Role == "Subscriber").ToList() ?? new();
+
+        await LoadNotifications();
+    }
+
+    async Task LoadNotifications()
+    {
+        var result = await getAllNotifs.ExecuteAsync();
+        notifications = result?.ToList() ?? new();
+    }
+
+    async Task DeleteNotif(Notification n)
+    {
+        try
+        {
+            await deleteNotif.ExecuteAsync(n);
+            notifications.Remove(n);
+            message = "Notification deleted.";
+            isError = false;
+        }
+        catch (Exception ex)
+        {
+            message = $"Error: {ex.Message}";
+            isError = true;
+        }
+    }
+
+    void UseTemplate(string t, string m)
+    {
+        title = t;
+        messageText = m;
+    }
+
+    async Task SendNotification()
+    {
+        if (string.IsNullOrWhiteSpace(selectedUserId))
+        {
+            message = "Please select a subscriber.";
+            isError = true;
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(messageText))
+        {
+            message = "Title and message are required.";
+            isError = true;
+            return;
+        }
+
+        isSending = true;
+        try
+        {
+            if (selectedUserId == "ALL")
+            {
+                // Send to every subscriber
+                foreach (var sub in subscribers)
+                {
+                    await createNotif.ExecuteAsync(new Notification
+                    {
+                        UserId  = sub.UserId,
+                        SentBy  = staffUsername,
+                        Title   = title,
+                        Message = messageText
+                    });
+                }
+                message = $"Notification sent to all {subscribers.Count} subscribers!";
+            }
+            else
+            {
+                await createNotif.ExecuteAsync(new Notification
+                {
+                    UserId  = selectedUserId,
+                    SentBy  = staffUsername,
+                    Title   = title,
+                    Message = messageText
+                });
+                message = "Notification sent successfully!";
+            }
+
+            isError = false;
+            await LoadNotifications();
+            selectedUserId = string.Empty;
+            title = string.Empty;
+            messageText = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            message = $"Error: {ex.Message}";
+            isError = true;
+        }
+        isSending = false;
+    }
+}

@@ -1,0 +1,423 @@
+@page "/sub-notification"
+@layout SubscriberLayout
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Domain.ICommands
+@using Domain.Models
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Subscriber")]
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IGetAll_User getAll
+@inject IGetByUser_Billing getBillings
+@inject IGetByUser_Subscription getSubscription
+@inject IGetAll_UpgradeRequest getAllRequests
+@inject IGetByUser_Notification getNotifications
+@inject IMarkRead_Notification markRead
+
+<div class="notif-wrapper">
+
+    <div class="notif-header">
+        <div>
+            <h3 class="fw-bold mb-0">Notifications</h3>
+            <p class="text-muted">Your billing and subscription alerts</p>
+        </div>
+        @if (notifications.Any() || manualNotifs.Any(x => !x.IsRead))
+        {
+            <span class="notif-count">@(notifications.Count + manualNotifs.Count(x => !x.IsRead))</span>
+        }
+    </div>
+
+    @if (!_loaded)
+    {
+        <div class="text-center text-muted py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2">Loading notifications...</p>
+        </div>
+    }
+    else if (!notifications.Any())
+    {
+        <div class="notif-empty">
+            <div style="font-size:3rem;">🔔</div>
+            <p class="text-muted mt-2">You're all caught up! No notifications.</p>
+        </div>
+    }
+    else
+    {
+        <!-- Manual notifications from Staff -->
+        @if (manualNotifs.Any())
+        {
+            <div class="notif-section-label">📨 Messages from Staff</div>
+            <div class="notif-list mb-4">
+                @foreach (var n in manualNotifs)
+                {
+                    <div class="notif-item @(n.IsRead ? "notif-read" : "notif-info")" @onclick="() => MarkAsRead(n)">
+                        <div class="notif-icon">📩</div>
+                        <div class="notif-body">
+                            <div class="notif-title">
+                                @n.Title
+                                @if (!n.IsRead)
+                                {
+                                    <span class="unread-dot"></span>
+                                }
+                            </div>
+                            <div class="notif-message">@n.Message</div>
+                            <div class="notif-time">From: @n.SentBy &nbsp;·&nbsp; @n.CreatedAt.ToString("MMM dd, yyyy hh:mm tt")</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- System notifications -->
+        @if (notifications.Any())
+        {
+            <div class="notif-section-label">🔔 System Alerts</div>
+            <div class="notif-list">
+                @foreach (var n in notifications)
+                {
+                    <div class="notif-item @n.TypeClass">
+                        <div class="notif-icon">@n.Icon</div>
+                        <div class="notif-body">
+                            <div class="notif-title">@n.Title</div>
+                            <div class="notif-message">@n.Message</div>
+                            <div class="notif-time">@n.Time</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (!manualNotifs.Any() && !notifications.Any())
+        {
+            <div class="notif-empty">
+                <div style="font-size:3rem;">🔔</div>
+                <p class="text-muted mt-2">You're all caught up! No notifications.</p>
+            </div>
+        }
+    }
+
+</div>
+
+<style>
+    .notif-wrapper {
+        padding: 32px;
+        background: #f5f6fa;
+        min-height: 100vh;
+    }
+
+    .notif-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 28px;
+    }
+
+    .notif-header h3 { color: #111; font-size: 1.5rem; }
+
+    .notif-count {
+        background: #ef4444;
+        color: white;
+        font-size: .8rem;
+        font-weight: 700;
+        padding: 4px 12px;
+        border-radius: 20px;
+    }
+
+    .notif-empty {
+        text-align: center;
+        padding: 60px 0;
+    }
+
+    .notif-list {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        max-width: 720px;
+    }
+
+    .notif-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        background: white;
+        border-radius: 14px;
+        padding: 18px 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,.05);
+        border-left: 4px solid #e5e7eb;
+        transition: transform .15s;
+    }
+
+    .notif-item:hover { transform: translateX(4px); }
+
+    .notif-item.notif-danger  { border-left-color: #ef4444; }
+    .notif-item.notif-warning { border-left-color: #f59e0b; }
+    .notif-item.notif-success { border-left-color: #22c55e; }
+    .notif-item.notif-info    { border-left-color: #3b82f6; }
+    .notif-item.notif-purple  { border-left-color: #8b5cf6; }
+
+    .notif-icon { font-size: 1.8rem; min-width: 40px; text-align: center; }
+
+    .notif-body { flex: 1; }
+
+    .notif-title {
+        font-weight: 700;
+        color: #111;
+        font-size: .98rem;
+        margin-bottom: 3px;
+    }
+
+    .notif-message {
+        font-size: .88rem;
+        color: #555;
+        line-height: 1.5;
+    }
+
+    .notif-time {
+        font-size: .78rem;
+        color: #aaa;
+        margin-top: 6px;
+    }
+
+    @@media (max-width: 800px) {
+        .notif-wrapper { padding: 70px 16px 16px; }
+    }
+
+    .notif-item.notif-read {
+        border-left-color: #e5e7eb;
+        opacity: 0.7;
+    }
+
+    .notif-section-label {
+        font-size: .82rem;
+        font-weight: 700;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        margin-bottom: 10px;
+    }
+
+    .unread-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        background: #ef4444;
+        border-radius: 50%;
+        margin-left: 6px;
+        vertical-align: middle;
+    }
+        border-left-color: #e5e7eb;
+        opacity: 0.7;
+    }
+
+    .notif-section-label {
+        font-size: .82rem;
+        font-weight: 700;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        margin-bottom: 10px;
+    }
+
+    .unread-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        background: #ef4444;
+        border-radius: 50%;
+        margin-left: 6px;
+        vertical-align: middle;
+    }
+</style>
+
+@code {
+    private List<NotifItem> notifications = new();
+    private List<Notification> manualNotifs = new();
+    private bool _loaded = false;
+    private string userId = string.Empty;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _loaded) return;
+        _loaded = true;
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var username = user.Identity.Name ?? "";
+            var users = await getAll.ExecuteAsync();
+            var currentUser = users?.FirstOrDefault(x => x.Username == username);
+
+            if (currentUser != null)
+            {
+                userId = currentUser.UserId ?? "";
+
+                // Load manual notifications from staff
+                var manualResult = await getNotifications.ExecuteAsync(userId);
+                manualNotifs = manualResult?.ToList() ?? new();
+
+                await BuildNotifications();
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    async Task BuildNotifications()
+    {
+        notifications.Clear();
+        var today = DateTime.Today;
+
+        // ── Billing notifications ──
+        var billingResult = await getBillings.ExecuteAsync(userId);
+        var bills = billingResult?.ToList() ?? new();
+
+        // Overdue bills
+        foreach (var bill in bills.Where(x => x.Status == "Overdue"))
+        {
+            notifications.Add(new NotifItem
+            {
+                Icon      = "🔴",
+                TypeClass = "notif-danger",
+                Title     = "Overdue Bill",
+                Message   = $"Bill #{bill.BillingId} of ₱{bill.Amount:N2} is overdue" +
+                            (bill.DueDate.HasValue ? $" since {bill.DueDate.Value:MMM dd, yyyy}." : "."),
+                Time      = "Action required"
+            });
+        }
+
+        // Due within 7 days
+        foreach (var bill in bills.Where(x => x.Status == "Pending"
+                                           && x.DueDate.HasValue
+                                           && x.DueDate.Value.Date >= today
+                                           && x.DueDate.Value.Date <= today.AddDays(7)))
+        {
+            var daysLeft = (bill.DueDate!.Value.Date - today).Days;
+            notifications.Add(new NotifItem
+            {
+                Icon      = "⚠️",
+                TypeClass = "notif-warning",
+                Title     = "Bill Due Soon",
+                Message   = $"Bill #{bill.BillingId} of ₱{bill.Amount:N2} is due in {daysLeft} day{(daysLeft == 1 ? "" : "s")} ({bill.DueDate.Value:MMM dd, yyyy}).",
+                Time      = $"Due {bill.DueDate.Value:MMM dd, yyyy}"
+            });
+        }
+
+        // Recently paid bills (last 7 days)
+        foreach (var bill in bills.Where(x => x.Status == "Paid"
+                                           && x.PaidAt.HasValue
+                                           && x.PaidAt.Value >= DateTime.Now.AddDays(-7)))
+        {
+            notifications.Add(new NotifItem
+            {
+                Icon      = "✅",
+                TypeClass = "notif-success",
+                Title     = "Payment Confirmed",
+                Message   = $"Bill #{bill.BillingId} of ₱{bill.Amount:N2} has been marked as paid. Thank you!",
+                Time      = bill.PaidAt!.Value.ToString("MMM dd, yyyy")
+            });
+        }
+
+        // ── Subscription notifications ──
+        var subsResult = await getSubscription.ExecuteAsync(userId);
+        var activeSub  = subsResult?.FirstOrDefault(x => x.Status == "Active");
+
+        if (activeSub != null)
+        {
+            // Subscription expiring within 7 days
+            if (activeSub.EndDate.HasValue)
+            {
+                var daysToExpire = (activeSub.EndDate.Value.Date - today).Days;
+                if (daysToExpire >= 0 && daysToExpire <= 7)
+                {
+                    notifications.Add(new NotifItem
+                    {
+                        Icon      = "📅",
+                        TypeClass = "notif-warning",
+                        Title     = "Subscription Expiring Soon",
+                        Message   = $"Your {activeSub.PlanName} plan expires in {daysToExpire} day{(daysToExpire == 1 ? "" : "s")} on {activeSub.EndDate.Value:MMM dd, yyyy}.",
+                        Time      = activeSub.EndDate.Value.ToString("MMM dd, yyyy")
+                    });
+                }
+                else if (daysToExpire < 0)
+                {
+                    notifications.Add(new NotifItem
+                    {
+                        Icon      = "❌",
+                        TypeClass = "notif-danger",
+                        Title     = "Subscription Expired",
+                        Message   = $"Your {activeSub.PlanName} plan has expired. Please contact support or pay your bill to renew.",
+                        Time      = "Expired"
+                    });
+                }
+            }
+        }
+
+        // ── Upgrade Request notifications ──
+        var allReqs   = await getAllRequests.ExecuteAsync();
+        var myRequests = allReqs?.Where(x => x.UserId == userId).ToList() ?? new();
+
+        foreach (var req in myRequests.Where(x => x.Status == "Approved"
+                                               && x.ProcessedAt.HasValue
+                                               && x.ProcessedAt.Value >= DateTime.Now.AddDays(-14)))
+        {
+            notifications.Add(new NotifItem
+            {
+                Icon      = "🎉",
+                TypeClass = "notif-success",
+                Title     = "Upgrade Approved!",
+                Message   = $"Your upgrade request to {req.PlanName} has been approved. Your plan is now active.",
+                Time      = req.ProcessedAt!.Value.ToString("MMM dd, yyyy")
+            });
+        }
+
+        foreach (var req in myRequests.Where(x => x.Status == "Rejected"
+                                               && x.ProcessedAt.HasValue
+                                               && x.ProcessedAt.Value >= DateTime.Now.AddDays(-14)))
+        {
+            notifications.Add(new NotifItem
+            {
+                Icon      = "❌",
+                TypeClass = "notif-danger",
+                Title     = "Upgrade Rejected",
+                Message   = $"Your upgrade request to {req.PlanName} was rejected. Please contact support for details.",
+                Time      = req.ProcessedAt!.Value.ToString("MMM dd, yyyy")
+            });
+        }
+
+        foreach (var req in myRequests.Where(x => x.Status == "Pending"))
+        {
+            notifications.Add(new NotifItem
+            {
+                Icon      = "⏳",
+                TypeClass = "notif-purple",
+                Title     = "Upgrade Request Pending",
+                Message   = $"Your upgrade request to {req.PlanName} is waiting for admin approval.",
+                Time      = req.RequestedAt.ToString("MMM dd, yyyy")
+            });
+        }
+
+        // Sort: danger first, then warning, then others
+        notifications = notifications
+            .OrderBy(x => x.TypeClass == "notif-danger"  ? 0 :
+                          x.TypeClass == "notif-warning" ? 1 : 2)
+            .ToList();
+    }
+
+    async Task MarkAsRead(Notification n)
+    {
+        if (n.IsRead) return;
+        n.IsRead = true;
+        await markRead.ExecuteAsync(n);
+    }
+
+    private class NotifItem
+    {
+        public string Icon      { get; set; } = "";
+        public string TypeClass { get; set; } = "";
+        public string Title     { get; set; } = "";
+        public string Message   { get; set; } = "";
+        public string Time      { get; set; } = "";
+    }
+}

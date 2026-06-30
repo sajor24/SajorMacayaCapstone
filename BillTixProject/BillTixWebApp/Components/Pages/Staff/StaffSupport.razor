@@ -1,0 +1,246 @@
+@page "/staff-support"
+@layout StaffLayout
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Domain.ICommands
+@using Domain.Models
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Staff")]
+@inject IGetAll_SupportMessage getAllMessages
+@inject ICreate_SupportMessage sendMessage
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IJSRuntime JS
+
+<div class="sub-wrapper">
+
+    <div class="topnav">
+        <div class="topnav-left">
+            <h2>Support Chat</h2>
+            <p>Reply to subscriber messages</p>
+        </div>
+    </div>
+
+    <div class="page-content">
+        <div class="row g-0" style="height: calc(100vh - 140px);">
+
+            <!-- Subscriber list -->
+            <div class="col-md-3 border-end">
+                <div class="convo-list">
+                    <div class="convo-search p-2">
+                        <input class="form-control form-control-sm" placeholder="Search subscriber..." @bind="searchText" @bind:event="oninput" />
+                    </div>
+                    @foreach (var sub in filteredSubscribers)
+                    {
+                        var hasUnread = allMessages.Any(x => x.UserId == sub.UserId && x.SenderRole == "Subscriber");
+                        <div class="convo-item @(selectedUserId == sub.UserId ? "convo-active" : "")"
+                             @onclick="() => SelectSubscriber(sub)">
+                            <div class="convo-avatar">@sub.FirstName?[0]@sub.LastName?[0]</div>
+                            <div class="convo-info">
+                                <div class="convo-name">@sub.FirstName @sub.LastName</div>
+                                <div class="convo-preview">
+                                    @(currentConvo.LastOrDefault()?.Message?.Length > 30
+                                        ? currentConvo.LastOrDefault()?.Message?[..30] + "..."
+                                        : currentConvo.LastOrDefault()?.Message ?? "No messages yet")
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    @if (!filteredSubscribers.Any())
+                    {
+                        <p class="text-muted text-center p-3 small">No subscribers.</p>
+                    }
+                </div>
+            </div>
+
+            <!-- Chat area -->
+            <div class="col-md-9 d-flex flex-column">
+                @if (selectedUserId == string.Empty)
+                {
+                    <div class="d-flex align-items-center justify-content-center h-100 text-muted">
+                        <div class="text-center">
+                            <div style="font-size:3rem;">💬</div>
+                            <p>Select a subscriber to start chatting</p>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="chat-header px-4 py-3 border-bottom">
+                        <strong>@selectedName</strong>
+                        <small class="text-muted ms-2">@selectedUserId</small>
+                    </div>
+
+                    <div class="chat-messages" id="staff-chat-box">
+                        @foreach (var msg in currentConvo)
+                        {
+                            var isStaff = msg.SenderRole == "Staff";
+                            <div class="chat-bubble-wrap @(isStaff ? "me" : "sub")">
+                                <div class="chat-bubble @(isStaff ? "bubble-staff" : "bubble-sub")">
+                                    @if (!isStaff)
+                                    {
+                                        <div class="chat-sender">👤 @msg.SentBy</div>
+                                    }
+                                    <div class="chat-text">@msg.Message</div>
+                                    <div class="chat-time">@msg.CreatedAt.ToString("MMM dd, hh:mm tt")</div>
+                                </div>
+                            </div>
+                        }
+                        @if (!currentConvo.Any())
+                        {
+                            <p class="text-muted text-center mt-5">No messages yet.</p>
+                        }
+                    </div>
+
+                    <div class="chat-input-area">
+                        <textarea class="chat-input"
+                                  placeholder="Type a reply..."
+                                  @bind="replyText"
+                                  @onkeydown="HandleKeyDown"
+                                  rows="1"></textarea>
+                        <button class="chat-send-btn" @onclick="SendReply" disabled="@isSending">
+                            @if (isSending)
+                            {
+                                <span class="spinner-border spinner-border-sm"></span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-send-fill"></i>
+                            }
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .sub-wrapper { min-height: 100vh; background: #f5f6fa; display: flex; flex-direction: column; }
+    .topnav { background: white; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4f46e5; }
+    .topnav-left h2 { font-size: 1.2rem; font-weight: 700; color: #111; margin: 0; }
+    .topnav-left p { font-size: .82rem; color: #4f46e5; margin: 0; }
+    .page-content { flex: 1; background: white; border-radius: 16px; margin: 20px 32px; box-shadow: 0 4px 20px rgba(0,0,0,.07); overflow: hidden; }
+
+    .convo-list { height: 100%; overflow-y: auto; }
+    .convo-search { border-bottom: 1px solid #f3f4f6; }
+    .convo-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; border-bottom: 1px solid #f9fafb; transition: .15s; }
+    .convo-item:hover { background: #f5f6fa; }
+    .convo-active { background: #eef2ff !important; border-left: 3px solid #4f46e5; }
+    .convo-avatar { width: 40px; height: 40px; background: #4f46e5; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .85rem; flex-shrink: 0; }
+    .convo-name { font-weight: 600; font-size: .9rem; color: #111; }
+    .convo-preview { font-size: .78rem; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+
+    .chat-header { background: #fafafa; }
+    .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+    .chat-bubble-wrap { display: flex; }
+    .chat-bubble-wrap.me { justify-content: flex-end; }
+    .chat-bubble-wrap.sub { justify-content: flex-start; }
+    .chat-bubble { max-width: 60%; padding: 10px 14px; border-radius: 16px; font-size: .9rem; line-height: 1.5; }
+    .bubble-staff { background: #4f46e5; color: white; border-bottom-right-radius: 4px; }
+    .bubble-sub { background: #f3f4f6; color: #111; border-bottom-left-radius: 4px; }
+    .chat-sender { font-size: .72rem; font-weight: 700; color: #4f46e5; margin-bottom: 3px; }
+    .chat-time { font-size: .68rem; opacity: .6; margin-top: 3px; text-align: right; }
+    .bubble-sub .chat-time { text-align: left; }
+
+    .chat-input-area { display: flex; align-items: flex-end; gap: 10px; padding: 14px 20px; border-top: 1px solid #f3f4f6; }
+    .chat-input { flex: 1; border: 1.5px solid #e5e7eb; border-radius: 12px; padding: 10px 14px; font-size: .9rem; resize: none; outline: none; transition: border .2s; max-height: 100px; overflow-y: auto; }
+    .chat-input:focus { border-color: #4f46e5; }
+    .chat-send-btn { background: #4f46e5; color: white; border: none; border-radius: 12px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 1rem; cursor: pointer; transition: .2s; flex-shrink: 0; }
+    .chat-send-btn:hover:not(:disabled) { background: #4338ca; }
+    .chat-send-btn:disabled { opacity: 0.6; }
+
+    @@media (max-width: 800px) {
+        .page-content { margin: 10px; }
+    }
+</style>
+
+@code {
+    private List<SupportMessage> allMessages = new();
+    private List<Users> subscribers = new();
+    private string selectedUserId = string.Empty;
+    private string selectedName = string.Empty;
+    private string replyText = string.Empty;
+    private string searchText = string.Empty;
+    private string staffUsername = string.Empty;
+    private bool isSending = false;
+
+    private List<SupportMessage> currentConvo =>
+        allMessages.Where(x => x.UserId == selectedUserId)
+                   .OrderBy(x => x.CreatedAt)
+                   .ToList();
+
+    private List<Users> filteredSubscribers =>
+        string.IsNullOrWhiteSpace(searchText)
+        ? subscribers
+        : subscribers.Where(x =>
+            (x.FirstName + " " + x.LastName).Contains(searchText, StringComparison.OrdinalIgnoreCase)
+            || (x.UserId ?? "").Contains(searchText, StringComparison.OrdinalIgnoreCase))
+          .ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        staffUsername = authState.User.Identity?.Name ?? "Staff";
+        await LoadAll();
+    }
+
+    async Task LoadAll()
+    {
+        // Get all subscribers who have sent messages
+        var msgs = await getAllMessages.ExecuteAsync();
+        allMessages = msgs?.ToList() ?? new();
+
+        // Build unique subscriber list from messages
+        subscribers = allMessages
+            .GroupBy(x => x.UserId)
+            .Select(g => new Users
+            {
+                UserId    = g.Key,
+                FirstName = g.First().FirstName,
+                LastName  = g.First().LastName,
+                Username  = g.First().Username
+            })
+            .ToList();
+    }
+
+    async Task SelectSubscriber(Users sub)
+    {
+        selectedUserId = sub.UserId ?? "";
+        selectedName   = $"{sub.FirstName} {sub.LastName}";
+        await Task.Delay(50);
+        await JS.InvokeVoidAsync("scrollToBottom", "staff-chat-box");
+    }
+
+    async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+            await SendReply();
+    }
+
+    async Task SendReply()
+    {
+        if (string.IsNullOrWhiteSpace(replyText) || isSending) return;
+
+        isSending = true;
+        var text = replyText.Trim();
+        replyText = string.Empty;
+
+        try
+        {
+            await sendMessage.ExecuteAsync(new SupportMessage
+            {
+                UserId     = selectedUserId,
+                SenderRole = "Staff",
+                SentBy     = staffUsername,
+                Message    = text
+            });
+
+            await LoadAll();
+            StateHasChanged();
+            await JS.InvokeVoidAsync("scrollToBottom", "staff-chat-box");
+        }
+        catch { }
+
+        isSending = false;
+    }
+}

@@ -43,6 +43,24 @@ builder.Services.AddScoped<IUpdate_UpgradeRequest, Update_UpgradeRequest>();
 builder.Services.AddScoped<IGetAll_UpgradeRequest, GetAll_UpgradeRequest>();
 builder.Services.AddScoped<IDelete_UpgradeRequest, Delete_UpgradeRequest>();
 
+// Notifications
+builder.Services.AddScoped<ICreate_Notification, Create_Notification>();
+builder.Services.AddScoped<IGetByUser_Notification, GetByUser_Notification>();
+builder.Services.AddScoped<IMarkRead_Notification, MarkRead_Notification>();
+builder.Services.AddScoped<IGetAll_Notification, GetAll_Notification>();
+builder.Services.AddScoped<IDelete_Notification, Delete_Notification>();
+
+// Support
+builder.Services.AddScoped<ICreate_SupportMessage, Create_SupportMessage>();
+builder.Services.AddScoped<IGetByUser_SupportMessage, GetByUser_SupportMessage>();
+builder.Services.AddScoped<IGetAll_SupportMessage, GetAll_SupportMessage>();
+
+// Service Requests
+builder.Services.AddScoped<ICreate_ServiceRequest, Create_ServiceRequest>();
+builder.Services.AddScoped<IGetByUser_ServiceRequest, GetByUser_ServiceRequest>();
+builder.Services.AddScoped<IGetAll_ServiceRequest, GetAll_ServiceRequest>();
+builder.Services.AddScoped<IUpdate_ServiceRequest, Update_ServiceRequest>();
+
 // Razor Components
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();

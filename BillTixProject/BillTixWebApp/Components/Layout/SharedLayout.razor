@@ -1,0 +1,19 @@
+@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
+@using Microsoft.AspNetCore.Components.Authorization
+
+<AuthorizeView Roles="Staff">
+    <Authorized>
+        <StaffLayout>
+            @Body
+        </StaffLayout>
+    </Authorized>
+</AuthorizeView>
+
+<AuthorizeView Roles="Admin">
+    <Authorized>
+        <AdminLayout>
+            @Body
+        </AdminLayout>
+    </Authorized>
+</AuthorizeView>

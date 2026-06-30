@@ -1,5 +1,5 @@
-@page "/admin-subscriber"
-@layout AdminLayout
+ï»¿@page "/staff-subscriber"
+@layout StaffLayout
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using Domain.ICommands
@@ -8,13 +8,13 @@
 @inject IDelete_User delete
 @inject IGetAll_User getAll
 @inject ICreate_User create
-@inject IUpdate_User update 
+@inject IUpdate_User update
 @inject IGetAll_Subscription getAllSubscription
 @inject ICreate_Subscription createSubscription
 @inject IUpdate_Subscription updateSubscription
 @inject IDelete_Subscription deleteSubscription
 @inject AuthenticationStateProvider AuthStateProvider
-@attribute [Authorize(Roles = "Admin")]
+@attribute [Authorize(Roles = "Staff")]
 
 <div class="sub-wrapper">
 
@@ -84,7 +84,7 @@
                                 <td>@item.FirstName @item.LastName</td>
                                 <td class="text-muted">@item.Email</td>
                                 <td class="text-muted">@item.ContactNumber</td>
-                                <td>@(sub?.PlanName ?? "—")</td>
+                                <td>@(sub?.PlanName ?? "â€”")</td>
                                 <td>
                                     @if (sub != null)
                                     {
@@ -94,10 +94,10 @@
                                     }
                                     else
                                     {
-                                        <span class="text-muted">—</span>
+                                        <span class="text-muted">â€”</span>
                                     }
                                 </td>
-                                <td class="text-muted">@(sub?.EndDate?.ToString("M/d/yyyy") ?? "—")</td>
+                                <td class="text-muted">@(sub?.EndDate?.ToString("M/d/yyyy") ?? "â€”")</td>
                                 <td>
                                     <div class="d-flex gap-2">
                                         <button class="action-btn edit-btn" title="Edit" @onclick="() => EditUser(item)">
@@ -198,9 +198,9 @@
                     <label class="form-label">Plan <span class="text-danger">*</span></label>
                     <select class="form-select" @bind="selectedPlan">
                         <option value="">Select Plan</option>
-                        <option value="@nameof(PlanType.Basic)">Basic — 150 Mbps — ?1,000/mo</option>
-                        <option value="@nameof(PlanType.Standard)">Standard — 200 Mbps — ?1,300/mo</option>
-                        <option value="@nameof(PlanType.Premium)">Premium — 250 Mbps — ?1,500/mo</option>
+                        <option value="@nameof(PlanType.Basic)">Basic â€” 150 Mbps â€” ?1,000/mo</option>
+                        <option value="@nameof(PlanType.Standard)">Standard â€” 200 Mbps â€” ?1,300/mo</option>
+                        <option value="@nameof(PlanType.Premium)">Premium â€” 250 Mbps â€” ?1,500/mo</option>
                     </select>
                 </div>
             }
@@ -332,10 +332,10 @@
         // Pre-fill subscription fields
         var existingSub = subscriptions.FirstOrDefault(x => x.UserId == item.UserId && x.Status == "Active")
                        ?? subscriptions.FirstOrDefault(x => x.UserId == item.UserId);
-        editSubStatus  = existingSub?.Status ?? "Active";
-        editStartDate  = existingSub?.StartDate ?? DateTime.Today;
-        editEndDate    = existingSub?.EndDate;
-        selectedPlan   = string.Empty;
+        editSubStatus = existingSub?.Status ?? "Active";
+        editStartDate = existingSub?.StartDate ?? DateTime.Today;
+        editEndDate = existingSub?.EndDate;
+        selectedPlan = string.Empty;
     }
 
     async Task SaveUser()
@@ -376,36 +376,36 @@
                     var existingSub = subscriptions.FirstOrDefault(x => x.UserId == user.UserId);
                     if (existingSub != null)
                     {
-                        existingSub.PlanName  = selectedPlan;
+                        existingSub.PlanName = selectedPlan;
                         existingSub.PlanPrice = updatedPlan.Price;
                         existingSub.StartDate = editStartDate;
-                        existingSub.EndDate   = editEndDate;
-                        existingSub.Status    = editSubStatus;
+                        existingSub.EndDate = editEndDate;
+                        existingSub.Status = editSubStatus;
                         await updateSubscription.ExecuteAsync(existingSub);
                     }
                     else
                     {
                         var newSub = new Subscription
                         {
-                            UserId    = user.UserId,
-                            PlanName  = selectedPlan,
+                            UserId = user.UserId,
+                            PlanName = selectedPlan,
                             PlanPrice = updatedPlan.Price,
                             StartDate = editStartDate,
-                            EndDate   = editEndDate,
-                            Status    = editSubStatus
+                            EndDate = editEndDate,
+                            Status = editSubStatus
                         };
                         await createSubscription.ExecuteAsync(newSub);
                     }
                 }
                 else
                 {
-                    // No plan change — just update dates/status if sub exists
+                    // No plan change â€” just update dates/status if sub exists
                     var existingSub = subscriptions.FirstOrDefault(x => x.UserId == user.UserId);
                     if (existingSub != null)
                     {
                         existingSub.StartDate = editStartDate;
-                        existingSub.EndDate   = editEndDate;
-                        existingSub.Status    = editSubStatus;
+                        existingSub.EndDate = editEndDate;
+                        existingSub.Status = editSubStatus;
                         await updateSubscription.ExecuteAsync(existingSub);
                     }
                 }

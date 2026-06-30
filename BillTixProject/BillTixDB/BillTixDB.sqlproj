@@ -62,6 +62,8 @@
     <Folder Include="StoredProcedure\InternetPlans\" />
     <Folder Include="Tables" />
     <Folder Include="StoredProcedure\UpgradeRequests\" />
+    <Folder Include="StoredProcedure\Notifications\" />
+    <Folder Include="StoredProcedure\Support\" />
   </ItemGroup>
   <ItemGroup>
     <Build Include="Tables\Users.sql" />
@@ -94,6 +96,16 @@
     <Build Include="StoredProcedure\UpgradeRequests\GetAllUpgradeRequests.sql" />
     <Build Include="StoredProcedure\UpgradeRequests\UpdateUpgradeRequest.sql" />
     <Build Include="StoredProcedure\UpgradeRequests\DeleteUpgradeRequest.sql" />
+    <Build Include="Tables\Notifications.sql" />
+    <Build Include="StoredProcedure\Notifications\CreateNotification.sql" />
+    <Build Include="StoredProcedure\Notifications\GetNotificationsByUser.sql" />
+    <Build Include="StoredProcedure\Notifications\GetAllNotifications.sql" />
+    <Build Include="StoredProcedure\Notifications\MarkNotificationRead.sql" />
+    <Build Include="StoredProcedure\Notifications\DeleteNotification.sql" />
+    <Build Include="Tables\SupportMessages.sql" />
+    <Build Include="StoredProcedure\Support\CreateSupportMessage.sql" />
+    <Build Include="StoredProcedure\Support\GetSupportMessagesByUser.sql" />
+    <Build Include="StoredProcedure\Support\GetAllSupportMessages.sql" />
   </ItemGroup>
   <ItemGroup>
     <None Include="BillTixDB.publish.xml" />

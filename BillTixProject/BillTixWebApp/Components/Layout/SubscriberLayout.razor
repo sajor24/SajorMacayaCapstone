@@ -1,5 +1,11 @@
 ﻿@inherits LayoutComponentBase
 @inject NavigationManager NavigationManager
+@using Microsoft.AspNetCore.Components.Authorization
+@using Domain.ICommands
+@using Domain.Models
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IGetAll_User getAllUsers
+@inject IGetByUser_Notification getNotifications
 
 <div class="admin-container">
 
@@ -31,6 +37,10 @@
             </NavLink>
             <NavLink href="/sub-notification" class="nav-item" ActiveClass="nav-active" @onclick="CloseSidebar">
                 <span>🔔</span> Notification
+                @if (unreadCount > 0)
+                {
+                    <span class="notif-badge">@unreadCount</span>
+                }
             </NavLink>
         </nav>
 
@@ -85,6 +95,22 @@
 
     .nav-item.active, .nav-item.nav-active, .sidebar a.active { background: linear-gradient(90deg,#ae84ff 52%,#7367f0 100%); color: #262248 !important; font-weight: bold !important; }
 
+    .notif-badge {
+        margin-left: auto;
+        background: #ef4444;
+        color: white;
+        font-size: .65rem;
+        font-weight: 700;
+        padding: 1px 6px;
+        border-radius: 10px;
+        min-width: 18px;
+        height: 18px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+    }
+
     .sidebar-footer { padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; }
 
     .logout-item { color: #ff8080 !important; background: rgba(255,80,80,0.08) !important; border: none; width: 100%; text-align: left; cursor: pointer; }
@@ -119,6 +145,29 @@
 @code {
     private bool sidebarOpen = false;
     private bool showLogoutConfirm = false;
+    private int unreadCount = 0;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var username = user.Identity.Name ?? "";
+            var users = await getAllUsers.ExecuteAsync();
+            var currentUser = users?.FirstOrDefault(x => x.Username == username);
+
+            if (currentUser != null)
+            {
+                var notifs = await getNotifications.ExecuteAsync(currentUser.UserId ?? "");
+                unreadCount = notifs?.Count(x => !x.IsRead) ?? 0;
+                StateHasChanged();
+            }
+        }
+    }
 
     void ToggleSidebar() => sidebarOpen = !sidebarOpen;
     void CloseSidebar() => sidebarOpen = false;

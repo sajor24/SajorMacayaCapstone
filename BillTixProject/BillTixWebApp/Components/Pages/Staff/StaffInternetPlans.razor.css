@@ -1,0 +1,135 @@
+﻿.sub-wrapper {
+    min-height: 100vh;
+    background: #f5f6fa;
+    display: flex;
+    flex-direction: column;
+}
+
+.topnav {
+    background: white;
+    padding: 16px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #4f46e5;
+}
+
+.topnav-left h2 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #111;
+    margin: 0;
+}
+
+.topnav-left p {
+    font-size: .82rem;
+    color: #4f46e5;
+    margin: 0;
+}
+
+.topnav-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.page-content {
+    padding: 32px;
+    flex: 1;
+}
+
+.table-card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06);
+}
+
+.sub-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+    .sub-table thead tr {
+        border-bottom: 2px solid #f3f4f6;
+    }
+
+    .sub-table th {
+        text-align: left;
+        padding: 10px 12px;
+        font-size: .82rem;
+        color: #888;
+        font-weight: 600;
+    }
+
+    .sub-table td {
+        padding: 14px 12px;
+        border-bottom: 1px solid #f3f4f6;
+        font-size: .9rem;
+        color: #333;
+    }
+
+    .sub-table tbody tr:hover {
+        background: #fafafa;
+    }
+
+.status-badge {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: .75rem;
+    font-weight: 600;
+}
+
+.badge-active {
+    background: #111827;
+    color: white;
+}
+
+.badge-inactive {
+    background: #f3f4f6;
+    color: #888;
+}
+
+.action-btn {
+    border: 1px solid #e5e7eb;
+    background: white;
+    border-radius: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: .2s;
+    font-size: .9rem;
+}
+
+.edit-btn:hover {
+    background: #f0f0ff;
+    border-color: #4f46e5;
+    color: #4f46e5;
+}
+
+.delete-btn:hover {
+    background: #fff0f0;
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.modal-backdrop-custom {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 1040;
+}
+
+.modal-box {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    width: 620px;
+    max-width: 95vw;
+    z-index: 1050;
+    max-height: 90vh;
+    overflow-y: auto;
+}

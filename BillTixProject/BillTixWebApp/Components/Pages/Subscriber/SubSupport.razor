@@ -1,0 +1,342 @@
+@page "/sub-support"
+@layout SubscriberLayout
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Domain.ICommands
+@using Domain.Models
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Subscriber")]
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IGetAll_User getAll
+@inject IGetByUser_SupportMessage getMessages
+@inject ICreate_SupportMessage sendMessage
+@inject IJSRuntime JS
+
+<div class="support-wrapper">
+
+    <div class="support-header">
+        <div>
+            <h3 class="fw-bold mb-0">Support</h3>
+            <p class="text-muted">Chat with our support team</p>
+        </div>
+        <div class="support-status">
+            <span class="status-dot"></span> Support Online
+        </div>
+    </div>
+
+    <div class="chat-container">
+
+        <!-- Chat messages -->
+        <div class="chat-messages" id="chat-box">
+            @if (!_loaded)
+            {
+                <div class="text-center text-muted py-5">
+                    <div class="spinner-border spinner-border-sm"></div>
+                    <p class="mt-2 small">Loading messages...</p>
+                </div>
+            }
+            else if (!messages.Any())
+            {
+                <div class="chat-empty">
+                    <div style="font-size:2.5rem;">🎧</div>
+                    <p class="text-muted mt-2">No messages yet. Send us a message!</p>
+                    <p class="text-muted small">Our team typically replies within a few hours.</p>
+                </div>
+            }
+            else
+            {
+                @foreach (var msg in messages)
+                {
+                    var isMe = msg.SenderRole == "Subscriber";
+                    <div class="chat-bubble-wrap @(isMe ? "me" : "staff")">
+                        <div class="chat-bubble @(isMe ? "bubble-me" : "bubble-staff")">
+                            @if (!isMe)
+                            {
+                                <div class="chat-sender">🎧 @msg.SentBy</div>
+                            }
+                            <div class="chat-text">@msg.Message</div>
+                            <div class="chat-time">@msg.CreatedAt.ToString("MMM dd, hh:mm tt")</div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+
+        <!-- Input area -->
+        <div class="chat-input-area">
+            <textarea class="chat-input"
+                      placeholder="Type your message..."
+                      @bind="newMessage"
+                      @onkeydown="HandleKeyDown"
+                      rows="1"></textarea>
+            <button class="chat-send-btn" @onclick="SendMessage" disabled="@isSending">
+                @if (isSending)
+                {
+                    <span class="spinner-border spinner-border-sm"></span>
+                }
+                else
+                {
+                    <i class="bi bi-send-fill"></i>
+                }
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .support-wrapper {
+        padding: 32px;
+        background: #f5f6fa;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .support-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .support-header h3 { color: #111; font-size: 1.4rem; }
+
+    .support-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: .85rem;
+        font-weight: 600;
+        color: #22c55e;
+    }
+
+    .status-dot {
+        width: 10px;
+        height: 10px;
+        background: #22c55e;
+        border-radius: 50%;
+        animation: pulse 1.5s infinite;
+    }
+
+    @@keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+    }
+
+    .chat-container {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,.07);
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        overflow: hidden;
+        max-height: calc(100vh - 180px);
+    }
+
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .chat-empty {
+        text-align: center;
+        margin: auto;
+        padding: 40px 0;
+    }
+
+    .chat-bubble-wrap {
+        display: flex;
+    }
+
+    .chat-bubble-wrap.me {
+        justify-content: flex-end;
+    }
+
+    .chat-bubble-wrap.staff {
+        justify-content: flex-start;
+    }
+
+    .chat-bubble {
+        max-width: 65%;
+        padding: 12px 16px;
+        border-radius: 18px;
+        font-size: .92rem;
+        line-height: 1.5;
+    }
+
+    .bubble-me {
+        background: #4f46e5;
+        color: white;
+        border-bottom-right-radius: 4px;
+    }
+
+    .bubble-staff {
+        background: #f3f4f6;
+        color: #111;
+        border-bottom-left-radius: 4px;
+    }
+
+    .chat-sender {
+        font-size: .75rem;
+        font-weight: 700;
+        color: #4f46e5;
+        margin-bottom: 4px;
+    }
+
+    .chat-text {
+        word-break: break-word;
+    }
+
+    .chat-time {
+        font-size: .7rem;
+        opacity: 0.6;
+        margin-top: 4px;
+        text-align: right;
+    }
+
+    .bubble-staff .chat-time {
+        text-align: left;
+    }
+
+    .chat-input-area {
+        display: flex;
+        align-items: flex-end;
+        gap: 10px;
+        padding: 16px 20px;
+        border-top: 1px solid #f3f4f6;
+        background: white;
+    }
+
+    .chat-input {
+        flex: 1;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 10px 14px;
+        font-size: .92rem;
+        resize: none;
+        outline: none;
+        transition: border .2s;
+        max-height: 120px;
+        overflow-y: auto;
+    }
+
+    .chat-input:focus {
+        border-color: #4f46e5;
+    }
+
+    .chat-send-btn {
+        background: #4f46e5;
+        color: white;
+        border: none;
+        border-radius: 12px;
+        width: 46px;
+        height: 46px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: .2s;
+        flex-shrink: 0;
+    }
+
+    .chat-send-btn:hover:not(:disabled) {
+        background: #4338ca;
+        transform: scale(1.05);
+    }
+
+    .chat-send-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    @@media (max-width: 800px) {
+        .support-wrapper { padding: 70px 12px 12px; }
+        .chat-bubble { max-width: 85%; }
+    }
+</style>
+
+@code {
+    private List<SupportMessage> messages = new();
+    private string newMessage = string.Empty;
+    private string userId = string.Empty;
+    private string username = string.Empty;
+    private bool _loaded = false;
+    private bool isSending = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _loaded) return;
+        _loaded = true;
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            username = user.Identity.Name ?? "";
+            var users = await getAll.ExecuteAsync();
+            var currentUser = users?.FirstOrDefault(x => x.Username == username);
+
+            if (currentUser != null)
+            {
+                userId = currentUser.UserId ?? "";
+                await LoadMessages();
+            }
+        }
+
+        StateHasChanged();
+        await ScrollToBottom();
+    }
+
+    async Task LoadMessages()
+    {
+        var result = await getMessages.ExecuteAsync(userId);
+        messages = result?.ToList() ?? new();
+    }
+
+    async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+            await SendMessage();
+    }
+
+    async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(newMessage) || isSending) return;
+
+        isSending = true;
+        var text = newMessage.Trim();
+        newMessage = string.Empty;
+
+        try
+        {
+            var msg = new SupportMessage
+            {
+                UserId     = userId,
+                SenderRole = "Subscriber",
+                SentBy     = username,
+                Message    = text
+            };
+
+            await sendMessage.ExecuteAsync(msg);
+            await LoadMessages();
+            StateHasChanged();
+            await ScrollToBottom();
+        }
+        catch { }
+
+        isSending = false;
+    }
+
+    async Task ScrollToBottom()
+    {
+        await Task.Delay(100);
+        await JS.InvokeVoidAsync("scrollToBottom", "chat-box");
+    }
+}
