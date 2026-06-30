@@ -64,6 +64,7 @@
     <Folder Include="StoredProcedure\UpgradeRequests\" />
     <Folder Include="StoredProcedure\Notifications\" />
     <Folder Include="StoredProcedure\Support\" />
+    <Folder Include="StoredProcedure\ServiceRequests\" />
   </ItemGroup>
   <ItemGroup>
     <Build Include="Tables\Users.sql" />
@@ -106,6 +107,11 @@
     <Build Include="StoredProcedure\Support\CreateSupportMessage.sql" />
     <Build Include="StoredProcedure\Support\GetSupportMessagesByUser.sql" />
     <Build Include="StoredProcedure\Support\GetAllSupportMessages.sql" />
+    <Build Include="Tables\ServiceRequests.sql" />
+    <Build Include="StoredProcedure\ServiceRequests\CreateServiceRequest.sql" />
+    <Build Include="StoredProcedure\ServiceRequests\GetServiceRequestsByUser.sql" />
+    <Build Include="StoredProcedure\ServiceRequests\GetAllServiceRequests.sql" />
+    <Build Include="StoredProcedure\ServiceRequests\UpdateServiceRequest.sql" />
   </ItemGroup>
   <ItemGroup>
     <None Include="BillTixDB.publish.xml" />

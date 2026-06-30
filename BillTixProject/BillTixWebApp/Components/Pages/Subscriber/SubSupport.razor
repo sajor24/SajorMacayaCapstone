@@ -8,69 +8,72 @@
 @attribute [Authorize(Roles = "Subscriber")]
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IGetAll_User getAll
-@inject IGetByUser_SupportMessage getMessages
-@inject ICreate_SupportMessage sendMessage
-@inject IJSRuntime JS
+@inject IGetByUser_ServiceRequest getRequests
+@inject ICreate_ServiceRequest createRequest
 
 <div class="support-wrapper">
 
     <div class="support-header">
-        <div>
-            <h3 class="fw-bold mb-0">Support</h3>
-            <p class="text-muted">Chat with our support team</p>
-        </div>
-        <div class="support-status">
-            <span class="status-dot"></span> Support Online
-        </div>
+        <h3 class="fw-bold mb-0">Support</h3>
+        <p class="text-muted">Submit and track your service requests</p>
     </div>
 
-    <div class="chat-container">
-
-        <!-- Chat messages -->
-        <div class="chat-messages" id="chat-box">
-            @if (!_loaded)
-            {
-                <div class="text-center text-muted py-5">
-                    <div class="spinner-border spinner-border-sm"></div>
-                    <p class="mt-2 small">Loading messages...</p>
-                </div>
-            }
-            else if (!messages.Any())
-            {
-                <div class="chat-empty">
-                    <div style="font-size:2.5rem;">🎧</div>
-                    <p class="text-muted mt-2">No messages yet. Send us a message!</p>
-                    <p class="text-muted small">Our team typically replies within a few hours.</p>
-                </div>
-            }
-            else
-            {
-                @foreach (var msg in messages)
-                {
-                    var isMe = msg.SenderRole == "Subscriber";
-                    <div class="chat-bubble-wrap @(isMe ? "me" : "staff")">
-                        <div class="chat-bubble @(isMe ? "bubble-me" : "bubble-staff")">
-                            @if (!isMe)
-                            {
-                                <div class="chat-sender">🎧 @msg.SentBy</div>
-                            }
-                            <div class="chat-text">@msg.Message</div>
-                            <div class="chat-time">@msg.CreatedAt.ToString("MMM dd, hh:mm tt")</div>
-                        </div>
-                    </div>
-                }
-            }
+    @if (!string.IsNullOrEmpty(message))
+    {
+        <div class="alert @(isError ? "alert-danger" : "alert-success") alert-dismissible mb-3">
+            @message
+            <button type="button" class="btn-close" @onclick="() => message = string.Empty"></button>
         </div>
+    }
 
-        <!-- Input area -->
-        <div class="chat-input-area">
-            <textarea class="chat-input"
-                      placeholder="Type your message..."
-                      @bind="newMessage"
-                      @onkeydown="HandleKeyDown"
-                      rows="1"></textarea>
-            <button class="chat-send-btn" @onclick="SendMessage" disabled="@isSending">
-                @if (isSending)
+    <div class="support-grid">
+
+        <!-- LEFT: Submit Form -->
+        <div class="form-card">
+            <div class="form-card-title">Report an Issue</div>
+            <p class="text-muted" style="font-size:.85rem; margin-top:-8px;">Submit a new service request</p>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Issue Type <span class="text-danger">*</span></label>
+                <select class="form-select" @bind="issueType">
+                    <option value="">Select issue type</option>
+                    <option value="No Connection">No Connection</option>
+                    <option value="Slow Internet">Slow Internet</option>
+                    <option value="Router Problem">Router Problem</option>
+                    <option value="WiFi Issue">WiFi Issue</option>
+                    <option value="Billing Concern">Billing Concern</option>
+                    <option value="Plan Upgrade">Plan Upgrade</option>
+                    <option value="Installation">Installation</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Priority</label>
+                <select class="form-select" @bind="priority">
+                    <option value="Low">Low</option>
+                    <option value="Medium" selected>Medium</option>
+                    <option value="High">High</option>
+                    <option value="Critical">Critical</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Description <span class="text-danger">*</span></label>
+                <textarea class="form-control" rows="4"
+                          placeholder="Describe your issue in detail..."
+                          @bind="description"></textarea>
+                <small class="text-muted">Please provide as much detail as possible</small>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-semibold">Contact Number</label>
+                <input class="form-control" placeholder="+63 912 345 6789" @bind="contactNumber" />
+            </div>
+
+            <button class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2"
+                    @onclick="SubmitRequest" disabled="@isSubmitting">
+                @if (isSubmitting)
                 {
                     <span class="spinner-border spinner-border-sm"></span>
                 }
@@ -78,7 +81,58 @@
                 {
                     <i class="bi bi-send-fill"></i>
                 }
+                @(isSubmitting ? "Submitting..." : "Submit Request")
             </button>
+        </div>
+
+        <!-- RIGHT: My Requests -->
+        <div class="requests-card">
+            <div class="requests-title">My Service Requests</div>
+            <p class="text-muted" style="font-size:.85rem; margin-top:-8px;">Track your submitted requests</p>
+
+            @if (!_loaded)
+            {
+                <div class="text-center text-muted py-4">
+                    <div class="spinner-border spinner-border-sm"></div>
+                </div>
+            }
+            else if (!requests.Any())
+            {
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-ticket-perforated" style="font-size:2.5rem; color:#ccc;"></i>
+                    <p class="mt-2">No requests submitted yet.</p>
+                </div>
+            }
+            else
+            {
+                <div class="requests-list">
+                    @foreach (var req in requests)
+                    {
+                        <div class="request-item">
+                            <div class="request-top">
+                                <span class="request-type">@req.IssueType</span>
+                                <span class="status-badge @GetStatusClass(req.Status)">@req.Status</span>
+                                <span class="priority-badge @GetPriorityClass(req.Priority)">@req.Priority</span>
+                            </div>
+                            <div class="request-desc">@req.Description</div>
+                            <div class="request-meta">
+                                <span>ID: @req.RequestId</span>
+                                <span>Created: @req.CreatedAt.ToString("M/d/yyyy")</span>
+                                @if (req.ResolvedAt.HasValue)
+                                {
+                                    <span>Resolved: @req.ResolvedAt.Value.ToString("M/d/yyyy")</span>
+                                }
+                            </div>
+                            @if (!string.IsNullOrEmpty(req.AssignedTo))
+                            {
+                                <div class="request-assigned">
+                                    <i class="bi bi-person-fill me-1"></i> Assigned to technician: @req.AssignedTo
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
         </div>
     </div>
 </div>
@@ -88,255 +142,240 @@
         padding: 32px;
         background: #f5f6fa;
         min-height: 100vh;
-        display: flex;
-        flex-direction: column;
     }
 
     .support-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
+        margin-bottom: 24px;
     }
 
-    .support-header h3 { color: #111; font-size: 1.4rem; }
+    .support-header h3 { color: #111; font-size: 1.5rem; }
 
-    .support-status {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: .85rem;
-        font-weight: 600;
-        color: #22c55e;
+    .support-grid {
+        display: grid;
+        grid-template-columns: 340px 1fr;
+        gap: 24px;
+        align-items: start;
     }
 
-    .status-dot {
-        width: 10px;
-        height: 10px;
-        background: #22c55e;
-        border-radius: 50%;
-        animation: pulse 1.5s infinite;
-    }
-
-    @@keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.4; }
-    }
-
-    .chat-container {
+    /* Form Card */
+    .form-card {
         background: white;
-        border-radius: 20px;
-        box-shadow: 0 4px 20px rgba(0,0,0,.07);
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-        overflow: hidden;
-        max-height: calc(100vh - 180px);
+        border-radius: 16px;
+        padding: 28px 24px;
+        box-shadow: 0 2px 10px rgba(0,0,0,.06);
     }
 
-    .chat-messages {
-        flex: 1;
-        overflow-y: auto;
-        padding: 24px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
-
-    .chat-empty {
-        text-align: center;
-        margin: auto;
-        padding: 40px 0;
-    }
-
-    .chat-bubble-wrap {
-        display: flex;
-    }
-
-    .chat-bubble-wrap.me {
-        justify-content: flex-end;
-    }
-
-    .chat-bubble-wrap.staff {
-        justify-content: flex-start;
-    }
-
-    .chat-bubble {
-        max-width: 65%;
-        padding: 12px 16px;
-        border-radius: 18px;
-        font-size: .92rem;
-        line-height: 1.5;
-    }
-
-    .bubble-me {
-        background: #4f46e5;
-        color: white;
-        border-bottom-right-radius: 4px;
-    }
-
-    .bubble-staff {
-        background: #f3f4f6;
-        color: #111;
-        border-bottom-left-radius: 4px;
-    }
-
-    .chat-sender {
-        font-size: .75rem;
+    .form-card-title {
+        font-size: 1.05rem;
         font-weight: 700;
-        color: #4f46e5;
+        color: #111;
         margin-bottom: 4px;
     }
 
-    .chat-text {
-        word-break: break-word;
-    }
-
-    .chat-time {
-        font-size: .7rem;
-        opacity: 0.6;
-        margin-top: 4px;
-        text-align: right;
-    }
-
-    .bubble-staff .chat-time {
-        text-align: left;
-    }
-
-    .chat-input-area {
-        display: flex;
-        align-items: flex-end;
-        gap: 10px;
-        padding: 16px 20px;
-        border-top: 1px solid #f3f4f6;
+    /* Requests Card */
+    .requests-card {
         background: white;
+        border-radius: 16px;
+        padding: 28px 24px;
+        box-shadow: 0 2px 10px rgba(0,0,0,.06);
     }
 
-    .chat-input {
-        flex: 1;
-        border: 1.5px solid #e5e7eb;
+    .requests-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #111;
+        margin-bottom: 4px;
+    }
+
+    .requests-list {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        margin-top: 12px;
+    }
+
+    .request-item {
+        border: 1px solid #e5e7eb;
         border-radius: 12px;
-        padding: 10px 14px;
-        font-size: .92rem;
-        resize: none;
-        outline: none;
-        transition: border .2s;
-        max-height: 120px;
-        overflow-y: auto;
+        padding: 16px 18px;
+        transition: box-shadow .15s;
     }
 
-    .chat-input:focus {
-        border-color: #4f46e5;
+    .request-item:hover {
+        box-shadow: 0 3px 12px rgba(0,0,0,.06);
     }
 
-    .chat-send-btn {
-        background: #4f46e5;
-        color: white;
-        border: none;
-        border-radius: 12px;
-        width: 46px;
-        height: 46px;
+    .request-top {
         display: flex;
         align-items: center;
-        justify-content: center;
-        font-size: 1.1rem;
-        cursor: pointer;
-        transition: .2s;
-        flex-shrink: 0;
+        gap: 8px;
+        margin-bottom: 8px;
+        flex-wrap: wrap;
     }
 
-    .chat-send-btn:hover:not(:disabled) {
-        background: #4338ca;
-        transform: scale(1.05);
+    .request-type {
+        font-weight: 700;
+        font-size: .95rem;
+        color: #111;
     }
 
-    .chat-send-btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
+    .request-desc {
+        font-size: .88rem;
+        color: #555;
+        margin-bottom: 8px;
+        line-height: 1.5;
     }
 
-    @@media (max-width: 800px) {
-        .support-wrapper { padding: 70px 12px 12px; }
-        .chat-bubble { max-width: 85%; }
+    .request-meta {
+        display: flex;
+        gap: 16px;
+        font-size: .78rem;
+        color: #aaa;
+        flex-wrap: wrap;
+    }
+
+    .request-assigned {
+        font-size: .82rem;
+        color: #6b7280;
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid #f3f4f6;
+    }
+
+    /* Status badges */
+    .status-badge {
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: .72rem;
+        font-weight: 700;
+    }
+
+    .badge-open       { background: #dbeafe; color: #1d4ed8; }
+    .badge-inprogress { background: #ede9fe; color: #7c3aed; }
+    .badge-resolved   { background: #d1fae5; color: #059669; }
+    .badge-closed     { background: #f3f4f6; color: #6b7280; }
+
+    /* Priority badges */
+    .priority-badge {
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: .72rem;
+        font-weight: 700;
+    }
+
+    .priority-low      { background: #d1fae5; color: #059669; }
+    .priority-medium   { background: #fef3c7; color: #d97706; }
+    .priority-high     { background: #fee2e2; color: #dc2626; }
+    .priority-critical { background: #dc2626; color: white; }
+
+    @@media (max-width: 900px) {
+        .support-grid { grid-template-columns: 1fr; }
+        .support-wrapper { padding: 70px 16px 16px; }
     }
 </style>
 
 @code {
-    private List<SupportMessage> messages = new();
-    private string newMessage = string.Empty;
+    private List<ServiceRequest> requests = new();
     private string userId = string.Empty;
-    private string username = string.Empty;
+    private string contactNumber = string.Empty;
+    private string issueType = string.Empty;
+    private string priority = "Medium";
+    private string description = string.Empty;
+    private string message = string.Empty;
+    private bool isError = false;
+    private bool isSubmitting = false;
     private bool _loaded = false;
-    private bool isSending = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender || _loaded) return;
         _loaded = true;
 
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
-
-        if (user.Identity?.IsAuthenticated == true)
+        try
         {
-            username = user.Identity.Name ?? "";
-            var users = await getAll.ExecuteAsync();
-            var currentUser = users?.FirstOrDefault(x => x.Username == username);
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
 
-            if (currentUser != null)
+            if (user.Identity?.IsAuthenticated == true)
             {
-                userId = currentUser.UserId ?? "";
-                await LoadMessages();
+                var username = user.Identity.Name ?? "";
+                var users = await getAll.ExecuteAsync();
+                var currentUser = users?.FirstOrDefault(x => x.Username == username);
+
+                if (currentUser != null)
+                {
+                    userId = currentUser.UserId ?? "";
+                    contactNumber = currentUser.ContactNumber ?? string.Empty;
+                    await LoadRequests();
+                }
             }
+        }
+        catch
+        {
+            // DB table may not exist yet
         }
 
         StateHasChanged();
-        await ScrollToBottom();
     }
 
-    async Task LoadMessages()
+    async Task LoadRequests()
     {
-        var result = await getMessages.ExecuteAsync(userId);
-        messages = result?.ToList() ?? new();
+        var result = await getRequests.ExecuteAsync(userId);
+        requests = result?.ToList() ?? new();
     }
 
-    async Task HandleKeyDown(KeyboardEventArgs e)
+    async Task SubmitRequest()
     {
-        if (e.Key == "Enter" && !e.ShiftKey)
-            await SendMessage();
-    }
+        if (string.IsNullOrWhiteSpace(issueType) || string.IsNullOrWhiteSpace(description))
+        {
+            message = "Issue Type and Description are required.";
+            isError = true;
+            return;
+        }
 
-    async Task SendMessage()
-    {
-        if (string.IsNullOrWhiteSpace(newMessage) || isSending) return;
-
-        isSending = true;
-        var text = newMessage.Trim();
-        newMessage = string.Empty;
-
+        isSubmitting = true;
         try
         {
-            var msg = new SupportMessage
+            await createRequest.ExecuteAsync(new ServiceRequest
             {
-                UserId     = userId,
-                SenderRole = "Subscriber",
-                SentBy     = username,
-                Message    = text
-            };
+                UserId        = userId,
+                IssueType     = issueType,
+                Priority      = priority,
+                Description   = description,
+                ContactNumber = contactNumber
+            });
 
-            await sendMessage.ExecuteAsync(msg);
-            await LoadMessages();
+            await LoadRequests();
+            message = "Request submitted successfully! Our team will get back to you soon.";
+            isError = false;
+            issueType   = string.Empty;
+            priority    = "Medium";
+            description = string.Empty;
             StateHasChanged();
-            await ScrollToBottom();
         }
-        catch { }
-
-        isSending = false;
+        catch (Exception ex)
+        {
+            message = $"Error: {ex.Message}";
+            isError = true;
+        }
+        isSubmitting = false;
     }
 
-    async Task ScrollToBottom()
+    string GetStatusClass(string? status) => status switch
     {
-        await Task.Delay(100);
-        await JS.InvokeVoidAsync("scrollToBottom", "chat-box");
-    }
+        "Open"        => "badge-open",
+        "In Progress" => "badge-inprogress",
+        "Resolved"    => "badge-resolved",
+        "Closed"      => "badge-closed",
+        _             => "badge-open"
+    };
+
+    string GetPriorityClass(string? priority) => priority switch
+    {
+        "Low"      => "priority-low",
+        "Medium"   => "priority-medium",
+        "High"     => "priority-high",
+        "Critical" => "priority-critical",
+        _          => "priority-medium"
+    };
 }

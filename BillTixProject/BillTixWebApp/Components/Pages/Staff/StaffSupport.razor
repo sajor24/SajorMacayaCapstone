@@ -1,246 +1,285 @@
 @page "/staff-support"
 @layout StaffLayout
 @using Microsoft.AspNetCore.Authorization
-@using Microsoft.AspNetCore.Components.Authorization
 @using Domain.ICommands
 @using Domain.Models
 @rendermode InteractiveServer
 @attribute [Authorize(Roles = "Staff")]
-@inject IGetAll_SupportMessage getAllMessages
-@inject ICreate_SupportMessage sendMessage
-@inject AuthenticationStateProvider AuthStateProvider
-@inject IJSRuntime JS
+@inject IGetAll_ServiceRequest getAll
+@inject IUpdate_ServiceRequest updateRequest
+@inject IGetAll_User getUsers
 
 <div class="sub-wrapper">
 
     <div class="topnav">
         <div class="topnav-left">
-            <h2>Support Chat</h2>
-            <p>Reply to subscriber messages</p>
+            <h2>Service Requests</h2>
+            <p>Manage and resolve subscriber issues</p>
         </div>
     </div>
 
     <div class="page-content">
-        <div class="row g-0" style="height: calc(100vh - 140px);">
 
-            <!-- Subscriber list -->
-            <div class="col-md-3 border-end">
-                <div class="convo-list">
-                    <div class="convo-search p-2">
-                        <input class="form-control form-control-sm" placeholder="Search subscriber..." @bind="searchText" @bind:event="oninput" />
-                    </div>
-                    @foreach (var sub in filteredSubscribers)
-                    {
-                        var hasUnread = allMessages.Any(x => x.UserId == sub.UserId && x.SenderRole == "Subscriber");
-                        <div class="convo-item @(selectedUserId == sub.UserId ? "convo-active" : "")"
-                             @onclick="() => SelectSubscriber(sub)">
-                            <div class="convo-avatar">@sub.FirstName?[0]@sub.LastName?[0]</div>
-                            <div class="convo-info">
-                                <div class="convo-name">@sub.FirstName @sub.LastName</div>
-                                <div class="convo-preview">
-                                    @(currentConvo.LastOrDefault()?.Message?.Length > 30
-                                        ? currentConvo.LastOrDefault()?.Message?[..30] + "..."
-                                        : currentConvo.LastOrDefault()?.Message ?? "No messages yet")
-                                </div>
-                            </div>
-                        </div>
-                    }
-                    @if (!filteredSubscribers.Any())
-                    {
-                        <p class="text-muted text-center p-3 small">No subscribers.</p>
-                    }
+        @if (!string.IsNullOrEmpty(message))
+        {
+            <div class="alert @(isError ? "alert-danger" : "alert-success") alert-dismissible mb-3">
+                @message
+                <button type="button" class="btn-close" @onclick="() => message = string.Empty"></button>
+            </div>
+        }
+
+        <!-- SUMMARY -->
+        <div class="summary-cards mb-4">
+            <div class="summary-card">
+                <div class="summary-label">Total</div>
+                <div class="summary-value">@requests.Count</div>
+            </div>
+            <div class="summary-card blue">
+                <div class="summary-label">Open</div>
+                <div class="summary-value">@requests.Count(x => x.Status == "Open")</div>
+            </div>
+            <div class="summary-card orange">
+                <div class="summary-label">In Progress</div>
+                <div class="summary-value">@requests.Count(x => x.Status == "In Progress")</div>
+            </div>
+            <div class="summary-card green">
+                <div class="summary-label">Resolved</div>
+                <div class="summary-value">@requests.Count(x => x.Status == "Resolved")</div>
+            </div>
+        </div>
+
+        <!-- TABLE -->
+        <div class="table-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="fw-semibold" style="color:#111;">All Requests</div>
+                <div class="search-box">
+                    <i class="bi bi-search text-muted"></i>
+                    <input placeholder="Search..." @bind="searchText" @bind:event="oninput" />
                 </div>
             </div>
-
-            <!-- Chat area -->
-            <div class="col-md-9 d-flex flex-column">
-                @if (selectedUserId == string.Empty)
-                {
-                    <div class="d-flex align-items-center justify-content-center h-100 text-muted">
-                        <div class="text-center">
-                            <div style="font-size:3rem;">💬</div>
-                            <p>Select a subscriber to start chatting</p>
-                        </div>
-                    </div>
-                }
-                else
-                {
-                    <div class="chat-header px-4 py-3 border-bottom">
-                        <strong>@selectedName</strong>
-                        <small class="text-muted ms-2">@selectedUserId</small>
-                    </div>
-
-                    <div class="chat-messages" id="staff-chat-box">
-                        @foreach (var msg in currentConvo)
+            <div class="table-responsive">
+                <table class="sub-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Subscriber</th>
+                            <th>Issue Type</th>
+                            <th>Priority</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th>Assigned To</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var req in filteredRequests)
                         {
-                            var isStaff = msg.SenderRole == "Staff";
-                            <div class="chat-bubble-wrap @(isStaff ? "me" : "sub")">
-                                <div class="chat-bubble @(isStaff ? "bubble-staff" : "bubble-sub")">
-                                    @if (!isStaff)
-                                    {
-                                        <div class="chat-sender">👤 @msg.SentBy</div>
-                                    }
-                                    <div class="chat-text">@msg.Message</div>
-                                    <div class="chat-time">@msg.CreatedAt.ToString("MMM dd, hh:mm tt")</div>
-                                </div>
-                            </div>
+                            <tr>
+                                <td class="fw-semibold">@req.RequestId</td>
+                                <td>
+                                    <div class="fw-semibold">@req.FirstName @req.LastName</div>
+                                    <small class="text-muted">@req.ContactNumber</small>
+                                </td>
+                                <td>@req.IssueType</td>
+                                <td><span class="priority-badge @GetPriorityClass(req.Priority)">@req.Priority</span></td>
+                                <td class="text-muted" style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">@req.Description</td>
+                                <td><span class="status-badge @GetStatusClass(req.Status)">@req.Status</span></td>
+                                <td class="text-muted">@(req.AssignedTo ?? "—")</td>
+                                <td class="text-muted">@req.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                <td>
+                                    <button class="action-btn edit-btn" title="Update" @onclick="() => OpenUpdate(req)">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+                                </td>
+                            </tr>
                         }
-                        @if (!currentConvo.Any())
+                        @if (!filteredRequests.Any())
                         {
-                            <p class="text-muted text-center mt-5">No messages yet.</p>
+                            <tr>
+                                <td colspan="9" class="text-center text-muted py-4">No service requests found.</td>
+                            </tr>
                         }
-                    </div>
-
-                    <div class="chat-input-area">
-                        <textarea class="chat-input"
-                                  placeholder="Type a reply..."
-                                  @bind="replyText"
-                                  @onkeydown="HandleKeyDown"
-                                  rows="1"></textarea>
-                        <button class="chat-send-btn" @onclick="SendReply" disabled="@isSending">
-                            @if (isSending)
-                            {
-                                <span class="spinner-border spinner-border-sm"></span>
-                            }
-                            else
-                            {
-                                <i class="bi bi-send-fill"></i>
-                            }
-                        </button>
-                    </div>
-                }
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 </div>
+
+<!-- UPDATE MODAL -->
+@if (showModal && selected != null)
+{
+    <div class="modal-backdrop-custom" @onclick="CloseModal"></div>
+    <div class="modal-box shadow-lg">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">Update Request — @selected.RequestId</h5>
+            <button class="btn-close" @onclick="CloseModal"></button>
+        </div>
+
+        <div class="mb-3 p-3" style="background:#f8f9fa; border-radius:10px;">
+            <div class="fw-semibold">@selected.IssueType</div>
+            <div class="text-muted small mt-1">@selected.Description</div>
+            <div class="text-muted small mt-1">Subscriber: @selected.FirstName @selected.LastName</div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">Status</label>
+                <select class="form-select" @bind="editStatus">
+                    <option value="Open">Open</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Resolved">Resolved</option>
+                    <option value="Closed">Closed</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">Assign To (Technician ID)</label>
+                <input class="form-control" placeholder="e.g. TECH001" @bind="editAssignedTo" />
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-4 justify-content-end">
+            <button class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+            <button class="btn btn-primary" @onclick="SaveUpdate">Save Changes</button>
+        </div>
+    </div>
+}
 
 <style>
     .sub-wrapper { min-height: 100vh; background: #f5f6fa; display: flex; flex-direction: column; }
     .topnav { background: white; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4f46e5; }
     .topnav-left h2 { font-size: 1.2rem; font-weight: 700; color: #111; margin: 0; }
     .topnav-left p { font-size: .82rem; color: #4f46e5; margin: 0; }
-    .page-content { flex: 1; background: white; border-radius: 16px; margin: 20px 32px; box-shadow: 0 4px 20px rgba(0,0,0,.07); overflow: hidden; }
+    .page-content { padding: 32px; flex: 1; }
 
-    .convo-list { height: 100%; overflow-y: auto; }
-    .convo-search { border-bottom: 1px solid #f3f4f6; }
-    .convo-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; border-bottom: 1px solid #f9fafb; transition: .15s; }
-    .convo-item:hover { background: #f5f6fa; }
-    .convo-active { background: #eef2ff !important; border-left: 3px solid #4f46e5; }
-    .convo-avatar { width: 40px; height: 40px; background: #4f46e5; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .85rem; flex-shrink: 0; }
-    .convo-name { font-weight: 600; font-size: .9rem; color: #111; }
-    .convo-preview { font-size: .78rem; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+    .summary-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .summary-card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.05); border-left: 4px solid #4f46e5; }
+    .summary-card.blue   { border-left-color: #3b82f6; }
+    .summary-card.orange { border-left-color: #f59e0b; }
+    .summary-card.green  { border-left-color: #22c55e; }
+    .summary-label { font-size: .8rem; color: #888; margin-bottom: 4px; }
+    .summary-value { font-size: 1.5rem; font-weight: 800; color: #111; }
 
-    .chat-header { background: #fafafa; }
-    .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-    .chat-bubble-wrap { display: flex; }
-    .chat-bubble-wrap.me { justify-content: flex-end; }
-    .chat-bubble-wrap.sub { justify-content: flex-start; }
-    .chat-bubble { max-width: 60%; padding: 10px 14px; border-radius: 16px; font-size: .9rem; line-height: 1.5; }
-    .bubble-staff { background: #4f46e5; color: white; border-bottom-right-radius: 4px; }
-    .bubble-sub { background: #f3f4f6; color: #111; border-bottom-left-radius: 4px; }
-    .chat-sender { font-size: .72rem; font-weight: 700; color: #4f46e5; margin-bottom: 3px; }
-    .chat-time { font-size: .68rem; opacity: .6; margin-top: 3px; text-align: right; }
-    .bubble-sub .chat-time { text-align: left; }
+    .table-card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 12px rgba(0,0,0,.06); }
+    .sub-table { width: 100%; border-collapse: collapse; }
+    .sub-table thead tr { border-bottom: 2px solid #f3f4f6; }
+    .sub-table th { text-align: left; padding: 10px 12px; font-size: .82rem; color: #888; font-weight: 600; white-space: nowrap; }
+    .sub-table td { padding: 14px 12px; border-bottom: 1px solid #f3f4f6; font-size: .88rem; color: #333; vertical-align: middle; }
+    .sub-table tbody tr:hover { background: #fafafa; }
 
-    .chat-input-area { display: flex; align-items: flex-end; gap: 10px; padding: 14px 20px; border-top: 1px solid #f3f4f6; }
-    .chat-input { flex: 1; border: 1.5px solid #e5e7eb; border-radius: 12px; padding: 10px 14px; font-size: .9rem; resize: none; outline: none; transition: border .2s; max-height: 100px; overflow-y: auto; }
-    .chat-input:focus { border-color: #4f46e5; }
-    .chat-send-btn { background: #4f46e5; color: white; border: none; border-radius: 12px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 1rem; cursor: pointer; transition: .2s; flex-shrink: 0; }
-    .chat-send-btn:hover:not(:disabled) { background: #4338ca; }
-    .chat-send-btn:disabled { opacity: 0.6; }
+    .search-box { display: flex; align-items: center; gap: 8px; border: 1px solid #e5e7eb; border-radius: 10px; padding: 8px 14px; width: 240px; background: white; }
+    .search-box input { border: none; outline: none; font-size: .9rem; width: 100%; }
+
+    .status-badge { padding: 4px 12px; border-radius: 20px; font-size: .72rem; font-weight: 700; }
+    .badge-open       { background: #dbeafe; color: #1d4ed8; }
+    .badge-inprogress { background: #ede9fe; color: #7c3aed; }
+    .badge-resolved   { background: #d1fae5; color: #059669; }
+    .badge-closed     { background: #f3f4f6; color: #6b7280; }
+
+    .priority-badge { padding: 4px 12px; border-radius: 20px; font-size: .72rem; font-weight: 700; }
+    .priority-low      { background: #d1fae5; color: #059669; }
+    .priority-medium   { background: #fef3c7; color: #d97706; }
+    .priority-high     { background: #fee2e2; color: #dc2626; }
+    .priority-critical { background: #dc2626; color: white; }
+
+    .action-btn { border: 1px solid #e5e7eb; background: white; border-radius: 8px; padding: 6px 10px; cursor: pointer; transition: .2s; font-size: .9rem; }
+    .edit-btn:hover { background: #f0f0ff; border-color: #4f46e5; color: #4f46e5; }
+
+    .modal-backdrop-custom { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1040; }
+    .modal-box { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: white; border-radius: 16px; padding: 2rem; width: 520px; max-width: 95vw; z-index: 1050; }
 
     @@media (max-width: 800px) {
-        .page-content { margin: 10px; }
+        .summary-cards { grid-template-columns: repeat(2, 1fr); }
+        .page-content { padding: 70px 12px 12px; }
     }
 </style>
 
 @code {
-    private List<SupportMessage> allMessages = new();
-    private List<Users> subscribers = new();
-    private string selectedUserId = string.Empty;
-    private string selectedName = string.Empty;
-    private string replyText = string.Empty;
+    private List<ServiceRequest> requests = new();
+    private ServiceRequest? selected;
+    private string editStatus = string.Empty;
+    private string editAssignedTo = string.Empty;
     private string searchText = string.Empty;
-    private string staffUsername = string.Empty;
-    private bool isSending = false;
+    private string message = string.Empty;
+    private bool isError = false;
+    private bool showModal = false;
 
-    private List<SupportMessage> currentConvo =>
-        allMessages.Where(x => x.UserId == selectedUserId)
-                   .OrderBy(x => x.CreatedAt)
-                   .ToList();
-
-    private List<Users> filteredSubscribers =>
-        string.IsNullOrWhiteSpace(searchText)
-        ? subscribers
-        : subscribers.Where(x =>
-            (x.FirstName + " " + x.LastName).Contains(searchText, StringComparison.OrdinalIgnoreCase)
-            || (x.UserId ?? "").Contains(searchText, StringComparison.OrdinalIgnoreCase))
-          .ToList();
+    private IEnumerable<ServiceRequest> filteredRequests =>
+        string.IsNullOrWhiteSpace(searchText) ? requests
+        : requests.Where(x =>
+            (x.RequestId   != null && x.RequestId.Contains(searchText,   StringComparison.OrdinalIgnoreCase)) ||
+            (x.FirstName   != null && x.FirstName.Contains(searchText,   StringComparison.OrdinalIgnoreCase)) ||
+            (x.LastName    != null && x.LastName.Contains(searchText,    StringComparison.OrdinalIgnoreCase)) ||
+            (x.IssueType   != null && x.IssueType.Contains(searchText,   StringComparison.OrdinalIgnoreCase)) ||
+            (x.Status      != null && x.Status.Contains(searchText,      StringComparison.OrdinalIgnoreCase))
+        );
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        staffUsername = authState.User.Identity?.Name ?? "Staff";
-        await LoadAll();
+        await LoadRequests();
     }
 
-    async Task LoadAll()
+    async Task LoadRequests()
     {
-        // Get all subscribers who have sent messages
-        var msgs = await getAllMessages.ExecuteAsync();
-        allMessages = msgs?.ToList() ?? new();
-
-        // Build unique subscriber list from messages
-        subscribers = allMessages
-            .GroupBy(x => x.UserId)
-            .Select(g => new Users
-            {
-                UserId    = g.Key,
-                FirstName = g.First().FirstName,
-                LastName  = g.First().LastName,
-                Username  = g.First().Username
-            })
-            .ToList();
-    }
-
-    async Task SelectSubscriber(Users sub)
-    {
-        selectedUserId = sub.UserId ?? "";
-        selectedName   = $"{sub.FirstName} {sub.LastName}";
-        await Task.Delay(50);
-        await JS.InvokeVoidAsync("scrollToBottom", "staff-chat-box");
-    }
-
-    async Task HandleKeyDown(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter" && !e.ShiftKey)
-            await SendReply();
-    }
-
-    async Task SendReply()
-    {
-        if (string.IsNullOrWhiteSpace(replyText) || isSending) return;
-
-        isSending = true;
-        var text = replyText.Trim();
-        replyText = string.Empty;
-
         try
         {
-            await sendMessage.ExecuteAsync(new SupportMessage
-            {
-                UserId     = selectedUserId,
-                SenderRole = "Staff",
-                SentBy     = staffUsername,
-                Message    = text
-            });
-
-            await LoadAll();
-            StateHasChanged();
-            await JS.InvokeVoidAsync("scrollToBottom", "staff-chat-box");
+            var result = await getAll.ExecuteAsync();
+            requests = result?.ToList() ?? new();
         }
         catch { }
-
-        isSending = false;
     }
+
+    void OpenUpdate(ServiceRequest req)
+    {
+        selected       = req;
+        editStatus     = req.Status ?? "Open";
+        editAssignedTo = req.AssignedTo ?? string.Empty;
+        showModal      = true;
+    }
+
+    void CloseModal()
+    {
+        showModal = false;
+        selected  = null;
+    }
+
+    async Task SaveUpdate()
+    {
+        if (selected == null) return;
+        try
+        {
+            selected.Status     = editStatus;
+            selected.AssignedTo = editAssignedTo;
+            selected.ResolvedAt = editStatus is "Resolved" or "Closed" ? DateTime.Now : null;
+            await updateRequest.ExecuteAsync(selected);
+            await LoadRequests();
+            message = "Request updated.";
+            isError = false;
+            CloseModal();
+        }
+        catch (Exception ex)
+        {
+            message = $"Error: {ex.Message}";
+            isError = true;
+        }
+    }
+
+    string GetStatusClass(string? s) => s switch
+    {
+        "Open"        => "badge-open",
+        "In Progress" => "badge-inprogress",
+        "Resolved"    => "badge-resolved",
+        "Closed"      => "badge-closed",
+        _             => "badge-open"
+    };
+
+    string GetPriorityClass(string? p) => p switch
+    {
+        "Low"      => "priority-low",
+        "Medium"   => "priority-medium",
+        "High"     => "priority-high",
+        "Critical" => "priority-critical",
+        _          => "priority-medium"
+    };
 }
