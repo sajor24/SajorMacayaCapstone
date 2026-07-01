@@ -1,30 +1,361 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">BillTixWebApp</a>
-    </div>
+﻿@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
+
+<!-- ── Mobile Top Bar ── -->
+<div class="mobile-topbar mobile-topbar-tech">
+    <button class="mobile-menu-btn" @onclick="ToggleMobileDrawer">
+        <i class="bi @(mobileOpen ? "bi-x-lg" : "bi-list")"></i>
+    </button>
+    <span class="mobile-brand-text">BILLTIX</span>
 </div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+@if (mobileOpen)
+{
+    <div class="mobile-overlay" @onclick="CloseMobileDrawer"></div>
+}
 
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
+<div class="tech-container @(collapsed ? "is-collapsed" : "") @(mobileOpen ? "drawer-open" : "")">
+
+    <!-- SIDEBAR -->
+    <nav class="sidebar">
+
+        <div class="sidebar-brand">
+            <div class="brand-icon brand-icon-tech"><i class="bi bi-grid-3x3-gap-fill"></i></div>
+            @if (!collapsed){ <span class="brand-text">BILLTIX</span> }
         </div>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
+        <div class="sidebar-nav">
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
+            @if (!collapsed){ <div class="nav-group-label">General</div> }
+
+            <NavLink href="/tech-dashboard" Match="NavLinkMatch.All" class="nav-item" ActiveClass="nav-active" @onclick="CloseMobileDrawer" title="@(collapsed ? "Dashboard" : null)">
+                <i class="bi bi-grid-fill nav-icon"></i>
+                @if (!collapsed){ <span>Dashboard</span> }
             </NavLink>
+
+            <NavLink href="/tech-service-requests" class="nav-item" ActiveClass="nav-active" @onclick="CloseMobileDrawer" title="@(collapsed ? "Service Requests" : null)">
+                <i class="bi bi-tools nav-icon"></i>
+                @if (!collapsed){ <span>Service Requests</span> }
+            </NavLink>
+
+            <NavLink href="/tech-myaccount" class="nav-item" ActiveClass="nav-active" @onclick="CloseMobileDrawer" title="@(collapsed ? "My Account" : null)">
+                <i class="bi bi-person-badge-fill nav-icon"></i>
+                @if (!collapsed){ <span>My Account</span> }
+            </NavLink>        </div>
+
+        <div class="sidebar-footer">
+            <button class="nav-item logout-item" @onclick="ConfirmLogout" title="@(collapsed ? "Logout" : null)">
+                <i class="bi bi-box-arrow-left nav-icon"></i>
+                @if (!collapsed){ <span>Logout</span> }
+            </button>
         </div>
     </nav>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+        @Body
+    </div>
+
 </div>
 
+<!-- Desktop floating toggle -->
+<button class="desktop-toggle tech-toggle @(collapsed ? "is-collapsed" : "")" @onclick="ToggleCollapse">
+    <i class="bi @(collapsed ? "bi-chevron-right" : "bi-chevron-left")"></i>
+</button>
+
+<!-- Logout Modal -->
+@if (showLogoutConfirm)
+{
+    <div class="logout-overlay" @onclick="CancelLogout"></div>
+    <div class="logout-modal shadow-lg">
+        <div class="text-center py-2">
+            <div style="font-size:2.5rem;">🚪</div>
+            <h5 class="fw-bold mt-2">Logout?</h5>
+            <p class="text-muted mt-1">Are you sure you want to logout?</p>
+        </div>
+        <div class="d-flex gap-2 mt-3 justify-content-center">
+            <button class="btn btn-secondary px-4" @onclick="CancelLogout">Cancel</button>
+            <button class="btn btn-danger px-4" @onclick="DoLogout">Yes, Logout</button>
+        </div>
+    </div>
+}
+
+<style>
+    .tech-container {
+        display: flex;
+        min-height: 100vh;
+        background: #0f1729;
+    }
+
+    .tech-container .sidebar {
+        width: 240px;
+        min-width: 240px;
+        height: 100vh;
+        background: #0d1b2a;
+        display: flex;
+        flex-direction: column;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        overflow: hidden;
+        transition: width 0.25s ease, min-width 0.25s ease;
+        flex-shrink: 0;
+    }
+
+    .tech-container.is-collapsed .sidebar {
+        width: 68px;
+        min-width: 68px;
+    }
+
+    .tech-container .sidebar-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 20px 14px 16px;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        min-height: 68px;
+        overflow: hidden;
+    }
+
+    .brand-icon-tech {
+        width: 38px;
+        height: 38px;
+        background: #2563eb;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+        color: white;
+        flex-shrink: 0;
+    }
+
+    .tech-container .brand-text {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: 1.5px;
+        white-space: nowrap;
+        flex: 1;
+    }
+
+    .tech-container .sidebar-nav {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 12px 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .tech-container .sidebar-nav::-webkit-scrollbar { width: 3px; }
+    .tech-container .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+
+    .tech-container .nav-group-label {
+        font-size: .7rem;
+        font-weight: 700;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        padding: 8px 8px 4px;
+        white-space: nowrap;
+    }
+
+    .tech-container .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px;
+        border-radius: 10px;
+        color: #94a3b8;
+        text-decoration: none;
+        font-size: .92rem;
+        font-weight: 500;
+        transition: background .15s, color .15s;
+        white-space: nowrap;
+        cursor: pointer;
+        border: none;
+        background: transparent;
+        width: 100%;
+        text-align: left;
+    }
+
+    .tech-container .nav-item:hover {
+        background: rgba(255,255,255,0.06);
+        color: #e2e8f0;
+        text-decoration: none;
+    }
+
+    .tech-container .nav-item.nav-active {
+        background: #1e3a5f;
+        color: #60a5fa !important;
+        font-weight: 600;
+    }
+
+    .tech-container .nav-icon {
+        font-size: 1.05rem;
+        min-width: 20px;
+        text-align: center;
+        flex-shrink: 0;
+    }
+
+    .tech-container.is-collapsed .nav-item {
+        justify-content: center;
+        gap: 0;
+        padding: 10px 0;
+        position: relative;
+    }
+
+    .tech-container.is-collapsed .nav-item[title]:hover::after {
+        content: attr(title);
+        position: absolute;
+        left: calc(100% + 10px);
+        top: 50%;
+        transform: translateY(-50%);
+        background: #1e3a5f;
+        color: #e2e8f0;
+        font-size: .8rem;
+        font-weight: 500;
+        white-space: nowrap;
+        padding: 5px 10px;
+        border-radius: 6px;
+        border: 1px solid rgba(96,165,250,0.2);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        z-index: 9999;
+        pointer-events: none;
+    }
+
+    .tech-container.is-collapsed .nav-group-label { display: none; }
+
+    .tech-container .sidebar-footer {
+        padding: 10px;
+        border-top: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .tech-container .logout-item { color: #f87171 !important; }
+    .tech-container .logout-item:hover {
+        background: rgba(248,113,113,0.1) !important;
+        color: #fca5a5 !important;
+    }
+
+    .tech-container .main-content {
+        flex: 1;
+        background: #111827;
+        overflow-y: auto;
+        min-width: 0;
+    }
+
+    /* Desktop toggle */
+    .tech-toggle {
+        position: fixed;
+        top: 20px;
+        left: calc(240px - 14px);
+        z-index: 200;
+        width: 28px;
+        height: 28px;
+        background: #1e3a5f;
+        border: 2px solid #2563eb;
+        color: #60a5fa;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: .8rem;
+        transition: left 0.25s ease, background .2s;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+
+    .tech-toggle.is-collapsed { left: calc(68px - 14px); }
+    .tech-toggle:hover { background: #2563eb; color: white; }
+
+    /* Mobile */
+    .mobile-topbar-tech { display: none; }
+
+    .logout-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000; }
+    .logout-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: white; border-radius: 16px; padding: 2rem; width: 360px; max-width: 95vw; z-index: 2001; }
+
+    @@media (max-width: 768px) {
+        .tech-toggle { display: none !important; }
+
+        .mobile-topbar-tech {
+            display: flex;
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 56px;
+            z-index: 1500;
+            background: #0d1b2a;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            align-items: center;
+            gap: 12px;
+            padding: 0 16px;
+        }
+
+        .mobile-menu-btn {
+            background: rgba(255,255,255,0.06);
+            border: none;
+            color: #94a3b8;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        .mobile-brand-text {
+            font-size: 1rem;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: 1.5px;
+        }
+
+        .mobile-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            z-index: 1599;
+        }
+
+        .tech-container .sidebar {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            height: 100vh !important;
+            width: 240px !important;
+            min-width: 240px !important;
+            z-index: 1600 !important;
+            transform: translateX(-100%) !important;
+            transition: transform 0.25s ease !important;
+        }
+
+        .tech-container.drawer-open .sidebar {
+            transform: translateX(0) !important;
+        }
+
+        .tech-container .main-content { padding-top: 56px; }
+
+        .tech-container.is-collapsed .nav-item {
+            justify-content: flex-start !important;
+            gap: 12px !important;
+        }
+
+        .tech-container.is-collapsed .nav-group-label { display: block !important; }
+    }
+</style>
+
+@code {
+    private bool collapsed = false;
+    private bool mobileOpen = false;
+    private bool showLogoutConfirm = false;
+
+    void ToggleCollapse() => collapsed = !collapsed;
+    void ToggleMobileDrawer() => mobileOpen = !mobileOpen;
+    void CloseMobileDrawer() => mobileOpen = false;
+    void ConfirmLogout() => showLogoutConfirm = true;
+    void CancelLogout() => showLogoutConfirm = false;
+    void DoLogout() => NavigationManager.NavigateTo("/account/logout", forceLoad: true);
+}

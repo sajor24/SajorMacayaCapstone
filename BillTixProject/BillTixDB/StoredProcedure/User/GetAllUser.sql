@@ -11,7 +11,10 @@ BEGIN
         Email,
         ContactNumber,
         Address,
-        CreatedAt
+        CreatedAt,
+        TechSpecialization,
+        TechArea,
+        TechCompletedJobs
     FROM [dbo].[Users]
     ORDER BY CreatedAt DESC
 END

@@ -9,42 +9,42 @@ namespace Framework.Extensions
         public static DynamicParameters ToUserDynamicParameters(this Users model)
         {
             var param = new DynamicParameters();
-            
-
-            param.Add("@UserId", model.UserId, DbType.String, ParameterDirection.Input);
-            param.Add("@FirstName", model.FirstName, DbType.String, ParameterDirection.Input);
-            param.Add("@LastName", model.LastName, DbType.String, ParameterDirection.Input);
-            param.Add("@Username", model.Username, DbType.String, ParameterDirection.Input);
-            param.Add("@Password", model.Password, DbType.String, ParameterDirection.Input);
-            param.Add("@Role", model.Role, DbType.String, ParameterDirection.Input);
-            param.Add("@Email", model.Email, DbType.String, ParameterDirection.Input);
-            param.Add("@ContactNumber", model.ContactNumber, DbType.String, ParameterDirection.Input);
-            param.Add("@Address", model.Address, DbType.String, ParameterDirection.Input);
-
+            param.Add("@UserId",             model.UserId,             DbType.String,  ParameterDirection.Input);
+            param.Add("@FirstName",          model.FirstName,          DbType.String,  ParameterDirection.Input);
+            param.Add("@LastName",           model.LastName,           DbType.String,  ParameterDirection.Input);
+            param.Add("@Username",           model.Username,           DbType.String,  ParameterDirection.Input);
+            param.Add("@Password",           model.Password,           DbType.String,  ParameterDirection.Input);
+            param.Add("@Role",               model.Role,               DbType.String,  ParameterDirection.Input);
+            param.Add("@Email",              model.Email,              DbType.String,  ParameterDirection.Input);
+            param.Add("@ContactNumber",      model.ContactNumber,      DbType.String,  ParameterDirection.Input);
+            param.Add("@Address",            model.Address,            DbType.String,  ParameterDirection.Input);
+            param.Add("@TechSpecialization", model.TechSpecialization, DbType.String,  ParameterDirection.Input);
+            param.Add("@TechArea",           model.TechArea,           DbType.String,  ParameterDirection.Input);
+            param.Add("@TechCompletedJobs",  model.TechCompletedJobs,  DbType.Int32,   ParameterDirection.Input);
             return param;
         }
 
         public static DynamicParameters ToCreateUserDynamicParameters(this Users model)
         {
             var param = new DynamicParameters();
-            param.Add("@FirstName", model.FirstName, DbType.String, ParameterDirection.Input);
-            param.Add("@LastName", model.LastName, DbType.String, ParameterDirection.Input);
-            param.Add("@Username", model.Username, DbType.String, ParameterDirection.Input);
-            param.Add("@Password", model.Password, DbType.String, ParameterDirection.Input);
-            param.Add("@Role", model.Role, DbType.String, ParameterDirection.Input);
-            param.Add("@Email", model.Email, DbType.String, ParameterDirection.Input);
-            param.Add("@ContactNumber", model.ContactNumber, DbType.String, ParameterDirection.Input);
-            param.Add("@Address", model.Address, DbType.String, ParameterDirection.Input);
-
+            param.Add("@FirstName",          model.FirstName,          DbType.String,  ParameterDirection.Input);
+            param.Add("@LastName",           model.LastName,           DbType.String,  ParameterDirection.Input);
+            param.Add("@Username",           model.Username,           DbType.String,  ParameterDirection.Input);
+            param.Add("@Password",           model.Password,           DbType.String,  ParameterDirection.Input);
+            param.Add("@Role",               model.Role,               DbType.String,  ParameterDirection.Input);
+            param.Add("@Email",              model.Email,              DbType.String,  ParameterDirection.Input);
+            param.Add("@ContactNumber",      model.ContactNumber,      DbType.String,  ParameterDirection.Input);
+            param.Add("@Address",            model.Address,            DbType.String,  ParameterDirection.Input);
+            param.Add("@TechSpecialization", model.TechSpecialization, DbType.String,  ParameterDirection.Input);
+            param.Add("@TechArea",           model.TechArea,           DbType.String,  ParameterDirection.Input);
+            param.Add("@TechCompletedJobs",  model.TechCompletedJobs,  DbType.Int32,   ParameterDirection.Input);
             return param;
         }
 
         public static DynamicParameters ToDeleteUserDynamicParameters(this Users model)
         {
             var param = new DynamicParameters();
-
             param.Add("@UserId", model.UserId, DbType.String, ParameterDirection.Input);
-
             return param;
         }
     }
