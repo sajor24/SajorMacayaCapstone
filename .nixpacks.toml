@@ -1,8 +1,0 @@
-[phases.build]
-cmds = [
-  "dotnet restore BillTixProject/BillTixWebApp/BillTixWebApp.csproj",
-  "dotnet publish BillTixProject/BillTixWebApp/BillTixWebApp.csproj -c Release -o out"
-]
-
-[start]
-cmd = "dotnet out/BillTixWebApp.dll"
