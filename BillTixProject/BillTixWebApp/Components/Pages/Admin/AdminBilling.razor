@@ -81,7 +81,6 @@
                             <th>Amount</th>
                             <th>Method</th>
                             <th>Status</th>
-                            <th>Due Date</th>
                             <th>Paid At</th>
                             <th>Actions</th>
                         </tr>
@@ -97,7 +96,6 @@
                                 <td>
                                     <span class="status-badge @GetStatusClass(item.Status)">@item.Status</span>
                                 </td>
-                                <td class="text-muted">@(item.DueDate?.ToString("MMM dd, yyyy") ?? "—")</td>
                                 <td class="text-muted">@(item.PaidAt?.ToString("MMM dd, yyyy") ?? "—")</td>
                                 <td>
                                     <div class="d-flex gap-2">
@@ -321,10 +319,6 @@
                 activeSub.EndDate = baseDate.AddMonths(1);
                 await updateSubscription.ExecuteAsync(activeSub);
             }
-
-            billing.DueDate = billing.DueDate.HasValue
-                ? billing.DueDate.Value.AddMonths(1)
-                : DateTime.Now.AddMonths(1);
         }
         else
         {

@@ -1,7 +1,7 @@
 CREATE PROCEDURE [dbo].[UpdateBilling]
     @BillingId     NVARCHAR(20),
     @Amount        DECIMAL(10,2),
-    @PaymentMethod NVARCHAR(50) = NULL,
+    @PaymentMethod NVARCHAR(255) = NULL,
     @Status        NVARCHAR(20),
     @DueDate       DATETIME = NULL,
     @PaidAt        DATETIME = NULL,

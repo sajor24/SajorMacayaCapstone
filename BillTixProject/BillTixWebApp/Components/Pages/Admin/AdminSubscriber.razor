@@ -8,11 +8,12 @@
 @inject IDelete_User delete
 @inject IGetAll_User getAll
 @inject ICreate_User create
-@inject IUpdate_User update 
+@inject IUpdate_User update
 @inject IGetAll_Subscription getAllSubscription
 @inject ICreate_Subscription createSubscription
 @inject IUpdate_Subscription updateSubscription
 @inject IDelete_Subscription deleteSubscription
+@inject IGetAll_InternetPlan getAllPlans
 @inject AuthenticationStateProvider AuthStateProvider
 @attribute [Authorize(Roles = "Admin")]
 
@@ -25,7 +26,7 @@
             <p>Manage your internet billing system</p>
         </div>
         <div class="topnav-right">
-            <div class="avatar">??</div>
+            <div class="avatar">üë§</div>
         </div>
     </div>
 
@@ -84,20 +85,20 @@
                                 <td>@item.FirstName @item.LastName</td>
                                 <td class="text-muted">@item.Email</td>
                                 <td class="text-muted">@item.ContactNumber</td>
-                                <td>@(sub?.PlanName ?? "ó")</td>
+                                <td>@(sub?.PlanName ?? "‚Äî")</td>
                                 <td>
                                     @if (sub != null)
                                     {
-                                        <span class="status-badge @(sub.Status == "Active" ? "badge-active" : "badge-inactive")">
+                                        <span class="status-badge @(sub.Status == "Active" ? "badge-active" : "Over Due")">
                                             @sub.Status
                                         </span>
                                     }
                                     else
                                     {
-                                        <span class="text-muted">ó</span>
+                                        <span class="text-muted">‚Äî</span>
                                     }
                                 </td>
-                                <td class="text-muted">@(sub?.EndDate?.ToString("M/d/yyyy") ?? "ó")</td>
+                                <td class="text-muted">@(sub?.EndDate?.ToString("M/d/yyyy") ?? "‚Äî")</td>
                                 <td>
                                     <div class="d-flex gap-2">
                                         <button class="action-btn edit-btn" title="Edit" @onclick="() => EditUser(item)">
@@ -129,7 +130,7 @@
     <div class="modal-backdrop-custom" @onclick="CancelDelete"></div>
     <div class="modal-box shadow-lg" style="width:420px;">
         <div class="text-center py-2">
-            <div style="font-size:3rem;">??</div>
+            <div style="font-size:3rem;">‚ö†Ô∏è</div>
             <h5 class="fw-bold mt-2">Delete Subscriber?</h5>
             <p class="text-muted mt-1">Are you sure you want to delete <strong>@deleteTargetName</strong>? This action cannot be undone.</p>
         </div>
@@ -171,7 +172,6 @@
                     }
                     else
                     {
-
                         <span class="text-muted small">(leave blank to keep)</span>
                     }
                 </label>
@@ -192,29 +192,20 @@
                 <input class="form-control" placeholder="Address" @bind="user.Address" />
             </div>
 
-            @if (!isEditing)
+            <!-- Internet Plan Selector (from Internet Plans table) -->
+            <div class="col-12">
+                <label class="form-label">Internet Plan <span class="text-danger">*</span></label>
+                <select class="form-select" @bind="selectedPlanId">
+                    <option value="">Select Plan</option>
+                    @foreach (var p in internetPlans)
+                    {
+                        <option value="@p.PlanId">@p.PlanName - @p.Speed - ‚Ç±@p.Price.ToString("N2")</option>
+                    }
+                </select>
+            </div>
+
+            @if (isEditing)
             {
-                <div class="col-md-6">
-                    <label class="form-label">Plan <span class="text-danger">*</span></label>
-                    <select class="form-select" @bind="selectedPlan">
-                        <option value="">Select Plan</option>
-                        <option value="@nameof(PlanType.Basic)">Basic ó 150 Mbps ó ?1,000/mo</option>
-                        <option value="@nameof(PlanType.Standard)">Standard ó 200 Mbps ó ?1,300/mo</option>
-                        <option value="@nameof(PlanType.Premium)">Premium ó 250 Mbps ó ?1,500/mo</option>
-                    </select>
-                </div>
-            }
-            else
-            {
-                <div class="col-md-6">
-                    <label class="form-label">Plan <span class="text-muted small">(leave blank to keep)</span></label>
-                    <select class="form-select" @bind="selectedPlan">
-                        <option value="">Keep current plan</option>
-                        <option value="Basic">Basic 150 Mbps ?1,000/mo</option>
-                        <option value="Standard">Standard 200 Mbps ?1,300/mo</option>
-                        <option value="Premium">Premium 250 Mbps ?1,500/m</option>
-                    </select>
-                </div>
                 <div class="col-md-6">
                     <label class="form-label">Subscription Status</label>
                     <select class="form-select" @bind="editSubStatus">
@@ -246,6 +237,8 @@
     private string username = "Admin";
     private List<Users> users = new();
     private List<Subscription> subscriptions = new();
+    private List<InternetPlan> internetPlans = new();
+
     private Users user = new();
     private bool isEditing = false;
     private bool showForm = false;
@@ -255,20 +248,17 @@
     private string searchText = string.Empty;
     private string passwordInput = string.Empty;
     private string errorMessage = string.Empty;
-    private string selectedPlan = string.Empty;
+
+    private string selectedPlanId = string.Empty;
+    private InternetPlan? selectedPlan => internetPlans.FirstOrDefault(x => x.PlanId == selectedPlanId);
+
     private string editSubStatus = "Active";
     private DateTime editStartDate = DateTime.Today;
     private DateTime? editEndDate = null;
 
-    private static readonly Dictionary<string, (decimal Price, string Speed)> Plans = new()
-    {
-        { nameof(PlanType.Basic),    (1000m, "150 Mbps") },
-        { nameof(PlanType.Standard), (1300m, "200 Mbps") },
-        { nameof(PlanType.Premium),  (1500m, "250 Mbps") },
-    };
-
     private Subscription? GetSubscription(string? userId) =>
-        subscriptions.FirstOrDefault(x => x.UserId == userId && x.Status == "Active");
+        subscriptions.FirstOrDefault(x => x.UserId == userId && x.Status == "Active")
+        ?? subscriptions.FirstOrDefault(x => x.UserId == userId);
 
     private IEnumerable<Users> filteredUsers =>
         string.IsNullOrWhiteSpace(searchText)
@@ -288,6 +278,7 @@
         var u = authState.User;
         if (u.Identity?.IsAuthenticated == true)
             username = u.Identity.Name ?? "Admin";
+
         await LoadUsers();
     }
 
@@ -298,13 +289,17 @@
 
         var subs = await getAllSubscription.ExecuteAsync();
         subscriptions = subs?.ToList() ?? new();
+
+        var plans = await getAllPlans.ExecuteAsync();
+        internetPlans = plans?.Where(x => x.IsActive).ToList() ?? new();
     }
 
     void OpenAddForm()
     {
         user = new Users { Role = "Subscriber" };
         passwordInput = string.Empty;
-        selectedPlan = string.Empty;
+        selectedPlanId = string.Empty;
+
         isEditing = false;
         errorMessage = string.Empty;
         showForm = true;
@@ -329,13 +324,20 @@
         errorMessage = string.Empty;
         showForm = true;
 
-        // Pre-fill subscription fields
         var existingSub = subscriptions.FirstOrDefault(x => x.UserId == item.UserId && x.Status == "Active")
                        ?? subscriptions.FirstOrDefault(x => x.UserId == item.UserId);
-        editSubStatus  = existingSub?.Status ?? "Active";
-        editStartDate  = existingSub?.StartDate ?? DateTime.Today;
-        editEndDate    = existingSub?.EndDate;
-        selectedPlan   = string.Empty;
+
+        editSubStatus = existingSub?.Status ?? "Active";
+        editStartDate = existingSub?.StartDate ?? DateTime.Today;
+        editEndDate = existingSub?.EndDate;
+
+        selectedPlanId = string.Empty;
+        if (!string.IsNullOrWhiteSpace(existingSub?.PlanName))
+        {
+            var planMatch = internetPlans.FirstOrDefault(x =>
+                string.Equals(x.PlanName, existingSub.PlanName, StringComparison.OrdinalIgnoreCase));
+            if (planMatch != null) selectedPlanId = planMatch.PlanId ?? "";
+        }
     }
 
     async Task SaveUser()
@@ -348,66 +350,52 @@
             return;
         }
 
-        if (!isEditing && string.IsNullOrWhiteSpace(selectedPlan))
-        {
-            errorMessage = "Please select a plan.";
-            return;
-        }
-
-        // Always Subscriber
-        user.Role = "Subscriber";
         if (!isEditing && string.IsNullOrWhiteSpace(passwordInput))
         {
             errorMessage = "Password is required.";
             return;
         }
+
+        if (string.IsNullOrWhiteSpace(selectedPlanId) || selectedPlan == null)
+        {
+            errorMessage = "Please select an Internet Plan.";
+            return;
+        }
+
+        user.Role = "Subscriber";
         errorMessage = string.Empty;
+
         try
         {
             if (isEditing)
             {
                 if (!string.IsNullOrWhiteSpace(passwordInput))
                     user.Password = passwordInput;
+
                 await update.ExecuteAsync(user);
 
-                // Update plan if a new one was selected
-                if (!string.IsNullOrEmpty(selectedPlan) && Plans.TryGetValue(selectedPlan, out var updatedPlan))
+                var existingSub = subscriptions.FirstOrDefault(x => x.UserId == user.UserId);
+                if (existingSub != null)
                 {
-                    var existingSub = subscriptions.FirstOrDefault(x => x.UserId == user.UserId);
-                    if (existingSub != null)
-                    {
-                        existingSub.PlanName  = selectedPlan;
-                        existingSub.PlanPrice = updatedPlan.Price;
-                        existingSub.StartDate = editStartDate;
-                        existingSub.EndDate   = editEndDate;
-                        existingSub.Status    = editSubStatus;
-                        await updateSubscription.ExecuteAsync(existingSub);
-                    }
-                    else
-                    {
-                        var newSub = new Subscription
-                        {
-                            UserId    = user.UserId,
-                            PlanName  = selectedPlan,
-                            PlanPrice = updatedPlan.Price,
-                            StartDate = editStartDate,
-                            EndDate   = editEndDate,
-                            Status    = editSubStatus
-                        };
-                        await createSubscription.ExecuteAsync(newSub);
-                    }
+                    existingSub.PlanName = selectedPlan.PlanName;
+                    existingSub.PlanPrice = selectedPlan.Price;
+                    existingSub.StartDate = editStartDate;
+                    existingSub.EndDate = editEndDate;
+                    existingSub.Status = editSubStatus;
+                    await updateSubscription.ExecuteAsync(existingSub);
                 }
                 else
                 {
-                    // No plan change ó just update dates/status if sub exists
-                    var existingSub = subscriptions.FirstOrDefault(x => x.UserId == user.UserId);
-                    if (existingSub != null)
+                    var newSub = new Subscription
                     {
-                        existingSub.StartDate = editStartDate;
-                        existingSub.EndDate   = editEndDate;
-                        existingSub.Status    = editSubStatus;
-                        await updateSubscription.ExecuteAsync(existingSub);
-                    }
+                        UserId = user.UserId,
+                        PlanName = selectedPlan.PlanName,
+                        PlanPrice = selectedPlan.Price,
+                        StartDate = editStartDate,
+                        EndDate = editEndDate,
+                        Status = editSubStatus
+                    };
+                    await createSubscription.ExecuteAsync(newSub);
                 }
             }
             else
@@ -415,33 +403,30 @@
                 user.Password = passwordInput;
                 await create.ExecuteAsync(user);
 
-                // Auto-create subscription
-                if (!string.IsNullOrEmpty(selectedPlan) && Plans.TryGetValue(selectedPlan, out var planInfo))
-                {
-                    // Get the newly created user to get UserId
-                    var allUsers = await getAll.ExecuteAsync();
-                    var newUser = allUsers?.FirstOrDefault(x => x.Username == user.Username);
+                var allUsers = await getAll.ExecuteAsync();
+                var newUser = allUsers?.FirstOrDefault(x => x.Username == user.Username);
 
-                    if (newUser != null)
+                if (newUser != null)
+                {
+                    var sub = new Subscription
                     {
-                        var sub = new Subscription
-                        {
-                            UserId = newUser.UserId,
-                            PlanName = selectedPlan,
-                            PlanPrice = planInfo.Price,
-                            StartDate = DateTime.Now,
-                            EndDate = DateTime.Now.AddMonths(1),
-                            Status = "Active"
-                        };
-                        await createSubscription.ExecuteAsync(sub);
-                    }
+                        UserId = newUser.UserId,
+                        PlanName = selectedPlan.PlanName,
+                        PlanPrice = selectedPlan.Price,
+                        StartDate = DateTime.Now,
+                        EndDate = DateTime.Now.AddMonths(1),
+                        Status = "Active"
+                    };
+                    await createSubscription.ExecuteAsync(sub);
                 }
             }
+
             user = new Users();
             passwordInput = string.Empty;
-            selectedPlan = string.Empty;
+            selectedPlanId = string.Empty;
             isEditing = false;
             showForm = false;
+
             await LoadUsers();
         }
         catch (Exception ex)
@@ -454,10 +439,12 @@
     {
         user = new Users();
         passwordInput = string.Empty;
-        selectedPlan = string.Empty;
+        selectedPlanId = string.Empty;
+
         editSubStatus = "Active";
         editStartDate = DateTime.Today;
         editEndDate = null;
+
         isEditing = false;
         showForm = false;
         errorMessage = string.Empty;
@@ -483,14 +470,12 @@
     {
         try
         {
-            // Delete subscription first (foreign key constraint)
             var existingSub = subscriptions.FirstOrDefault(x => x.UserId == deleteTargetId);
             if (existingSub != null)
             {
                 await deleteSubscription.ExecuteAsync(existingSub);
             }
 
-            // Then delete the user
             var deleteUser = new Users { UserId = deleteTargetId };
             await delete.ExecuteAsync(deleteUser);
 

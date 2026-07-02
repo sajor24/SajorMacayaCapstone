@@ -27,6 +27,7 @@ namespace Domain.Models
     {
         Active,
         Inactive,
-        Expired
+        Expired,
+        Overdue
     }
 }

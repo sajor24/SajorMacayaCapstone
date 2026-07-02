@@ -1,25 +1,88 @@
-﻿
-.billing-wrapper {
+﻿/* ===== Page Wrapper ===== */
+.plans-wrapper {
     padding: 32px;
     background: #f5f6fa;
     min-height: 100vh;
 }
 
-.billing-header {
+.plans-header {
     margin-bottom: 24px;
 }
 
-    .billing-header h3 {
+    .plans-header h3 {
         color: #111;
     }
 
+/* ===== Current Bill Banner (same feel as internet plans) ===== */
+.current-plan-banner {
+    background: #eef4ff;
+    border: 1px solid #c7dcff;
+    border-radius: 14px;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
 
+.current-plan-label {
+    font-size: .78rem;
+    color: #64748b;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
 
+.current-plan-name {
+    font-size: 1.06rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.current-plan-price {
+    font-size: .95rem;
+    color: #334155;
+    margin-top: 2px;
+}
+
+.badge-pending-plan {
+    display: inline-flex;
+    align-items: center;
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: .75rem;
+    font-weight: 700;
+}
+
+/* ===== Reusable Buttons (same naming as internet plans) ===== */
+.btn-plan {
+    border: none;
+    border-radius: 10px;
+    padding: 9px 16px;
+    font-size: .85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s ease;
+    white-space: nowrap;
+}
+
+.btn-plan-switch {
+    background: linear-gradient(90deg, #2563eb, #3b82f6);
+    color: #fff;
+}
+
+    .btn-plan-switch:hover {
+        opacity: .92;
+        transform: translateY(-1px);
+    }
+
+/* ===== Table Card ===== */
 .table-card {
-    background: white;
+    background: #fff;
     border-radius: 16px;
     padding: 24px;
-    box-shadow: 0 2px 12px rgba(0,0,0,.06);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, .06);
 }
 
 .sub-table {
@@ -51,6 +114,7 @@
         background: #fafafa;
     }
 
+/* ===== Status Badges ===== */
 .status-badge {
     padding: 5px 14px;
     border-radius: 20px;
@@ -73,30 +137,26 @@
     color: #dc2626;
 }
 
-.btn-pay {
-    background: linear-gradient(90deg, #4f46e5, #7367f0);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 7px 16px;
-    font-size: .85rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: .2s;
-    display: flex;
+/* ===== Submitted Badge ===== */
+.badge-submitted {
+    display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
+    background: #fef9c3;
+    color: #854d0e;
+    border: 1px solid #fde047;
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: .78rem;
+    font-weight: 600;
+    white-space: nowrap;
 }
 
-    .btn-pay:hover {
-        opacity: 0.88;
-        transform: translateY(-1px);
-    }
-
+/* ===== Modal ===== */
 .modal-backdrop-custom {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.4);
+    background: rgba(0, 0, 0, 0.4);
     z-index: 1040;
 }
 
@@ -105,7 +165,7 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: white;
+    background: #fff;
     border-radius: 16px;
     padding: 2rem;
     width: 500px;
@@ -115,10 +175,17 @@
     overflow-y: auto;
 }
 
+/* ===== Responsive ===== */
 @media (max-width: 800px) {
-    .billing-wrapper {
+    .plans-wrapper {
         padding: 70px 16px 16px 16px;
     }
 
-}
+    .current-plan-banner {
+        padding: 14px;
+    }
 
+    .table-card {
+        padding: 14px;
+    }
+}
