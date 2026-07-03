@@ -1,40 +1,50 @@
 using Domain.ICommands;
-using MailKit.Net.Smtp;
-using MailKit.Security;
 using Microsoft.Extensions.Configuration;
-using MimeKit;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 
 namespace Framework.Services
 {
     public class EmailService : IEmailService
     {
         private readonly IConfiguration _config;
+        private readonly HttpClient _http;
 
         public EmailService(IConfiguration config)
         {
             _config = config;
+            _http = new HttpClient();
         }
 
         public async Task SendAsync(string toEmail, string subject, string body)
         {
-            var host     = _config["Email:Host"]     ?? "smtp-relay.brevo.com";
-            var port     = int.Parse(_config["Email:Port"] ?? "587");
-            var from     = _config["Email:From"]     ?? throw new InvalidOperationException("Email:From not configured.");
-            var username = _config["Email:Username"] ?? throw new InvalidOperationException("Email:Username not configured.");
-            var password = _config["Email:Password"] ?? throw new InvalidOperationException("Email:Password not configured.");
+            var apiKey  = _config["Email:BrevoApiKey"] ?? throw new InvalidOperationException("Email:BrevoApiKey not configured.");
+            var from    = _config["Email:From"]        ?? throw new InvalidOperationException("Email:From not configured.");
+            var fromName = _config["Email:FromName"]   ?? "BillTix";
 
-            var mail = new MimeMessage();
-            mail.From.Add(new MailboxAddress("BillTix", from));
-            mail.To.Add(MailboxAddress.Parse(toEmail));
-            mail.Subject = subject;
+            var payload = new
+            {
+                sender = new { name = fromName, email = from },
+                to     = new[] { new { email = toEmail } },
+                subject,
+                htmlContent = body
+            };
 
-            mail.Body = new TextPart("html") { Text = body };
+            var request = new HttpRequestMessage(HttpMethod.Post, "https://api.brevo.com/v3/smtp/email");
+            request.Headers.Add("api-key", apiKey);
+            request.Content = new StringContent(
+                JsonSerializer.Serialize(payload),
+                Encoding.UTF8,
+                "application/json");
 
-            using var smtp = new SmtpClient();
-            await smtp.ConnectAsync(host, port, SecureSocketOptions.StartTls);
-            await smtp.AuthenticateAsync(username, password);
-            await smtp.SendAsync(mail);
-            await smtp.DisconnectAsync(true);
+            var response = await _http.SendAsync(request);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Brevo API error: {response.StatusCode} - {error}");
+            }
         }
 
         public async Task SendBillingDueReminderAsync(string toEmail, string firstName, string billingId, decimal amount, DateTime dueDate)
