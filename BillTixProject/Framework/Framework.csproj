@@ -9,8 +9,9 @@
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
     <PackageReference Include="Dapper" Version="2.1.79" />
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.8" />
+    <PackageReference Include="MailKit" Version="4.17.0" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.0-preview1.26124.5" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="11.0.0-preview.5.26302.115" />
   </ItemGroup>
 
   <ItemGroup>

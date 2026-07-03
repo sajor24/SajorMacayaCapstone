@@ -11,6 +11,7 @@
 @inject ICreate_Notification createNotif
 @inject IGetAll_Notification getAllNotifs
 @inject IDelete_Notification deleteNotif
+@inject IEmailService emailService
 @inject AuthenticationStateProvider AuthStateProvider
 
 <div class="sub-wrapper">
@@ -237,9 +238,9 @@
         {
             if (selectedUserId == "ALL")
             {
-                // Send to every subscriber
                 foreach (var sub in subscribers)
                 {
+                    // Save notification to DB
                     await createNotif.ExecuteAsync(new Notification
                     {
                         UserId  = sub.UserId,
@@ -247,11 +248,28 @@
                         Title   = title,
                         Message = messageText
                     });
+
+                    // Send Gmail if subscriber has email
+                    if (!string.IsNullOrWhiteSpace(sub.Email))
+                    {
+                        try
+                        {
+                            await emailService.SendMaintenanceNoticeAsync(
+                                sub.Email,
+                                sub.FirstName ?? sub.Username ?? "Subscriber",
+                                title,
+                                messageText);
+                        }
+                        catch { /* skip failed emails silently */ }
+                    }
                 }
                 message = $"Notification sent to all {subscribers.Count} subscribers!";
             }
             else
             {
+                var sub = subscribers.FirstOrDefault(x => x.UserId == selectedUserId);
+
+                // Save notification to DB
                 await createNotif.ExecuteAsync(new Notification
                 {
                     UserId  = selectedUserId,
@@ -259,7 +277,29 @@
                     Title   = title,
                     Message = messageText
                 });
-                message = "Notification sent successfully!";
+
+                // Send Gmail if subscriber has email
+                if (sub != null && !string.IsNullOrWhiteSpace(sub.Email))
+                {
+                    try
+                    {
+                        await emailService.SendMaintenanceNoticeAsync(
+                            sub.Email,
+                            sub.FirstName ?? sub.Username ?? "Subscriber",
+                            title,
+                            messageText);
+                        message = "Notification sent and email delivered!";
+                    }
+                    catch (Exception emailEx)
+                    {
+                        message = $"Notification saved but email failed: {emailEx.Message}";
+                        isError = true;
+                    }
+                }
+                else
+                {
+                    message = "Notification sent (no email on file for this subscriber).";
+                }
             }
 
             isError = false;

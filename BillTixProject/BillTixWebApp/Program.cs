@@ -1,6 +1,7 @@
 using BillTixWebApp.Components;
 using Framework;
 using Framework.Commands;
+using Framework.Services;
 using Domain.ICommands;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -9,6 +10,9 @@ using System.Security.Claims;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<Repository>();
+
+// Email
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 builder.Services.AddScoped<ICreate_User, Create_User>();
 builder.Services.AddScoped<ILoginUser, LoginUser>();
