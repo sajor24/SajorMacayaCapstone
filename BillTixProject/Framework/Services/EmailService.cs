@@ -1,6 +1,5 @@
 using Domain.ICommands;
 using Microsoft.Extensions.Configuration;
-using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 

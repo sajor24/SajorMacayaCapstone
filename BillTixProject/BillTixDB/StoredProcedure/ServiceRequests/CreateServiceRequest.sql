@@ -10,8 +10,9 @@ BEGIN
     DECLARE @LastNumber INT;
     DECLARE @NewId NVARCHAR(20);
 
-    SELECT @LastNumber = ISNULL(MAX(CAST(RIGHT(RequestId, 4) AS INT)), 0)
-    FROM [dbo].[ServiceRequests];
+    SELECT @LastNumber = ISNULL(MAX(CAST(RIGHT(RequestId, 3) AS INT)), 0)
+    FROM [dbo].[ServiceRequests]
+    WHERE ISNUMERIC(RIGHT(RequestId, 3)) = 1;
 
     SET @LastNumber = @LastNumber + 1;
     SET @NewId = 'SR-' + RIGHT('000' + CAST(@LastNumber AS NVARCHAR), 3);
