@@ -10,6 +10,8 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IGetAll_ServiceRequest getAllRequests
 @inject IUpdate_ServiceRequest updateRequest
+@inject IGetAll_User getUsers
+@inject IUpdateCompletedJobs_User updateCompletedJobs
 
 <PageTitle>My Tickets - BillTix</PageTitle>
 
@@ -131,7 +133,7 @@
                 <div class="ticket-actions">
                     @if (ticket.Status != "Resolved")
                     {
-                        @if (ticket.Status == "Pending")
+                        @if (ticket.Status == "Open" || ticket.Status == "Pending")
                         {
                             <button class="btn-inprogress" @onclick="() => MarkInProgress(ticket)">
                                 <i class="bi bi-play-circle"></i> Start Working
@@ -420,14 +422,23 @@
     private List<ServiceRequest> requests = new();
     private string message = string.Empty;
     private bool isError = false;
+    private string technicianFullName = string.Empty;
 
     private int completedToday => requests.Count(x =>
         x.Status == "Resolved" && x.ResolvedAt?.Date == DateTime.Today);
     private int inProgressCount => requests.Count(x => x.Status == "In Progress");
-    private int pendingCount => requests.Count(x => x.Status == "Pending");
+    private int pendingCount => requests.Count(x => x.Status == "Open" || x.Status == "Pending");
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var username = authState.User.Identity?.Name ?? "";
+
+        var users = await getUsers.ExecuteAsync();
+        var currentUser = users?.FirstOrDefault(x => x.Username == username);
+        if (currentUser != null)
+            technicianFullName = $"{currentUser.FirstName} {currentUser.LastName}";
+
         await LoadRequests();
     }
 
@@ -436,7 +447,11 @@
         try
         {
             var result = await getAllRequests.ExecuteAsync();
-            requests = result?.OrderByDescending(x => x.CreatedAt).ToList() ?? new();
+            // Show only tickets assigned to this technician
+            requests = result?
+                .Where(x => string.Equals(x.AssignedTo, technicianFullName, StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(x => x.CreatedAt)
+                .ToList() ?? new();
         }
         catch { }
     }
@@ -465,6 +480,18 @@
             ticket.Status = "Resolved";
             ticket.ResolvedAt = DateTime.Now;
             await updateRequest.ExecuteAsync(ticket);
+
+            // Increment TechCompletedJobs using dedicated SP
+            var allUsers = await getUsers.ExecuteAsync();
+            var techUser = allUsers?.FirstOrDefault(x =>
+                string.Equals($"{x.FirstName} {x.LastName}", technicianFullName, StringComparison.OrdinalIgnoreCase));
+
+            if (techUser != null)
+            {
+                var newCount = (techUser.TechCompletedJobs ?? 0) + 1;
+                await updateCompletedJobs.ExecuteAsync(techUser.UserId!, newCount);
+            }
+
             await LoadRequests();
             message = "Ticket marked as complete!";
             isError = false;
@@ -487,6 +514,7 @@
 
     string GetStatusClass(string? s) => s?.ToLower() switch
     {
+        "open"        => "status-pending",
         "pending"     => "status-pending",
         "in progress" => "status-inprogress",
         "resolved"    => "status-resolved",

@@ -9,6 +9,7 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IGetAll_User getAll
 @inject IGetByUser_Subscription getSubscription
+@inject IGetByUser_Billing getBillings
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 
@@ -44,7 +45,7 @@
         <div class="dashboard-card">
             <div class="card-icon">📅</div>
             <h5>Next Billing</h5>
-            <h3>@daysUntilBilling Days</h3>
+            <h3>@(nextDueDate.HasValue ? nextDueDate.Value.ToString("MMM dd, yyyy") : "N/A")</h3>
         </div>
 
     </div>
@@ -80,7 +81,7 @@
             <div class="detail-box">
                 <span>End Date</span>
                 <strong>
-                    @(currentSub?.EndDate?.ToString("MMMM dd, yyyy") ?? "N/A")
+                    @(nextDueDate?.ToString("MMMM dd, yyyy") ?? currentSub?.EndDate?.ToString("MMMM dd, yyyy") ?? "N/A")
                 </strong>
             </div>
 
@@ -92,9 +93,8 @@
 @code {
     private string fullName = "";
     private string userId = "";
-    private string planSpeed = "";
-    private int daysUntilBilling = 0;
     private Subscription? currentSub;
+    private DateTime? nextDueDate;
 
     protected override async Task OnInitializedAsync()
     {
@@ -115,13 +115,14 @@
                 var subs = await getSubscription.ExecuteAsync(currentUser.UserId ?? "");
                 currentSub = subs?.FirstOrDefault(x => x.Status == "Active");
 
-                if (currentSub?.EndDate != null)
-                {
-                    DateTime today = DateTime.Now;
-                    DateTime nextBilling = today.AddMonths(1);
+                // Get due date from the earliest unpaid bill
+                var billResult = await getBillings.ExecuteAsync(userId);
+                var unpaidBill = billResult?
+                    .Where(x => x.Status != "Paid" && x.Status != "Cancelled")
+                    .OrderBy(x => x.DueDate ?? DateTime.MaxValue)
+                    .FirstOrDefault();
 
-                    daysUntilBilling = (nextBilling - today).Days;
-                }
+                nextDueDate = unpaidBill?.DueDate ?? currentSub?.EndDate;
             }
         }
     }

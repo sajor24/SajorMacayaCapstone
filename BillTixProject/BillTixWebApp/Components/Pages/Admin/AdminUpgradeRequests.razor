@@ -4,7 +4,7 @@
 @using Domain.ICommands
 @using Domain.Models
 @rendermode InteractiveServer
-@attribute [Authorize(Roles = "Admin,Staff")]
+@attribute [Authorize(Roles = "Admin")]
 @inject IGetAll_UpgradeRequest getAll
 @inject IUpdate_UpgradeRequest updateRequest
 @inject IDelete_UpgradeRequest deleteRequest
@@ -12,6 +12,8 @@
 @inject IUpdate_Subscription updateSub
 @inject ICreate_Subscription createSub
 @inject ICreate_Billing createBilling
+@inject IGetAll_Billing getAllBillings
+@inject IUpdate_Billing updateBilling
 @inject IGetAll_InternetPlan getPlans
 
 <div class="sub-wrapper">
@@ -57,7 +59,7 @@
                         {
                             <tr>
                                 <td class="fw-semibold">@req.RequestId</td>
-                                <td>@req.FirstName @req.LastName<br/><small class="text-muted">@req.Username</small></td>
+                                <td>@req.FirstName @req.LastName<br /><small class="text-muted">@req.Username</small></td>
                                 <td>@req.PlanName</td>
                                 <td>@req.ReferenceNo</td>
                                 <td>
@@ -121,10 +123,10 @@
 
     string GetStatusClass(string? status) => status switch
     {
-        "Pending"  => "badge-pending",
+        "Pending" => "badge-pending",
         "Approved" => "badge-approved",
         "Rejected" => "badge-rejected",
-        _          => ""
+        _ => ""
     };
 
     async Task Approve(UpgradeRequest req)
@@ -141,46 +143,91 @@
             var plan = plans?.FirstOrDefault(x => x.PlanName == req.PlanName);
             decimal planPrice = plan?.Price ?? 0;
 
-            // 3. Update subscription — add 1 month from current EndDate
+            // 3. Update subscription — ADD 1 month ON TOP of the existing EndDate
+            //    (hindi na basta ni-reset sa "ngayon + 1 buwan", para hindi mawala
+            //    ang natitirang bilang ng araw ng subscriber kung mag-upgrade sila mid-cycle)
             var allSubs = await getAllSubs.ExecuteAsync();
             var currentSub = allSubs?.FirstOrDefault(x => x.UserId == req.UserId && x.Status == "Active");
 
+            DateTime newEndDate;
+
             if (currentSub != null)
             {
+                var baseDate = currentSub.EndDate ?? DateTime.Now;
+                newEndDate = baseDate.AddMonths(1);
+
                 currentSub.PlanName = req.PlanName;
                 currentSub.PlanPrice = planPrice;
-                currentSub.StartDate = DateTime.Now;
-                currentSub.EndDate = DateTime.Now.AddMonths(1);
+                // NOTE: StartDate ay hindi na dinidiin/binabago dito para hindi
+                // mawala ang tunay na simula ng subscription ng subscriber.
+                currentSub.EndDate = newEndDate;
                 currentSub.Status = "Active";
                 await updateSub.ExecuteAsync(currentSub);
             }
             else
             {
+                newEndDate = DateTime.Now.AddMonths(1);
+
                 var newSub = new Subscription
                 {
                     UserId = req.UserId,
                     PlanName = req.PlanName,
                     PlanPrice = planPrice,
                     StartDate = DateTime.Now,
-                    EndDate = DateTime.Now.AddMonths(1),
+                    EndDate = newEndDate,
                     Status = "Active"
                 };
                 await createSub.ExecuteAsync(newSub);
             }
 
-            // 4. Auto-create Billing record (Paid)
-            var newBilling = new Billing
-            {
-                UserId        = req.UserId,
-                Amount        = planPrice,
-                PaymentMethod = "Reference: " + req.ReferenceNo,
-                Status        = "Paid",
-                DueDate       = DateTime.Now,
-                PaidAt        = DateTime.Now,
-                Description   = $"Plan upgrade to {req.PlanName}"
-            };            await createBilling.ExecuteAsync(newBilling);
+            // 4. Resolve the ORIGINAL Pending bill (galing sa sub-billing.razor SubmitPayment)
+            //    sa halip na gumawa ng bagong hiwalay/orphaned na Billing record.
+            var allBillings = await getAllBillings.ExecuteAsync();
 
-            message = $"Approved! {req.FirstName}'s plan upgraded to {req.PlanName}. Billing record created.";
+            var originalBill = allBillings?
+                .Where(x => x.UserId == req.UserId
+                         && !string.Equals(x.Status, "Paid", StringComparison.OrdinalIgnoreCase)
+                         && !string.Equals(x.Status, "Cancelled", StringComparison.OrdinalIgnoreCase)
+                         && !string.IsNullOrEmpty(req.ReferenceNo)
+                         && x.PaymentMethod != null
+                         && x.PaymentMethod.Contains(req.ReferenceNo, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(x => x.DueDate ?? DateTime.MaxValue)
+                .FirstOrDefault();
+
+            // Fallback: kung walang match sa reference number (edge case), kunin na lang
+            // yung pinakalumang unresolved bill ng subscriber
+            originalBill ??= allBillings?
+                .Where(x => x.UserId == req.UserId
+                         && !string.Equals(x.Status, "Paid", StringComparison.OrdinalIgnoreCase)
+                         && !string.Equals(x.Status, "Cancelled", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(x => x.DueDate ?? DateTime.MaxValue)
+                .FirstOrDefault();
+
+            if (originalBill != null)
+            {
+                originalBill.Status = "Paid";
+                originalBill.PaidAt = DateTime.Now;
+                originalBill.Amount = planPrice;
+                originalBill.Description = $"Plan upgrade to {req.PlanName}";
+                await updateBilling.ExecuteAsync(originalBill);
+            }
+            else
+            {
+                // Walang nahanap na existing bill — gumawa na lang ng bago
+                var newBilling = new Billing
+                {
+                    UserId = req.UserId,
+                    Amount = planPrice,
+                    PaymentMethod = "Reference: " + req.ReferenceNo,
+                    Status = "Paid",
+                    DueDate = DateTime.Now,
+                    PaidAt = DateTime.Now,
+                    Description = $"Plan upgrade to {req.PlanName}"
+                };
+                await createBilling.ExecuteAsync(newBilling);
+            }
+
+            message = $"Approved! {req.FirstName}'s plan upgraded to {req.PlanName}. Billing record updated.";
             isError = false;
             await LoadRequests();
         }

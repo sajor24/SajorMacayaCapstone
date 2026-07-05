@@ -374,7 +374,8 @@
 
                 await update.ExecuteAsync(user);
 
-                var existingSub = subscriptions.FirstOrDefault(x => x.UserId == user.UserId);
+                var existingSub = subscriptions.FirstOrDefault(x => x.UserId == user.UserId && x.Status == "Active")
+                ?? subscriptions.FirstOrDefault(x => x.UserId == user.UserId);
                 if (existingSub != null)
                 {
                     existingSub.PlanName = selectedPlan.PlanName;

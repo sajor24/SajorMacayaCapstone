@@ -19,6 +19,7 @@ builder.Services.AddScoped<ILoginUser, LoginUser>();
 builder.Services.AddScoped<IUpdate_User, Update_User>();
 builder.Services.AddScoped<IDelete_User, Delete_User>();
 builder.Services.AddScoped<IGetAll_User, GetAll_User>();
+builder.Services.AddScoped<IUpdateCompletedJobs_User, UpdateCompletedJobs_User>();
 
 // Billing
 builder.Services.AddScoped<ICreate_Billing, Create_Billing>();
@@ -64,7 +65,7 @@ builder.Services.AddScoped<ICreate_ServiceRequest, Create_ServiceRequest>();
 builder.Services.AddScoped<IGetByUser_ServiceRequest, GetByUser_ServiceRequest>();
 builder.Services.AddScoped<IGetAll_ServiceRequest, GetAll_ServiceRequest>();
 builder.Services.AddScoped<IUpdate_ServiceRequest, Update_ServiceRequest>();
-
+builder.Services.AddScoped<IDelete_ServiceRequest, Delete_ServiceRequest>();
 // Razor Components
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();

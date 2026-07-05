@@ -53,9 +53,10 @@
                 @if (!collapsed){ <span>Send Notifications</span> }
             </NavLink>
 
-            <NavLink href="/staff-support" class="nav-item" ActiveClass="nav-active" @onclick="CloseMobileDrawer" title="@(collapsed ? "Support Chat" : null)">
-                <i class="bi bi-headset nav-icon"></i>
-                @if (!collapsed){ <span>Support Chat</span> }
+           
+            <NavLink href="/staff-service-requests" class="nav-item" ActiveClass="nav-active" @onclick="CloseMobileDrawer" title="@(collapsed ? "Service Requests" : null)">
+                <i class="bi bi-tools nav-icon"></i>
+                @if (!collapsed){ <span>Service Requests</span> }
             </NavLink>
 
         </div>

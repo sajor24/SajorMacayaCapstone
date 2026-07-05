@@ -244,7 +244,7 @@
     private string errorMessage = string.Empty;
     private int techCompletedJobs = 0;
 
-    private int openRequests      => serviceRequests.Count(x => x.Status == "Pending");
+    private int openRequests      => serviceRequests.Count(x => x.Status == "Open" || x.Status == "Pending");
     private int inProgressRequests => serviceRequests.Count(x => x.Status == "In Progress");
 
     private IEnumerable<Users> filteredTechnicians =>

@@ -1,0 +1,377 @@
+@page "/staff-service-requests"
+@layout StaffLayout
+@using Microsoft.AspNetCore.Authorization
+@using Domain.ICommands
+@using Domain.Models
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Staff")]
+@inject IGetAll_ServiceRequest getAllRequests
+@inject IUpdate_ServiceRequest updateRequest
+@inject IDelete_ServiceRequest deleteRequest
+@inject IGetAll_User getUsers
+
+<div class="sub-wrapper">
+
+    <div class="topnav">
+        <div class="topnav-left">
+            <h2>Service Requests</h2>
+            <p>Manage and assign technicians to service requests</p>
+        </div>
+    </div>
+
+    <div class="page-content">
+
+        @if (!string.IsNullOrEmpty(message))
+        {
+            <div class="alert @(isError ? "alert-danger" : "alert-success") alert-dismissible mb-3">
+                @message
+                <button type="button" class="btn-close" @onclick="() => message = string.Empty"></button>
+            </div>
+        }
+
+        <!-- SUMMARY CARDS -->
+        <div class="summary-cards mb-4">
+            <div class="summary-card">
+                <div class="summary-label">Total</div>
+                <div class="summary-value">@requests.Count</div>
+            </div>
+            <div class="summary-card orange">
+                <div class="summary-label">Open</div>
+                <div class="summary-value">@requests.Count(x => x.Status == "Open")</div>
+            </div>
+            <div class="summary-card blue">
+                <div class="summary-label">In Progress</div>
+                <div class="summary-value">@requests.Count(x => x.Status == "In Progress")</div>
+            </div>
+            <div class="summary-card green">
+                <div class="summary-label">Resolved</div>
+                <div class="summary-value">@requests.Count(x => x.Status == "Resolved")</div>
+            </div>
+        </div>
+
+        <!-- TABLE -->
+        <div class="table-card">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="fw-semibold" style="color:#111;">All Service Requests</div>
+                <div class="search-box">
+                    <i class="bi bi-search text-muted"></i>
+                    <input placeholder="Search..." @bind="searchText" @bind:event="oninput" />
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="sub-table">
+                    <thead>
+                        <tr>
+                            <th>Request ID</th>
+                            <th>Subscriber</th>
+                            <th>Issue</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Assigned To</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in filteredRequests)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@item.RequestId</td>
+                                <td>@item.FirstName @item.LastName</td>
+                                <td>@item.IssueType</td>
+                                <td>
+                                    <span class="status-badge @GetPriorityClass(item.Priority)">@item.Priority</span>
+                                </td>
+                                <td>
+                                    <span class="status-badge @GetStatusClass(item.Status)">@item.Status</span>
+                                </td>
+                                <td class="text-muted">@(item.AssignedTo ?? "—")</td>
+                                <td class="text-muted">@item.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                <td>
+                                    <div class="d-flex gap-2">
+                                        <button class="action-btn edit-btn" title="Assign Technician"
+                                                @onclick="() => OpenAssignModal(item)">
+                                            <i class="bi bi-person-check"></i>
+                                        </button>
+                                        <button class="action-btn delete-btn" title="Delete"
+                                                @onclick="() => OpenDeleteConfirm(item)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        @if (!filteredRequests.Any())
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">No service requests found.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ASSIGN MODAL -->
+@if (showAssignModal && selectedRequest != null)
+{
+    <div class="modal-backdrop-custom" @onclick="CloseAssignModal"></div>
+    <div class="modal-box shadow-lg">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">Assign Technician</h5>
+            <button class="btn-close" @onclick="CloseAssignModal"></button>
+        </div>
+
+        <!-- Request Summary -->
+        <div class="mb-3 p-3" style="background:#f8f9fa; border-radius:10px;">
+            <div class="d-flex justify-content-between mb-1">
+                <span class="text-muted">Request ID</span>
+                <strong>@selectedRequest.RequestId</strong>
+            </div>
+            <div class="d-flex justify-content-between mb-1">
+                <span class="text-muted">Subscriber</span>
+                <strong>@selectedRequest.FirstName @selectedRequest.LastName</strong>
+            </div>
+            <div class="d-flex justify-content-between mb-1">
+                <span class="text-muted">Issue</span>
+                <strong>@selectedRequest.IssueType</strong>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span class="text-muted">Priority</span>
+                <span class="status-badge @GetPriorityClass(selectedRequest.Priority)">@selectedRequest.Priority</span>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Assign To <span class="text-danger">*</span></label>
+            <select class="form-select" @bind="assignedTechnicianId">
+                <option value="">— Select Technician —</option>
+                @foreach (var tech in technicians)
+                {
+                    <option value="@tech.UserId">
+                        @tech.FirstName @tech.LastName
+                        @if (!string.IsNullOrEmpty(tech.TechSpecialization))
+                        {
+                            <text> · @tech.TechSpecialization</text>
+                        }
+                        @if (!string.IsNullOrEmpty(tech.TechArea))
+                        {
+                            <text> (@tech.TechArea)</text>
+                        }
+                    </option>
+                }
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Status</label>
+            <select class="form-select" @bind="assignStatus">
+                <option value="Open">Open</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Resolved">Resolved</option>
+            </select>
+        </div>
+
+        @if (!string.IsNullOrEmpty(formError))
+        {
+            <div class="alert alert-danger">@formError</div>
+        }
+
+        <div class="d-flex gap-2 mt-4 justify-content-end">
+            <button class="btn btn-secondary" @onclick="CloseAssignModal">Cancel</button>
+            <button class="btn btn-primary" @onclick="SaveAssignment" disabled="@isSaving">
+                @(isSaving ? "Saving..." : "Save Assignment")
+            </button>
+        </div>
+    </div>
+}
+
+<!-- DELETE CONFIRMATION MODAL -->
+@if (showDeleteConfirm && deleteTarget != null)
+{
+    <div class="modal-backdrop-custom" @onclick="CloseDeleteConfirm"></div>
+    <div class="modal-box shadow-lg" style="width:420px;">
+        <div class="text-center py-2">
+            <div style="font-size:3rem;">⚠️</div>
+            <h5 class="fw-bold mt-2">Delete Service Request?</h5>
+            <p class="text-muted mt-1">
+                Are you sure you want to delete request <strong>@deleteTarget.RequestId</strong>
+                for <strong>@deleteTarget.FirstName @deleteTarget.LastName</strong>? This action cannot be undone.
+            </p>
+        </div>
+        <div class="d-flex gap-2 mt-3 justify-content-center">
+            <button class="btn btn-secondary px-4" @onclick="CloseDeleteConfirm">Cancel</button>
+            <button class="btn btn-danger px-4" @onclick="ConfirmDelete" disabled="@isDeleting">
+                @(isDeleting ? "Deleting..." : "Yes, Delete")
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    private List<ServiceRequest> requests = new();
+    private List<Users> technicians = new();
+    private string searchText = string.Empty;
+    private string message = string.Empty;
+    private bool isError = false;
+
+    private bool showAssignModal = false;
+    private ServiceRequest? selectedRequest;
+    private string assignedTechnicianId = string.Empty;
+    private string assignStatus = "Open";
+    private string formError = string.Empty;
+    private bool isSaving = false;
+
+    private bool showDeleteConfirm = false;
+    private ServiceRequest? deleteTarget;
+    private bool isDeleting = false;
+
+    private IEnumerable<ServiceRequest> filteredRequests =>
+        string.IsNullOrWhiteSpace(searchText)
+        ? requests
+        : requests.Where(x =>
+            (x.RequestId != null && x.RequestId.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
+            (x.FirstName != null && x.FirstName.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
+            (x.LastName != null && x.LastName.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
+            (x.IssueType != null && x.IssueType.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
+            (x.Status != null && x.Status.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
+            (x.AssignedTo != null && x.AssignedTo.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+        );
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    async Task LoadData()
+    {
+        var result = await getAllRequests.ExecuteAsync();
+        requests = result?.OrderByDescending(x => x.CreatedAt).ToList() ?? new();
+
+        var users = await getUsers.ExecuteAsync();
+        technicians = users?.Where(x => x.Role == "Technician").ToList() ?? new();
+    }
+
+    void OpenAssignModal(ServiceRequest req)
+    {
+        selectedRequest = req;
+        assignStatus = req.Status ?? "Open";
+        formError = string.Empty;
+
+        // Pre-select the currently assigned technician if any
+        var match = technicians.FirstOrDefault(t =>
+            $"{t.FirstName} {t.LastName}" == req.AssignedTo);
+        assignedTechnicianId = match?.UserId ?? string.Empty;
+
+        showAssignModal = true;
+    }
+
+    void CloseAssignModal()
+    {
+        showAssignModal = false;
+        selectedRequest = null;
+        assignedTechnicianId = string.Empty;
+        formError = string.Empty;
+    }
+
+    async Task SaveAssignment()
+    {
+        if (selectedRequest == null) return;
+
+        if (string.IsNullOrWhiteSpace(assignedTechnicianId))
+        {
+            formError = "Please select a technician.";
+            return;
+        }
+
+        isSaving = true;
+        formError = string.Empty;
+
+        try
+        {
+            var tech = technicians.First(x => x.UserId == assignedTechnicianId);
+
+            selectedRequest.AssignedTo = $"{tech.FirstName} {tech.LastName}";
+            selectedRequest.Status = assignStatus;
+
+            if (assignStatus == "Resolved" && !selectedRequest.ResolvedAt.HasValue)
+                selectedRequest.ResolvedAt = DateTime.Now;
+            else if (assignStatus != "Resolved")
+                selectedRequest.ResolvedAt = null;
+
+            await updateRequest.ExecuteAsync(selectedRequest);
+            await LoadData();
+
+            message = $"Assigned to {selectedRequest.AssignedTo} successfully.";
+            isError = false;
+            showAssignModal = false;
+        }
+        catch (Exception ex)
+        {
+            formError = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    void OpenDeleteConfirm(ServiceRequest req)
+    {
+        deleteTarget = req;
+        showDeleteConfirm = true;
+    }
+
+    void CloseDeleteConfirm()
+    {
+        showDeleteConfirm = false;
+        deleteTarget = null;
+    }
+
+    async Task ConfirmDelete()
+    {
+        if (deleteTarget == null) return;
+
+        isDeleting = true;
+
+        try
+        {
+            await deleteRequest.ExecuteAsync(deleteTarget);
+            await LoadData();
+
+            message = "Service request deleted.";
+            isError = false;
+            showDeleteConfirm = false;
+            deleteTarget = null;
+        }
+        catch (Exception ex)
+        {
+            message = $"Error: {ex.Message}";
+            isError = true;
+            showDeleteConfirm = false;
+        }
+        finally
+        {
+            isDeleting = false;
+        }
+    }
+
+    string GetStatusClass(string? s) => s switch
+    {
+        "Open" => "badge-pending",
+        "In Progress" => "badge-inprogress",
+        "Resolved" => "badge-paid",
+        _ => "badge-pending"
+    };
+
+    string GetPriorityClass(string? p) => p?.ToLower() switch
+    {
+        "urgent" => "badge-overdue",
+        "high" => "badge-overdue",
+        "medium" => "badge-pending",
+        "low" => "badge-paid",
+        _ => "badge-pending"
+    };
+}

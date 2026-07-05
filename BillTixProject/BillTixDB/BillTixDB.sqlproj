@@ -77,6 +77,8 @@
     <Build Include="StoredProcedure\User\DeleteUser.sql" />
     <Build Include="StoredProcedure\User\GetAllUser.sql" />
     <Build Include="StoredProcedure\User\GetUserByUsername.sql" />
+    <Build Include="StoredProcedure\User\GetAllSubscribers.sql" />
+    <Build Include="StoredProcedure\User\UpdateTechCompletedJobs.sql" />
     <Build Include="StoredProcedure\Billing\CreateBilling.sql" />
     <Build Include="StoredProcedure\Billing\UpdateBilling.sql" />
     <Build Include="StoredProcedure\Billing\DeleteBilling.sql" />
@@ -112,6 +114,7 @@
     <Build Include="StoredProcedure\ServiceRequests\GetServiceRequestsByUser.sql" />
     <Build Include="StoredProcedure\ServiceRequests\GetAllServiceRequests.sql" />
     <Build Include="StoredProcedure\ServiceRequests\UpdateServiceRequest.sql" />
+    <Build Include="StoredProcedure\ServiceRequests\DeleteServiceRequest.sql" />
   </ItemGroup>
   <ItemGroup>
     <None Include="BillTixDB.publish.xml" />

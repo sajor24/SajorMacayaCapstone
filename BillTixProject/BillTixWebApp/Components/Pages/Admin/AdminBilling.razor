@@ -309,15 +309,38 @@
         if (!isEditing && activeSub != null)
             billing.DueDate = activeSub.EndDate;
 
+        // Track if this bill was previously NOT paid (to avoid duplicate next-month bills on re-edit)
+        var wasAlreadyPaid = isEditing &&
+            billings.Any(x => x.BillingId == billing.BillingId && x.Status == "Paid");
+
         if (billing.Status == "Paid")
         {
             billing.PaidAt ??= DateTime.Now;
 
-            if (activeSub != null)
+            // Only extend subscription and create next bill when first marking as Paid
+            if (activeSub != null && !wasAlreadyPaid)
             {
                 var baseDate = activeSub.EndDate ?? DateTime.Now;
-                activeSub.EndDate = baseDate.AddMonths(1);
+                var nextDueDate = baseDate.AddMonths(1);
+
+                activeSub.EndDate = nextDueDate;
                 await updateSubscription.ExecuteAsync(activeSub);
+
+                // Update current bill's DueDate to reflect the new cycle
+                billing.DueDate = billing.DueDate.HasValue
+                    ? billing.DueDate.Value.AddMonths(1)
+                    : nextDueDate;
+
+                // Create next month's bill
+                var nextBill = new Billing
+                {
+                    UserId = billing.UserId,
+                    Amount = activeSub.PlanPrice,
+                    Description = $"Monthly subscription - {activeSub.PlanName}",
+                    DueDate = nextDueDate,
+                    Status = "Pending"
+                };
+                await create.ExecuteAsync(nextBill);
             }
         }
         else

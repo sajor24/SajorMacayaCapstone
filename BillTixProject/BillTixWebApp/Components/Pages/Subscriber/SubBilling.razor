@@ -80,7 +80,6 @@
                         <th>Billing ID</th>
                         <th>Amount</th>
                         <th>Description</th>
-                        <th>Due Date</th>
                         <th>Status</th>
                         <th>Paid At</th>
                     </tr>
@@ -92,7 +91,6 @@
                             <td class="fw-semibold">@bill.BillingId</td>
                             <td>₱@bill.Amount.ToString("N2")</td>
                             <td class="text-muted">@(bill.Description ?? "—")</td>
-                            <td class="text-muted">@(bill.DueDate?.ToString("MMM dd, yyyy") ?? "—")</td>
                             <td>
                                 <span class="status-badge @GetStatusClass(bill.Status)">@bill.Status</span>
                             </td>
@@ -305,11 +303,9 @@
         referenceNo = string.Empty;
         formError = string.Empty;
 
-        if (activeSub != null && string.IsNullOrWhiteSpace(selectedPlanId))
-        {
-            var match = plans.FirstOrDefault(x => x.PlanName == activeSub.PlanName);
-            if (match != null) selectedPlanId = match.PlanId ?? "";
-        }
+        // Laging i-reset papunta sa current active plan bawat bukas ng form,
+        // hindi lang kapag blank, para hindi mag-stick ang dating browsed plan.
+        ResetSelectedPlanToActive();
 
         showPayForm = true;
     }
@@ -320,6 +316,18 @@
         paymentMethod = string.Empty;
         referenceNo = string.Empty;
         formError = string.Empty;
+
+        // I-reset din pabalik sa current plan kapag na-cancel ang form
+        // (hindi natuloy magbayad) para hindi manatili yung binrowse lang na plan.
+        ResetSelectedPlanToActive();
+    }
+
+    void ResetSelectedPlanToActive()
+    {
+        var match = activeSub != null
+            ? plans.FirstOrDefault(x => x.PlanName == activeSub.PlanName)
+            : null;
+        selectedPlanId = match?.PlanId ?? "";
     }
 
     async Task SubmitPayment()
