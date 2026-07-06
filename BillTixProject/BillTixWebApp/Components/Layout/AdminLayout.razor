@@ -51,8 +51,8 @@
             </NavLink>
 
             <NavLink href="/admin-upgrade-requests" class="nav-item" ActiveClass="nav-active" @onclick="CloseMobileDrawer" title="@(collapsed ? "Upgrade Requests" : null)">
-                <i class="bi bi-arrow-up-circle-fill nav-icon"></i>
-                @if (!collapsed){ <span>Upgrade Requests</span> }
+                <i class="bi bi-credit-card-fill nav-icon"></i>
+                @if (!collapsed){ <span>Payment Request</span> }
             </NavLink>
 
             <NavLink href="/admin-accounts" class="nav-item" ActiveClass="nav-active" @onclick="CloseMobileDrawer" title="@(collapsed ? "Accounts" : null)">
@@ -101,7 +101,7 @@
     <div class="logout-overlay" @onclick="CancelLogout"></div>
     <div class="logout-modal shadow-lg">
         <div class="text-center py-2">
-            <div style="font-size:2.5rem;">🚪</div>
+            <i class="bi bi-box-arrow-left" style="font-size: 1.5rem;"></i>
             <h5 class="fw-bold mt-2">Logout?</h5>
             <p class="text-muted mt-1">Are you sure you want to logout?</p>
         </div>

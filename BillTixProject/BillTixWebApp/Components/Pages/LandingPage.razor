@@ -2,6 +2,9 @@
 @layout EmptyLayout
 @inject NavigationManager _Nav
 @using BillTixWebApp.Components.Layout
+@using Domain.ICommands
+@using Domain.Models
+@inject IGetAll_InternetPlan getAll
 
 <PageTitle>BILLTIX</PageTitle>
 
@@ -10,298 +13,517 @@
         box-sizing: border-box;
         margin: 0;
         padding: 0;
-        font-family: 'Segoe UI', sans-serif;
+        font-family: 'Plus Jakarta Sans', 'Segoe UI', -apple-system, sans-serif;
     }
 
     body {
-        background: #191825;
+        background: #0d0b14;
+        color: #f1eaff;
+        overflow-x: hidden;
     }
 
+    html {
+        scroll-behavior: smooth;
+    }
+
+    /* ===== Keyframes ===== */
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes navFadeDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes floatIcon {
+        0%, 100% {
+            transform: translateY(0) scale(1);
+        }
+
+        50% {
+            transform: translateY(-8px) scale(1.05);
+        }
+    }
+
+    @@keyframes signalPulse {
+        0%, 100% {
+            opacity: var(--base-opacity, 0.4);
+            transform: scale(1);
+        }
+
+        50% {
+            opacity: 1;
+            transform: scale(1.02);
+        }
+    }
+
+    @@keyframes dotPing {
+        0% {
+            box-shadow: 0 0 0 0 rgba(40,199,111,0.7);
+        }
+
+        70% {
+            box-shadow: 0 0 0 12px rgba(40,199,111,0);
+        }
+
+        100% {
+            box-shadow: 0 0 0 0 rgba(40,199,111,0);
+        }
+    }
+
+    /* ===== Navbar ===== */
     .navbar {
-        padding: 18px 40px;
-        background: #221c36;
-        font-size: 2rem;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 48px;
+        background: rgba(11, 11, 18, 0.8);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        z-index: 100;
+        animation: navFadeDown 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+        .navbar .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+            .navbar .brand .dot {
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                background: #28c76f;
+                animation: dotPing 2s infinite;
+            }
+
+        .navbar .nav-links {
+            display: flex;
+            gap: 40px;
+            list-style: none;
+        }
+
+            .navbar .nav-links li {
+                font-size: 0.9rem;
+                font-weight: 600;
+            }
+
+            .navbar .nav-links .nav-link-item {
+                color: #a4a0cb;
+                text-decoration: none;
+                transition: color 0.25s, transform 0.25s;
+                display: inline-block;
+            }
+
+                .navbar .nav-links .nav-link-item:hover {
+                    color: #ffffff;
+                    transform: translateY(-1px);
+                }
+
+        .navbar .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .navbar .nav-cta {
+            padding: 10px 28px;
+            border-radius: 30px;
+            border: 1px solid rgba(115, 103, 240, 0.5);
+            background: rgba(115, 103, 240, 0.1);
+            color: #fff;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+            .navbar .nav-cta:hover {
+                background: #7367f0;
+                border-color: #7367f0;
+                box-shadow: 0 8px 20px rgba(115, 103, 240, 0.3);
+                transform: translateY(-2px);
+            }
+
+        .navbar .hamburger {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            gap: 6px;
+            width: 32px;
+            height: 32px;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+            .navbar .hamburger span {
+                width: 100%;
+                height: 2.5px;
+                background: #f1eaff;
+                border-radius: 4px;
+                transition: all 0.3s;
+            }
+
+    /* ===== Sections & Utilities ===== */
+    .hero {
+        position: relative;
+        min-height: 100vh;
+        background: radial-gradient(circle at 80% 20%, rgba(115, 103, 240, 0.15) 0%, transparent 50%), #0b0b12;
+        padding: 160px 48px 100px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 60px;
+    }
+
+    .hero-copy {
+        max-width: 620px;
+        z-index: 2;
+    }
+
+    .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(40, 199, 111, 0.1);
+        border: 1px solid rgba(40, 199, 111, 0.2);
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-family: monospace;
+        font-size: 0.8rem;
         font-weight: 700;
         letter-spacing: 2px;
-        color: #ffffff;
-        text-shadow: -3px -2px 0px rgba(14, 12, 12, 1), 2px 1px 0px #555555, 3px 3px 0px #444444, 4px 4px 0px #333333, 5px 5px 8px rgba(0, 0, 0, 0.5);
+        text-transform: uppercase;
+        color: #28c76f;
+        margin-bottom: 28px;
     }
 
-    .hero {
-        background: linear-gradient(135deg, #191825 60%, #302b63 100%);
-        color: #f1eaff;
-        text-align: center;
-        padding: 80px 20px;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.12);
-    }
-
-        .hero h1 {
-            font-size: 2.7rem;
-            font-weight: 800;
-            letter-spacing: 1px;
-            margin-bottom: 12px;
-            color: #fff;
-        }
-
-        .hero p {
-            font-size: 1.12rem;
-            opacity: 0.83;
-            color: #b4baff;
-        }
-
-    .hero-btn {
-        margin-top: 28px;
-        padding: 14px 36px;
-        background: linear-gradient(90deg, #7367f0 60%, #28c76f 100%);
+    .hero h1 {
+        font-size: clamp(2.8rem, 6vw, 4.5rem);
+        font-weight: 800;
+        line-height: 1.1;
+        letter-spacing: -1.5px;
+        margin-bottom: 24px;
         color: #fff;
-        border: none;
-        border-radius: 30px;
-        font-size: 1.01rem;
-        cursor: pointer;
-        transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
-        font-weight: 700;
-        box-shadow: 0 2px 16px rgba(82,73,202,0.13);
     }
 
-        .hero-btn:hover {
-            background: linear-gradient(90deg, #4739ab 40%, #26a04f 100%);
-            box-shadow: 0 4px 24px rgba(72,110,190,0.18);
-            transform: translateY(-2px);
+        .hero h1 .accent {
+            background: linear-gradient(90deg, #7367f0, #28c76f);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-    .pricing-section {
-        text-align: center;
-        padding: 60px 20px 40px;
-        background: #222030;
+    .hero p {
+        font-size: 1.15rem;
+        line-height: 1.65;
+        color: #b4baff;
+        opacity: 0.85;
+        margin-bottom: 40px;
     }
 
-        .pricing-section h2 {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: #d1c7ff;
-            letter-spacing: 1px;
-        }
-
-        .pricing-section .sub {
-            color: #b5aad5;
-            margin-bottom: 36px;
-            font-size: 0.99rem;
-        }
-
-    .pricing-cards {
+    .hero-actions {
         display: flex;
-        justify-content: center;
-        gap: 24px;
+        gap: 20px;
         flex-wrap: wrap;
     }
 
+    .hero-btn {
+        padding: 16px 38px;
+        background: linear-gradient(90deg, #7367f0 0%, #28c76f 100%);
+        background-size: 200% auto;
+        color: #fff;
+        border: none;
+        border-radius: 30px;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+        .hero-btn:hover {
+            background-position: right center;
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(115, 103, 240, 0.4);
+        }
+
+    .hero-btn-outline {
+        padding: 16px 36px;
+        background: transparent;
+        color: #f1eaff;
+        border: 1.5px solid rgba(255,255,255,0.15);
+        border-radius: 30px;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+        .hero-btn-outline:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.3);
+            transform: translateY(-3px);
+        }
+
+    .signal-art {
+        position: absolute;
+        right: 0;
+        bottom: 5%;
+        width: min(600px, 50vw);
+        height: min(600px, 50vw);
+        z-index: 1;
+        pointer-events: none;
+    }
+
+        .signal-art path {
+            transform-origin: bottom left;
+            animation: signalPulse 3.5s ease-in-out infinite;
+        }
+
+            .signal-art path:nth-child(1) {
+                --base-opacity: 0.15;
+                animation-delay: 0s;
+            }
+
+            .signal-art path:nth-child(2) {
+                --base-opacity: 0.3;
+                animation-delay: 0.2s;
+            }
+
+            .signal-art path:nth-child(3) {
+                --base-opacity: 0.45;
+                animation-delay: 0.4s;
+            }
+
+            .signal-art path:nth-child(4) {
+                --base-opacity: 0.6;
+                animation-delay: 0.6s;
+            }
+
+            .signal-art path:nth-child(5) {
+                --base-opacity: 0.8;
+                animation-delay: 0.8s;
+            }
+
+    .pricing-section, .roles-section {
+        position: relative;
+        padding: 100px 48px;
+        text-align: center;
+    }
+
+    .pricing-section {
+        background: #14121f;
+    }
+
+    .roles-section {
+        background: #0d0b14;
+    }
+
+        .pricing-section h2, .roles-section h2 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 12px;
+            color: #ffffff;
+        }
+
+        .pricing-section .sub, .roles-section .sub {
+            color: #9c98bd;
+            margin-bottom: 50px;
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+    .pricing-cards, .role-cards {
+        display: flex;
+        justify-content: center;
+        gap: 28px;
+        flex-wrap: wrap;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
     .pricing-card {
-        background: rgba(37,37,60,0.95);
-        border: 1.5px solid #3b3755;
-        border-radius: 17px;
-        padding: 30px 24px;
-        width: 230px;
+        background: rgba(25, 23, 38, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 24px;
+        padding: 40px 32px;
+        width: 280px;
         text-align: left;
-        box-shadow: 0 4px 20px rgba(22,14,40,0.15);
-        transition: transform 0.25s, border 0.21s, box-shadow 0.25s;
+        backdrop-filter: blur(10px);
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
         .pricing-card:hover {
-            transform: translateY(-8px) scale(1.03);
-            border: 1.5px solid #7367f0;
-            box-shadow: 0 10px 30px rgba(22,14,40,0.28);
+            transform: translateY(-12px);
+            border-color: rgba(115, 103, 240, 0.5);
+            background: rgba(25, 23, 38, 0.9);
         }
 
         .pricing-card h3 {
-            font-size: 1rem;
-            color: #88b4ff;
-            font-weight: 700;
+            font-size: 1.2rem;
+            color: #ffffff;
+            margin-bottom: 8px;
         }
 
         .pricing-card .speed {
             color: #28c76f;
             font-weight: 700;
-            font-size: 1.01rem;
-            margin-bottom: 12px;
-            letter-spacing: .5px;
-            background: rgba(76,224,164,0.08);
-            padding: 2px 9px;
-            border-radius: 10px;
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+            background: rgba(40, 199, 111, 0.1);
+            padding: 4px 12px;
+            border-radius: 12px;
             display: inline-block;
         }
 
         .pricing-card .price {
-            font-size: 1.55rem;
+            font-size: 2rem;
             font-weight: 800;
-            color: #f1eaff;
-            margin-bottom: 16px;
+            margin-bottom: 24px;
         }
 
             .pricing-card .price span {
-                font-size: 0.86rem;
-                font-weight: 400;
-                color: #b2acf4;
+                font-size: 0.9rem;
+                color: #8985a8;
             }
 
         .pricing-card ul {
             list-style: none;
-            padding: 0;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            padding-top: 20px;
         }
 
             .pricing-card ul li {
-                font-size: 0.93rem;
-                color: #bebef7;
-                padding: 4px 0;
-                font-weight: 500;
-                letter-spacing: .4px;
+                font-size: 0.95rem;
+                color: #b5b1d7;
+                padding: 8px 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
             }
 
                 .pricing-card ul li::before {
-                    content: "✓ ";
-                    color: #7367f0;
-                    font-weight: bold;
+                    content: "✓";
+                    color: #28c76f;
+                    font-weight: 900;
                 }
 
-    .roles-section {
-        padding: 50px 20px;
-        background: #191825;
-        text-align: center;
-    }
-
-        .roles-section h2 {
-            font-size: 1.7rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: #ebe8fd;
-            letter-spacing: 1px;
-        }
-
-        .roles-section .sub {
-            color: #bcbfe0;
-            margin-bottom: 36px;
-            font-size: 0.97rem;
-        }
-
-    .role-cards {
-        display: flex;
-        justify-content: center;
-        gap: 22px;
-        flex-wrap: wrap;
-    }
-
     .role-card {
-        background: rgba(30,28,42,0.90);
-        border: 1.5px solid #332f48;
-        border-radius: 16px;
-        padding: 28px 20px;
-        width: 210px;
+        background: rgba(20, 18, 31, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        border-radius: 20px;
+        padding: 36px 28px;
+        width: 260px;
         text-align: left;
-        box-shadow: 0 2px 14px rgba(0,0,0,0.09);
-        transition: transform 0.25s, border 0.21s, box-shadow 0.25s;
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
         .role-card:hover {
-            transform: translateY(-8px) scale(1.04);
-            border: 1.5px solid #28c76f;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.22);
+            transform: translateY(-8px);
+            border-color: rgba(40, 199, 111, 0.4);
         }
 
+            .role-card:hover .icon {
+                animation: floatIcon 1.2s ease-in-out infinite;
+            }
+
         .role-card .icon {
-            font-size: 2rem;
-            margin-bottom: 12px;
-            color: #e7e7ff;
-            text-shadow: 0 4px 20px rgba(68,110,222,0.16);
+            font-size: 2.5rem;
+            margin-bottom: 16px;
+            display: inline-block;
         }
 
         .role-card h4 {
-            font-size: 1.08rem;
+            font-size: 1.25rem;
             font-weight: 700;
             margin-bottom: 4px;
-            color: #b8aaff;
+            color: #ffffff;
         }
 
         .role-card .subtitle {
-            font-size: 0.83rem;
             color: #28c76f;
+            font-size: 0.85rem;
             font-weight: 700;
-            margin-bottom: 8px;
+            margin-bottom: 14px;
+            text-transform: uppercase;
         }
 
         .role-card p {
-            font-size: 0.81rem;
-            color: #b5b1df;
-            margin-bottom: 18px;
+            font-size: 0.9rem;
+            color: #9c98bd;
+            margin-bottom: 24px;
             line-height: 1.6;
+            min-height: 70px;
         }
 
     .btn-login {
-        background: linear-gradient(90deg, #7367f0 70%, #28c76f 100%);
+        background: rgba(255,255,255,0.05);
         color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 10px 0;
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 12px;
+        padding: 12px 0;
         width: 100%;
         cursor: pointer;
-        font-size: 0.94rem;
+        font-size: 0.95rem;
         font-weight: 700;
-        box-shadow: 0 2px 14px rgba(82,73,202,0.11);
-        transition: background 0.19s, box-shadow 0.21s, transform 0.2s;
+        transition: all 0.3s;
     }
 
-        .btn-login:hover {
-            background: linear-gradient(90deg, #4339ab 45%, #17e398 100%);
-            box-shadow: 0 4px 22px rgba(44,80,120,0.13);
-            transform: translateY(-1px);
-        }
+    .role-card:hover .btn-login {
+        background: linear-gradient(90deg, #7367f0 0%, #28c76f 100%);
+        border-color: transparent;
+    }
 
     .footer {
-        background: linear-gradient(135deg, #181728 80%, #221c3a 100%);
-        color: #cec8f9;
+        background: linear-gradient(135deg, #0b0b12 0%, #151124 100%);
+        border-top: 1px solid rgba(255,255,255,0.05);
+        color: #9c98bd;
         text-align: center;
-        padding: 52px 20px;
+        padding: 80px 48px;
     }
 
         .footer h3 {
-            font-size: 1.62rem;
+            font-size: 2rem;
             font-weight: 800;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             color: #fff;
-            letter-spacing: 1px;
         }
 
-        .footer p {
-            font-size: 0.95rem;
-            opacity: 0.78;
-            margin-bottom: 26px;
-            color: #b3b9d9;
-        }
-
-    .footer-btn {
-        padding: 13px 32px;
-        background: linear-gradient(90deg, #7367f0 70%, #28c76f 100%);
-        color: #fff;
-        border: none;
-        border-radius: 30px;
-        font-size: 1.01rem;
-        font-weight: 700;
-        cursor: pointer;
-        transition: opacity 0.19s, box-shadow 0.19s, transform 0.2s;
-        box-shadow: 0 2px 14px rgba(82,73,202,0.10);
-    }
-
-        .footer-btn:hover {
-            opacity: 0.88;
-            box-shadow: 0 4px 20px rgba(82,73,202,0.18);
-            transform: translateY(-1px);
-        }
-
-    /* ===== Scroll Reveal ===== */
+    /* ===== Reveal Animation ===== */
     .reveal {
         opacity: 0;
-        transform: translateY(36px);
-        transition: opacity 0.75s ease, transform 0.75s cubic-bezier(.2,.65,.2,1);
-        will-change: opacity, transform;
+        transform: translateY(30px);
+        transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
         .reveal.show {
@@ -310,89 +532,171 @@
         }
 
     .delay-1 {
-        transition-delay: .08s;
+        transition-delay: .1s;
     }
 
     .delay-2 {
-        transition-delay: .16s;
+        transition-delay: .2s;
     }
 
     .delay-3 {
-        transition-delay: .24s;
+        transition-delay: .3s;
     }
 
     .delay-4 {
-        transition-delay: .32s;
+        transition-delay: .4s;
     }
 
-    /* Responsive for mobile */
+    /* ===== Responsive ===== */
+   @@media (max-width: 900px) {
+        .hero {
+            flex-direction: column;
+            text-align: center;
+            padding: 140px 24px 8px;
+        }
+
+        .hero-actions {
+            justify-content: center;
+        }
+
+        .signal-art {
+            position: relative;
+            width: 70vw;
+            height: 70vw;
+            margin-top: 40px;
+        }
+    }
+
     @@media (max-width: 700px) {
+        .navbar {
+            padding: 16px 24px;
+        }
+
+            .navbar .hamburger {
+                display: flex;
+            }
+
+            .navbar .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                flex-direction: column;
+                background: #0b0b12;
+                border-bottom: 1px solid rgba(255,255,255,0.08);
+            }
+
+                .navbar .nav-links.open {
+                    display: flex;
+                }
+
+                .navbar .nav-links li {
+                    width: 100%;
+                    border-top: 1px solid rgba(255,255,255,0.05);
+                }
+
+                .navbar .nav-links .nav-link-item {
+                    display: block;
+                    padding: 18px 0;
+                    width: 100%;
+                    text-align: center;
+                }
+
+        .pricing-section, .roles-section, .footer {
+            padding: 80px 24px;
+        }
+
         .pricing-cards, .role-cards {
             flex-direction: column;
-            gap: 16px;
             align-items: center;
+            gap: 20px;
         }
 
-        .hero {
-            padding: 50px 12px;
-        }
-
-        .footer {
-            padding: 34px 8px;
+        .pricing-card, .role-card {
+            width: 100%;
+            max-width: 340px;
         }
     }
 </style>
 
-<!-- Navbar -->
-<div class="navbar">BILLTIX</div>
+<div class="navbar">
+    <a href="#" class="brand"><span class="dot"></span> BILLTIX</a>
 
-<!-- Hero -->
-<div class="hero">
-    <h1 class="reveal">Welcome to BILLTIX</h1>
-    <p class="reveal delay-1">Fast, reliable internet service for everyone.</p>
-    <button class="hero-btn reveal delay-2" @onclick='() => _Nav.NavigateTo("/login")'>Get Started</button>
-</div>
+    <ul class="nav-links @(mobileNavOpen ? "open" : "")" id="navLinks">
+        <li><a href="#pricing" class="nav-link-item" @onclick="CloseMobileNav">Plans</a></li>
+        <li><a href="#pricing" class="nav-link-item" @onclick="CloseMobileNav">Coverage</a></li>
+        <li><a href="#roles" class="nav-link-item" @onclick="CloseMobileNav">Support</a></li>
+    </ul>
 
-<!-- Pricing -->
-<div class="pricing-section">
-    <h2 class="reveal">Simple, Transparent Pricing</h2>
-    <p class="sub reveal delay-1">Choose the perfect plan for your needs. No hidden fees, cancel anytime.</p>
-    <div class="pricing-cards">
-        <div class="pricing-card reveal delay-1">
-            <h3>Basic</h3>
-            <div class="speed">150 MBPS</div>
-            <div class="price">₱1,000.00<span>/Month</span></div>
-            <ul>
-                <li>Waived Installation Fee</li>
-                <li>Unlimited Data</li>
-                <li>Free Router</li>
-            </ul>
-        </div>
-        <div class="pricing-card reveal delay-2">
-            <h3>Standard</h3>
-            <div class="speed">200 MBPS</div>
-            <div class="price">₱1,300.00<span>/Month</span></div>
-            <ul>
-                <li>Waived Installation Fee</li>
-                <li>Unlimited Data</li>
-                <li>Free Router</li>
-            </ul>
-        </div>
-        <div class="pricing-card reveal delay-3">
-            <h3>Premium</h3>
-            <div class="speed">250 MBPS</div>
-            <div class="price">₱1,500.00<span>/Month</span></div>
-            <ul>
-                <li>Waived Installation Fee</li>
-                <li>Unlimited Data</li>
-                <li>Free Router</li>
-            </ul>
-        </div>
+    <div class="nav-right">
+        <button class="nav-cta" @onclick='() => _Nav.NavigateTo("/login")'>Login</button>
+
+        <button class="hamburger" id="hamburgerBtn" @onclick="ToggleMobileNav" aria-label="Toggle menu" aria-expanded="@mobileNavOpen.ToString().ToLower()">
+            <span></span><span></span><span></span>
+        </button>
     </div>
 </div>
 
-<!-- Roles -->
-<div class="roles-section">
+<div class="hero">
+    <div class="hero-copy">
+        <div class="eyebrow reveal"><span class="dot"></span> Network Online</div>
+        <h1 class="reveal delay-1">Internet that<br />just <span class="accent">stays connected.</span></h1>
+        <p class="reveal delay-2">Fast, reliable service and billing you can actually keep track of — no surprises, no dropouts.</p>
+        <div class="hero-actions reveal delay-2">
+            <button class="hero-btn" @onclick='() => _Nav.NavigateTo("/login")'>Get Started</button>
+            <a class="hero-btn-outline" href="#pricing" style="text-decoration:none; display:inline-flex; align-items:center;">View Plans</a>
+        </div>
+    </div>
+    <svg class="signal-art" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="signalGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#7367f0" />
+                <stop offset="100%" stop-color="#28c76f" />
+            </linearGradient>
+        </defs>
+        <g fill="none" stroke="url(#signalGrad)" stroke-width="3" stroke-linecap="round">
+            <path d="M 100 500 A 400 400 0 0 1 500 100" />
+            <path d="M 160 500 A 340 340 0 0 1 500 160" />
+            <path d="M 220 500 A 280 280 0 0 1 500 220" />
+            <path d="M 280 500 A 220 220 0 0 1 500 280" />
+            <path d="M 340 500 A 160 160 0 0 1 500 340" />
+        </g>
+        <circle class="source-dot" cx="500" cy="500" r="9" fill="#28c76f" />
+    </svg>
+</div>
+
+<div class="pricing-section" id="pricing">
+    <h2 class="reveal">Simple, Transparent Pricing</h2>
+    <p class="sub reveal delay-1">Choose the perfect plan for your needs. No hidden fees, cancel anytime.</p>
+    <div class="pricing-cards">
+        @if (plans.Count == 0)
+        {
+            <p class="sub reveal">No plans available right now. Please check back soon.</p>
+        }
+        else
+        {
+            @for (int i = 0; i < plans.Count; i++)
+            {
+                var item = plans[i];
+                var delaySeconds = (0.1 + (i * 0.1)).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
+                <div class="pricing-card reveal" style="transition-delay:@(delaySeconds)s">
+                    <h3>@item.PlanName</h3>
+                    <div class="speed">@item.Speed</div>
+                    <div class="price">₱@item.Price.ToString("N2")<span>/Month</span></div>
+                    <ul>
+                        @foreach (var feature in (item.Features ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries))
+                        {
+                            <li>@feature.Trim()</li>
+                        }
+                    </ul>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<div class="roles-section" id="roles">
     <h2 class="reveal">Login to Your Portal</h2>
     <p class="sub reveal delay-1">Select your role to access your dashboard.</p>
     <div class="role-cards">
@@ -427,29 +731,56 @@
     </div>
 </div>
 
-<!-- Footer -->
-<div class="footer">
-    <h3 class="reveal">Ready to Get Started?</h3>
-    <p class="reveal delay-1">Join thousands of satisfied customers enjoying fast, reliable internet service.</p>
-    <button class="footer-btn reveal delay-2" @onclick='() => _Nav.NavigateTo("/login")'>Get Started Now</button>
-</div>
 
 <script>
     (() => {
-        const items = document.querySelectorAll('.reveal');
-        if (!items.length) return;
-
-        const observer = new IntersectionObserver((entries) => {
+        const io = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     entry.target.classList.add('show');
-                    observer.unobserve(entry.target); // animate once
+                    io.unobserve(entry.target);
                 }
             });
-        }, {
-            threshold: 0.14
+        }, { threshold: 0.1 });
+
+        function observeAll(root) {
+            root.querySelectorAll('.reveal:not(.show)').forEach(el => io.observe(el));
+        }
+
+        observeAll(document);
+
+        const mo = new MutationObserver((mutations) => {
+            mutations.forEach(mutation => {
+                mutation.addedNodes.forEach(node => {
+                    if (node.nodeType !== 1) return;
+                    if (node.matches && node.matches('.reveal')) io.observe(node);
+                    if (node.querySelectorAll) observeAll(node);
+                });
+            });
         });
 
-        items.forEach(el => observer.observe(el));
+        mo.observe(document.body, { childList: true, subtree: true });
     })();
 </script>
+
+@code {
+    private List<InternetPlan> plans = new();
+    private bool mobileNavOpen = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await getAll.ExecuteAsync();
+        plans = result?.ToList() ?? new();
+    }
+
+    // Native Blazor methods para sa Navigation Link control at Hamburger menu state
+    private void ToggleMobileNav()
+    {
+        mobileNavOpen = !mobileNavOpen;
+    }
+
+    private void CloseMobileNav()
+    {
+        mobileNavOpen = false;
+    }
+}

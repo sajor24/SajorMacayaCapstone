@@ -42,6 +42,7 @@
                 <i class="bi bi-wifi nav-icon"></i>
                 @if (!collapsed){ <span>Internet Plans</span> }
             </NavLink>
+            
 
             <NavLink href="/staff-billing" class="nav-item" ActiveClass="nav-active" @onclick="CloseMobileDrawer" title="@(collapsed ? "Billing" : null)">
                 <i class="bi bi-receipt nav-icon"></i>
@@ -87,7 +88,7 @@
     <div class="logout-overlay" @onclick="CancelLogout"></div>
     <div class="logout-modal shadow-lg">
         <div class="text-center py-2">
-            <div style="font-size:2.5rem;">🚪</div>
+            <i class="bi bi-box-arrow-left" style="font-size: 1.5rem;"></i>
             <h5 class="fw-bold mt-2">Logout?</h5>
             <p class="text-muted mt-1">Are you sure you want to logout?</p>
         </div>
