@@ -18,6 +18,7 @@ namespace Framework.Extensions
             param.Add("@Email",              model.Email,              DbType.String,  ParameterDirection.Input);
             param.Add("@ContactNumber",      model.ContactNumber,      DbType.String,  ParameterDirection.Input);
             param.Add("@Address",            model.Address,            DbType.String,  ParameterDirection.Input);
+            param.Add("@Photo",              model.Photo);
             param.Add("@TechSpecialization", model.TechSpecialization, DbType.String,  ParameterDirection.Input);
             param.Add("@TechArea",           model.TechArea,           DbType.String,  ParameterDirection.Input);
             param.Add("@TechCompletedJobs",  model.TechCompletedJobs,  DbType.Int32,   ParameterDirection.Input);
@@ -35,6 +36,7 @@ namespace Framework.Extensions
             param.Add("@Email",              model.Email,              DbType.String,  ParameterDirection.Input);
             param.Add("@ContactNumber",      model.ContactNumber,      DbType.String,  ParameterDirection.Input);
             param.Add("@Address",            model.Address,            DbType.String,  ParameterDirection.Input);
+            param.Add("@Photo",              model.Photo);
             param.Add("@TechSpecialization", model.TechSpecialization, DbType.String,  ParameterDirection.Input);
             param.Add("@TechArea",           model.TechArea,           DbType.String,  ParameterDirection.Input);
             param.Add("@TechCompletedJobs",  model.TechCompletedJobs,  DbType.Int32,   ParameterDirection.Input);

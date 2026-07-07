@@ -62,16 +62,30 @@
 
             @if (!collapsed){ <div class="nav-group-label mt-2">Tools</div> }
             else { <div class="nav-divider"></div> }
+            
+            <NavLink href="/admin-notifications" class="nav-item" ActiveClass="nav-active" @onclick="CloseMobileDrawer" title="@(collapsed ? "Send Notifications" : null)">
+                <i class="bi bi-bell-fill nav-icon"></i>
+                @if (!collapsed){ <span>Send Notifications</span> }
+            </NavLink>
 
+           
+            <NavLink href="/admin-service-requests" class="nav-item" ActiveClass="nav-active" @onclick="CloseMobileDrawer" title="@(collapsed ? "Service Requests" : null)">
+                <i class="bi bi-tools nav-icon"></i>
+                @if (!collapsed){ <span>Service Requests</span> }
+            </NavLink>
+            <NavLink href="/admin-technicians" class="nav-item" ActiveClass="nav-active" @onclick="CloseMobileDrawer" title="@(collapsed ? "Technicians" : null)">
+                <i class="bi bi-people nav-icon"></i>
+                @if (!collapsed)
+                {
+                    <span>Technicians</span>
+                }
+            </NavLink>
             <NavLink href="/admin-financial-report" class="nav-item" ActiveClass="nav-active" @onclick="CloseMobileDrawer" title="@(collapsed ? "Financial Report" : null)">
                 <i class="bi bi-bar-chart-fill nav-icon"></i>
                 @if (!collapsed){ <span>Financial Report</span> }
             </NavLink>
 
-            <NavLink href="/admin-technicians" class="nav-item" ActiveClass="nav-active" @onclick="CloseMobileDrawer" title="@(collapsed ? "Technicians" : null)">
-                <i class="bi bi-tools nav-icon"></i>
-                @if (!collapsed){ <span>Technicians</span> }
-            </NavLink>
+         
 
         </div>
 

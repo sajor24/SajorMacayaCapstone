@@ -9,6 +9,7 @@
     [Email]        NVARCHAR(255) NULL,
     [ContactNumber] NVARCHAR(20) NULL,
     [Address]      NVARCHAR(255) NULL,
+    [Photo]        NVARCHAR(MAX) NULL,          
     [CreatedAt]    DATETIME DEFAULT GETDATE(),
 
     -- Technician-specific fields

@@ -7,6 +7,7 @@
     @Email               NVARCHAR(255) = NULL,
     @ContactNumber       NVARCHAR(20)  = NULL,
     @Address             NVARCHAR(255) = NULL,
+    @Photo               NVARCHAR(MAX) = NULL,     
     @TechSpecialization  NVARCHAR(100) = NULL,
     @TechArea            NVARCHAR(100) = NULL,
     @TechCompletedJobs   INT           = 0
@@ -35,13 +36,13 @@ BEGIN
     INSERT INTO Users
     (
         UserId, FirstName, LastName, Username, Password, Role,
-        Email, ContactNumber, Address, CreatedAt,
+        Email, ContactNumber, Address, Photo, CreatedAt,          -- ← IDAGDAG "Photo"
         TechSpecialization, TechArea, TechCompletedJobs
     )
     VALUES
     (
         @NewId, @FirstName, @LastName, @Username, @Password, @Role,
-        @Email, @ContactNumber, @Address, GETDATE(),
+        @Email, @ContactNumber, @Address, @Photo, GETDATE(),       -- ← IDAGDAG "@Photo"
         @TechSpecialization, @TechArea, ISNULL(@TechCompletedJobs, 0)
     )
 END

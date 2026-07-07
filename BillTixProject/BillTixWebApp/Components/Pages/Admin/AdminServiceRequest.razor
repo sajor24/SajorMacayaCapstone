@@ -1,10 +1,10 @@
-@page "/staff-service-requests"
-@layout StaffLayout
+﻿@page "/admin-service-requests"
+@layout AdminLayout
 @using Microsoft.AspNetCore.Authorization
 @using Domain.ICommands
 @using Domain.Models
 @rendermode InteractiveServer
-@attribute [Authorize(Roles = "Staff")]
+@attribute [Authorize(Roles = "Admin")]
 @inject IGetAll_ServiceRequest getAllRequests
 @inject IUpdate_ServiceRequest updateRequest
 @inject IDelete_ServiceRequest deleteRequest
@@ -247,11 +247,11 @@
         ? requests
         : requests.Where(x => searchField switch
         {
-            "id"       => x.RequestId?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
-            "name"     => ($"{x.FirstName} {x.LastName}").Contains(searchText, StringComparison.OrdinalIgnoreCase),
-            "issue"    => x.IssueType?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
-            "address"  => x.Address?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
-            "status"   => x.Status?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+            "id" => x.RequestId?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+            "name" => ($"{x.FirstName} {x.LastName}").Contains(searchText, StringComparison.OrdinalIgnoreCase),
+            "issue" => x.IssueType?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+            "address" => x.Address?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+            "status" => x.Status?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
             "assigned" => x.AssignedTo?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
             _ =>
                 (x.RequestId?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||

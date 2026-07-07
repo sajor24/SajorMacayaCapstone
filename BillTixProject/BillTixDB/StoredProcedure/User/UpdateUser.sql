@@ -8,6 +8,7 @@
     @Email               NVARCHAR(255),
     @ContactNumber       NVARCHAR(20),
     @Address             NVARCHAR(255),
+    @Photo               NVARCHAR(MAX) = NULL,     
     @TechSpecialization  NVARCHAR(100) = NULL,
     @TechArea            NVARCHAR(100) = NULL,
     @TechCompletedJobs   INT           = NULL
@@ -23,6 +24,7 @@ BEGIN
         Email              = @Email,
         ContactNumber      = @ContactNumber,
         Address            = @Address,
+        Photo              = @Photo,
         TechSpecialization = @TechSpecialization,
         TechArea           = @TechArea,
         TechCompletedJobs  = @TechCompletedJobs

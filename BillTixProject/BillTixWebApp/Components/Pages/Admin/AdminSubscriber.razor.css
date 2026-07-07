@@ -1,4 +1,9 @@
-.sub-wrapper { min-height: 100vh; background: #f5f6fa; display: flex; flex-direction: column; }
+.sub-wrapper {
+    min-height: 100vh;
+    background: #f5f6fa;
+    display: flex;
+    flex-direction: column;
+}
 
 .topnav {
     background: white;
@@ -9,9 +14,24 @@
     border-bottom: 2px solid #4f46e5;
 }
 
-.topnav-left h2 { font-size: 1.2rem; font-weight: 700; color: #111; margin: 0; }
-.topnav-left p { font-size: .82rem; color: #4f46e5; margin: 0; }
-.topnav-right { display: flex; align-items: center; gap: 16px; }
+.topnav-left h2 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #111;
+    margin: 0;
+}
+
+.topnav-left p {
+    font-size: .82rem;
+    color: #4f46e5;
+    margin: 0;
+}
+
+.topnav-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
 
 .avatar {
     width: 38px;
@@ -25,7 +45,10 @@
     font-size: 1.1rem;
 }
 
-.page-content { padding: 32px; flex: 1; }
+.page-content {
+    padding: 32px;
+    flex: 1;
+}
 
 .table-card {
     background: white;
@@ -45,35 +68,152 @@
     background: white;
 }
 
-.search-box input { border: none; outline: none; font-size: .9rem; width: 100%; color: #333; }
+    .search-box input {
+        border: none;
+        outline: none;
+        font-size: .9rem;
+        width: 100%;
+        color: #333;
+    }
 
-.sub-table { width: 100%; border-collapse: collapse; }
-.sub-table thead tr { border-bottom: 2px solid #f3f4f6; }
-.sub-table th { text-align: left; padding: 10px 12px; font-size: .82rem; color: #888; font-weight: 600; white-space: nowrap; }
-.sub-table td { padding: 14px 12px; border-bottom: 1px solid #f3f4f6; font-size: .9rem; color: #333; }
-.sub-table tbody tr:hover { background: #fafafa; }
+.sub-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
+}
 
-.status-badge { padding: 5px 14px; border-radius: 20px; font-size: .75rem; font-weight: 600; }
+    .sub-table thead tr {
+        border-bottom: 2px solid #f3f4f6;
+    }
+
+    .sub-table th {
+        text-align: left;
+        padding: 10px 12px;
+        font-size: .82rem;
+        color: #888;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .sub-table td {
+        padding: 14px 12px;
+        border-bottom: 1px solid #f3f4f6;
+        font-size: .9rem;
+        color: #333;
+        white-space: nowrap;
+    }
+
+    .sub-table tbody tr:hover {
+        background: #fafafa;
+    }
+
+    .sub-table th:first-child, .sub-table td:first-child {
+        width: 80px;
+    }
+
+    .sub-table th:last-child, .sub-table td:last-child {
+        width: 96px;
+    }
+
+.status-badge {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: .75rem;
+    font-weight: 600;
+}
+
 .badge-active {
     background-color: #28a745;
+    color: white;
+}
+
+.badge-expired {
+    background-color: #dc3545;
     color: white;
 }
 
 .badge-inactive {
-    background-color: #dc3545;
-    color: white;
+    background-color: #f3f4f6;
+    color: #888;
 }
-.badge-active {
-    background-color: #28a745;
-    color: white;
+
+.row-id-thumb {
+    width: 60px;
+    height: 40px;
+    border-radius: 6px;
+    object-fit: cover;
+    border: 1px solid #e5e7eb;
 }
-.badge-inactive { background: #f3f4f6; color: #888; }
 
-.action-btn { border: 1px solid #e5e7eb; background: white; border-radius: 8px; padding: 6px 10px; cursor: pointer; transition: .2s; font-size: .9rem; }
-.edit-btn:hover { background: #f0f0ff; border-color: #4f46e5; color: #4f46e5; }
-.delete-btn:hover { background: #fff0f0; border-color: #ef4444; color: #ef4444; }
+.row-id-placeholder {
+    width: 60px;
+    height: 40px;
+    border-radius: 6px;
+    background: #f3f4f6;
+    color: #aaa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .65rem;
+    font-weight: 600;
+    border: 1px dashed #d1d5db;
+}
 
-.modal-backdrop-custom { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1040; }
+.id-preview {
+    width: 100%;
+    max-width: 340px;
+    max-height: 220px;
+    border-radius: 10px;
+    object-fit: contain;
+    border: 1px solid #e5e7eb;
+    background: #fafafa;
+    display: block;
+    margin: 0 auto;
+}
+
+.id-preview-placeholder {
+    width: 100%;
+    max-width: 340px;
+    height: 140px;
+    border-radius: 10px;
+    background: #f3f4f6;
+    color: #888;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .85rem;
+    margin: 0 auto;
+    border: 1px dashed #d1d5db;
+}
+
+.action-btn {
+    border: 1px solid #e5e7eb;
+    background: white;
+    border-radius: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: .2s;
+    font-size: .9rem;
+}
+
+.edit-btn:hover {
+    background: #f0f0ff;
+    border-color: #4f46e5;
+    color: #4f46e5;
+}
+
+.delete-btn:hover {
+    background: #fff0f0;
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.modal-backdrop-custom {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 1040;
+}
 
 .modal-box {
     position: fixed;
@@ -83,9 +223,67 @@
     background: white;
     border-radius: 16px;
     padding: 2rem;
-    width: 620px;
+    width: 680px;
     max-width: 95vw;
     z-index: 1050;
     max-height: 90vh;
     overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Lightbox */
+.lightbox-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.88);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: zoom-out;
+    animation: fadeIn .15s ease;
+}
+
+.lightbox-container {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lightbox-img {
+    max-width: 90vw;
+    max-height: 88vh;
+    border-radius: 12px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+    object-fit: contain;
+}
+
+.lightbox-close {
+    position: absolute;
+    top: -16px;
+    right: -16px;
+    width: 36px;
+    height: 36px;
+    background: white;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    color: #333;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    transition: background .15s;
+    z-index: 2001;
+}
+
+.lightbox-close:hover { background: #f3f4f6; }
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
 }

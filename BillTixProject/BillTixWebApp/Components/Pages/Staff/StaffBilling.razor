@@ -1,4 +1,4 @@
-﻿@page "/staff-billing"
+﻿@page "/Staff-billing"
 @layout StaffLayout
 @using Microsoft.AspNetCore.Authorization
 @using Domain.ICommands
@@ -67,9 +67,33 @@
         <div class="table-card">
             <div class="d-flex justify-content-between align-items-start mb-3">
                 <div class="fw-semibold" style="color:#111;">All Bills</div>
-                <div class="search-box">
-                    <i class="bi bi-search text-muted"></i>
-                    <input placeholder="Search..." @bind="searchText" @bind:event="oninput" />
+                <div class="d-flex gap-2 align-items-center flex-wrap justify-content-end">
+                    <!-- Date filter -->
+                    <div class="d-flex align-items-center gap-1">
+                        <span class="text-muted" style="font-size:.82rem; white-space:nowrap;">Paid on:</span>
+                        <input type="date" class="form-control form-control-sm" style="width:150px;"
+                               @bind="filterDate" @bind:event="oninput" />
+                        @if (filterDate.HasValue)
+                        {
+                            <button class="btn btn-sm btn-outline-secondary" style="padding:2px 8px;"
+                                    @onclick="() => filterDate = null" title="Clear date">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        }
+                    </div>
+                    <select class="form-select form-select-sm" style="width:160px;" @bind="searchField">
+                        <option value="all">All Fields</option>
+                        <option value="name">Subscriber Name</option>
+                        <option value="id">Billing ID</option>
+                        <option value="status">Status</option>
+                        <option value="method">Payment Method</option>
+                        <option value="duedate">Due Date</option>
+                        <option value="paidat">Paid Date</option>
+                    </select>
+                    <div class="search-box">
+                        <i class="bi bi-search text-muted"></i>
+                        <input placeholder="Search..." @bind="searchText" @bind:event="oninput" />
+                    </div>
                 </div>
             </div>
             <div class="table-responsive">
@@ -81,7 +105,6 @@
                             <th>Amount</th>
                             <th>Method</th>
                             <th>Status</th>
-                            <th>Due Date</th>
                             <th>Paid At</th>
                             <th>Actions</th>
                         </tr>
@@ -97,7 +120,6 @@
                                 <td>
                                     <span class="status-badge @GetStatusClass(item.Status)">@item.Status</span>
                                 </td>
-                                <td class="text-muted">@(item.DueDate?.ToString("MMM dd, yyyy") ?? "—")</td>
                                 <td class="text-muted">@(item.PaidAt?.ToString("MMM dd, yyyy") ?? "—")</td>
                                 <td>
                                     <div class="d-flex gap-2">
@@ -213,22 +235,49 @@
     private bool showDeleteConfirm = false;
     private Billing? deleteTarget;
     private string searchText = string.Empty;
+    private string searchField = "all";
+    private DateTime? filterDate = null;
     private string errorMessage = string.Empty;
     private int pendingUpgradeCount = 0;
 
-    private IEnumerable<Billing> filteredBillings =>
-        string.IsNullOrWhiteSpace(searchText)
-        ? billings
-        : billings.Where(x =>
-            (x.BillingId != null && x.BillingId.Contains(searchText, StringComparison.OrdinalIgnoreCase))
-            || (x.FirstName != null && x.FirstName.Contains(searchText, StringComparison.OrdinalIgnoreCase))
-            || (x.LastName != null && x.LastName.Contains(searchText, StringComparison.OrdinalIgnoreCase))
-            || (x.Status != null && x.Status.Contains(searchText, StringComparison.OrdinalIgnoreCase))
-            || (x.DueDate.HasValue && x.DueDate.Value.ToString("MM/dd/yyyy").Contains(searchText, StringComparison.OrdinalIgnoreCase))
-            || (x.DueDate.HasValue && x.DueDate.Value.ToString("MMM dd, yyyy").Contains(searchText, StringComparison.OrdinalIgnoreCase))
-            || (x.PaidAt.HasValue && x.PaidAt.Value.ToString("MM/dd/yyyy").Contains(searchText, StringComparison.OrdinalIgnoreCase))
-            || (x.PaidAt.HasValue && x.PaidAt.Value.ToString("MMM dd, yyyy").Contains(searchText, StringComparison.OrdinalIgnoreCase))
-        );
+    private IEnumerable<Billing> filteredBillings
+    {
+        get
+        {
+            var result = billings.AsEnumerable();
+
+            // Date filter — by PaidAt date
+            if (filterDate.HasValue)
+                result = result.Where(x => x.PaidAt.HasValue && x.PaidAt.Value.Date == filterDate.Value.Date);
+
+            if (string.IsNullOrWhiteSpace(searchText))
+                return result;
+
+            return result.Where(x => searchField switch
+            {
+                "name" => ($"{x.FirstName} {x.LastName}").Contains(searchText, StringComparison.OrdinalIgnoreCase),
+                "id" => x.BillingId?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+                "status" => x.Status?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+                "method" => x.PaymentMethod?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+                "duedate" =>
+                    (x.DueDate.HasValue && x.DueDate.Value.ToString("MM/dd/yyyy").Contains(searchText)) ||
+                    (x.DueDate.HasValue && x.DueDate.Value.ToString("MMM dd, yyyy").Contains(searchText, StringComparison.OrdinalIgnoreCase)),
+                "paidat" =>
+                    (x.PaidAt.HasValue && x.PaidAt.Value.ToString("MM/dd/yyyy").Contains(searchText)) ||
+                    (x.PaidAt.HasValue && x.PaidAt.Value.ToString("MMM dd, yyyy").Contains(searchText, StringComparison.OrdinalIgnoreCase)),
+                _ => // all
+                    (x.BillingId?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                    (x.FirstName?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                    (x.LastName?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                    (x.Status?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                    (x.PaymentMethod?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                    (x.DueDate.HasValue && x.DueDate.Value.ToString("MM/dd/yyyy").Contains(searchText)) ||
+                    (x.DueDate.HasValue && x.DueDate.Value.ToString("MMM dd, yyyy").Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
+                    (x.PaidAt.HasValue && x.PaidAt.Value.ToString("MM/dd/yyyy").Contains(searchText)) ||
+                    (x.PaidAt.HasValue && x.PaidAt.Value.ToString("MMM dd, yyyy").Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            });
+        }
+    }
 
     string GetStatusClass(string? status) => status switch
     {
@@ -311,20 +360,39 @@
         if (!isEditing && activeSub != null)
             billing.DueDate = activeSub.EndDate;
 
+        // Track if this bill was previously NOT paid (to avoid duplicate next-month bills on re-edit)
+        var wasAlreadyPaid = isEditing &&
+            billings.Any(x => x.BillingId == billing.BillingId && x.Status == "Paid");
+
         if (billing.Status == "Paid")
         {
             billing.PaidAt ??= DateTime.Now;
 
-            if (activeSub != null)
+            // Only extend subscription and create next bill when first marking as Paid
+            if (activeSub != null && !wasAlreadyPaid)
             {
                 var baseDate = activeSub.EndDate ?? DateTime.Now;
-                activeSub.EndDate = baseDate.AddMonths(1);
-                await updateSubscription.ExecuteAsync(activeSub);
-            }
+                var nextDueDate = baseDate.AddMonths(1);
 
-            billing.DueDate = billing.DueDate.HasValue
-                ? billing.DueDate.Value.AddMonths(1)
-                : DateTime.Now.AddMonths(1);
+                activeSub.EndDate = nextDueDate;
+                await updateSubscription.ExecuteAsync(activeSub);
+
+                // Update current bill's DueDate to reflect the new cycle
+                billing.DueDate = billing.DueDate.HasValue
+                    ? billing.DueDate.Value.AddMonths(1)
+                    : nextDueDate;
+
+                // Create next month's bill
+                var nextBill = new Billing
+                {
+                    UserId = billing.UserId,
+                    Amount = activeSub.PlanPrice,
+                    Description = $"Monthly subscription - {activeSub.PlanName}",
+                    DueDate = nextDueDate,
+                    Status = "Pending"
+                };
+                await create.ExecuteAsync(nextBill);
+            }
         }
         else
         {

@@ -36,9 +36,9 @@
             </div>
             <div class="stat-card">
                 <div>
-                    <div class="label">Pending</div>
+                    <div class="label">Active</div>
                     <div class="value">@pendingCount</div>
-                    <div class="trend">Awaiting action</div>
+                    <div class="trend">Open & In Progress</div>
                 </div>
                 <div class="stat-icon icon-orange">⏳</div>
             </div>
@@ -63,9 +63,10 @@
                                 <th>Request ID</th>
                                 <th>Subscriber</th>
                                 <th>Issue Type</th>
-                                <th>Priority</th>
+                                <th>Adress</th>
                                 <th>Status</th>
                                 <th>Date</th>
+                                <th>Assigned to</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -75,13 +76,12 @@
                                     <td class="fw-semibold">@item.RequestId</td>
                                     <td>@item.FirstName @item.LastName</td>
                                     <td>@item.IssueType</td>
-                                    <td>
-                                        <span class="badge-priority @GetPriorityClass(item.Priority)">@item.Priority</span>
-                                    </td>
+                                    <td class="text-muted">@(item.Address ?? "—")</td>
                                     <td>
                                         <span class="badge-status @GetStatusClass(item.Status)">@item.Status</span>
                                     </td>
                                     <td class="text-muted">@item.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                    <td>@item.AssignedTo</td>
                                 </tr>
                             }
                             @if (!recentRequests.Any())
@@ -96,57 +96,9 @@
     </div>
 </div>
 
-<style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
-    .wrapper { min-height: 100vh; background: #f5f6fa; overflow-x: hidden; }
-
-    .topnav { background: white; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e7eb; gap: 20px; flex-wrap: wrap; }
-    .topnav-left h2 { font-size: 1.2rem; font-weight: 700; color: #111; }
-    .topnav-left p { font-size: .82rem; color: #2563eb; }
-
-    .content { padding: 32px; }
-    .content h1 { font-size: 2rem; font-weight: 800; margin-bottom: 24px; color: #111; }
-
-    .stat-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; margin-bottom: 28px; }
-    .stat-card { background: white; border-radius: 16px; padding: 24px; display: flex; justify-content: space-between; align-items: flex-start; box-shadow: 0 2px 10px rgba(0,0,0,.05); min-width: 0; }
-    .stat-card .label { font-size: .82rem; color: #888; margin-bottom: 6px; }
-    .stat-card .value { font-size: 2rem; font-weight: 800; color: #111; margin-bottom: 6px; }
-    .stat-card .trend { font-size: .8rem; color: #22c55e; font-weight: 600; }
-    .stat-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
-    .icon-blue { background: #eff6ff; }
-    .icon-green { background: #f0fdf4; }
-    .icon-orange { background: #fff7ed; }
-
-    .bottom-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
-    .card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,.05); }
-    .card-title { font-size: 1rem; font-weight: 700; color: #111; margin-bottom: 4px; }
-    .card-sub { font-size: .82rem; color: #aaa; margin-bottom: 16px; }
-    .table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-
-    table { width: 100%; border-collapse: collapse; min-width: 600px; }
-    thead tr { background: #f9fafb; }
-    th { text-align: left; padding: 12px; font-size: .82rem; color: #444; }
-    td { padding: 14px 12px; border-bottom: 1px solid #f3f4f6; color: #333; font-size: .9rem; }
-
-    .badge-priority, .badge-status { padding: 4px 10px; border-radius: 20px; font-size: .75rem; font-weight: 600; }
-    .priority-high { background: #fee2e2; color: #dc2626; }
-    .priority-medium { background: #fef9c3; color: #ca8a04; }
-    .priority-low { background: #f0fdf4; color: #16a34a; }
-    .status-pending { background: #fff7ed; color: #ea580c; }
-    .status-inprogress { background: #eff6ff; color: #2563eb; }
-    .status-resolved { background: #f0fdf4; color: #16a34a; }
-
-    @@media (max-width: 1100px) { .stat-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-    @@media (max-width: 768px) {
-        .content { padding: 16px; }
-        .content h1 { font-size: 1.5rem; }
-        .stat-cards { grid-template-columns: 1fr; }
-        .topnav { padding: 12px 16px; }
-    }
-</style>
-
 @code {
     private string username = "Technician";
+    private string techFullName = string.Empty;
     private int totalRequests = 0;
     private int pendingCount = 0;
     private int resolvedCount = 0;
@@ -161,12 +113,22 @@
 
         try
         {
+            // Get full name of current technician
+            var users = await getAll.ExecuteAsync();
+            var currentUser = users?.FirstOrDefault(x => x.Username == username);
+            if (currentUser != null)
+                techFullName = $"{currentUser.FirstName} {currentUser.LastName}";
+
             var all = await getAllRequests.ExecuteAsync();
             if (all != null)
             {
-                var list = all.ToList();
+                // Only show requests assigned to this technician
+                var list = all
+                    .Where(x => string.Equals(x.AssignedTo, techFullName, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
                 totalRequests = list.Count;
-                pendingCount  = list.Count(x => x.Status == "Pending");
+                pendingCount  = list.Count(x => x.Status == "Open" || x.Status == "In Progress");
                 resolvedCount = list.Count(x => x.Status == "Resolved");
                 recentRequests = list.OrderByDescending(x => x.CreatedAt).Take(10).ToList();
             }
@@ -174,16 +136,9 @@
         catch { }
     }
 
-    string GetPriorityClass(string? p) => p?.ToLower() switch
-    {
-        "high"   => "priority-high",
-        "medium" => "priority-medium",
-        "low"    => "priority-low",
-        _        => ""
-    };
-
     string GetStatusClass(string? s) => s?.ToLower() switch
     {
+        "open"        => "status-pending",
         "pending"     => "status-pending",
         "in progress" => "status-inprogress",
         "resolved"    => "status-resolved",

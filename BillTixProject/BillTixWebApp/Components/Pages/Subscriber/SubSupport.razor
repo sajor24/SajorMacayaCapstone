@@ -49,16 +49,6 @@
             </div>
 
             <div class="mb-3">
-                <label class="form-label fw-semibold">Priority</label>
-                <select class="form-select" @bind="priority">
-                    <option value="Low">Low</option>
-                    <option value="Medium" selected>Medium</option>
-                    <option value="High">High</option>
-                    <option value="Critical">Critical</option>
-                </select>
-            </div>
-
-            <div class="mb-3">
                 <label class="form-label fw-semibold">Description <span class="text-danger">*</span></label>
                 <textarea class="form-control" rows="4"
                           placeholder="Describe your issue in detail..."
@@ -112,7 +102,6 @@
                             <div class="request-top">
                                 <span class="request-type">@req.IssueType</span>
                                 <span class="status-badge @GetStatusClass(req.Status)">@req.Status</span>
-                                <span class="priority-badge @GetPriorityClass(req.Priority)">@req.Priority</span>
                             </div>
                             <div class="request-desc">@req.Description</div>
                             <div class="request-meta">
@@ -141,7 +130,6 @@
     private string userId = string.Empty;
     private string contactNumber = string.Empty;
     private string issueType = string.Empty;
-    private string priority = "Medium";
     private string description = string.Empty;
     private string message = string.Empty;
     private bool isError = false;
@@ -202,7 +190,7 @@
             {
                 UserId        = userId,
                 IssueType     = issueType,
-                Priority      = priority,
+                Priority      = "Medium",
                 Description   = description,
                 ContactNumber = contactNumber
             });
@@ -211,7 +199,6 @@
             message = "Request submitted successfully! Our team will get back to you soon.";
             isError = false;
             issueType   = string.Empty;
-            priority    = "Medium";
             description = string.Empty;
             StateHasChanged();
         }

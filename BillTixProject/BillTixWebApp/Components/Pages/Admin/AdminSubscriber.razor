@@ -2,6 +2,7 @@
 @layout AdminLayout
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
 @using Domain.ICommands
 @using Domain.Models
 @rendermode InteractiveServer
@@ -25,9 +26,7 @@
             <h2>Welcome, @username</h2>
             <p>Manage your internet billing system</p>
         </div>
-        <div class="topnav-right">
-            <div class="avatar">👤</div>
-        </div>
+
     </div>
 
     <!-- PAGE CONTENT -->
@@ -54,11 +53,24 @@
                     <div class="fw-semibold" style="color:#111;">All Subscribers</div>
                     <small class="text-muted">Total: @users.Count subscriber@(users.Count != 1 ? "s" : "")</small>
                 </div>
-                <div class="search-box">
-                    <i class="bi bi-search text-muted"></i>
-                    <input placeholder="Search subscribers..."
-                           @bind="searchText"
-                           @bind:event="oninput" />
+                <div class="d-flex gap-2 align-items-center flex-wrap justify-content-end">
+                    <select class="form-select form-select-sm" style="width:160px;" @bind="searchField">
+                        <option value="all">All Fields</option>
+                        <option value="firstname">First Name</option>
+                        <option value="lastname">Last Name</option>
+                        <option value="username">Username</option>
+                        <option value="id">Subscriber ID</option>
+                        <option value="email">Email</option>
+                        <option value="address">Address / Location</option>
+                        <option value="plan">Internet Plan</option>
+                        <option value="status">Status</option>
+                    </select>
+                    <div class="search-box">
+                        <i class="bi bi-search text-muted"></i>
+                        <input placeholder="Search..."
+                               @bind="searchText"
+                               @bind:event="oninput" />
+                    </div>
                 </div>
             </div>
 
@@ -66,9 +78,10 @@
                 <table class="sub-table">
                     <thead>
                         <tr>
+                            <th>Valid ID</th>
                             <th>ID</th>
                             <th>Name</th>
-                            <th>Email</th>
+                            <th>Address</th>
                             <th>Phone</th>
                             <th>Plan</th>
                             <th>Status</th>
@@ -80,18 +93,31 @@
                         @foreach (var item in filteredUsers)
                         {
                             var sub = GetSubscription(item.UserId);
-                            <tr>
+                            <tr style="cursor:pointer;" @onclick="() => ViewDetails(item)">
+                                <td @onclick:stopPropagation="true">
+                                    @if (!string.IsNullOrEmpty(item.Photo))
+                                    {
+                                        <img src="@item.Photo" class="row-id-thumb" alt="Valid ID"
+                                             style="cursor:zoom-in;"
+                                             @onclick="() => OpenLightbox(item.Photo)" />
+                                    }
+                                    else
+                                    {
+                                        <div class="row-id-placeholder">No ID</div>
+                                    }
+                                </td>
                                 <td class="fw-semibold">@item.UserId</td>
                                 <td>@item.FirstName @item.LastName</td>
-                                <td class="text-muted">@item.Email</td>
-                                <td class="text-muted">@item.ContactNumber</td>
+                                <td class="text-muted">@(item.Address ?? "—")</td>
+                                <td class="text-muted">@(item.ContactNumber ?? "—")</td>
                                 <td>@(sub?.PlanName ?? "—")</td>
                                 <td>
+                                    @{
+                                        var status = GetStatusDisplay(sub);
+                                    }
                                     @if (sub != null)
                                     {
-                                        <span class="status-badge @(sub.Status == "Active" ? "badge-active" : "Over Due")">
-                                            @sub.Status
-                                        </span>
+                                        <span class="status-badge @status.CssClass">@status.Text</span>
                                     }
                                     else
                                     {
@@ -99,7 +125,7 @@
                                     }
                                 </td>
                                 <td class="text-muted">@(sub?.EndDate?.ToString("M/d/yyyy") ?? "—")</td>
-                                <td>
+                                <td @onclick:stopPropagation="true">
                                     <div class="d-flex gap-2">
                                         <button class="action-btn edit-btn" title="Edit" @onclick="() => EditUser(item)">
                                             <i class="bi bi-pencil-square"></i>
@@ -114,7 +140,7 @@
                         @if (!filteredUsers.Any())
                         {
                             <tr>
-                                <td colspan="8" class="text-center text-muted py-4">No subscribers found.</td>
+                                <td colspan="9" class="text-center text-muted py-4">No subscribers found.</td>
                             </tr>
                         }
                     </tbody>
@@ -123,6 +149,89 @@
         </div>
     </div>
 </div>
+
+<!-- VIEW DETAILS MODAL (read-only) -->
+@if (showViewModal && viewUser != null)
+{
+    var viewSub = GetSubscription(viewUser.UserId);
+    var viewStatus = GetStatusDisplay(viewSub);
+    <div class="modal-backdrop-custom" @onclick="CloseViewModal"></div>
+    <div class="modal-box shadow-lg">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">Subscriber Details</h5>
+            <button class="btn-close" @onclick="CloseViewModal"></button>
+        </div>
+        <div class="text-center mb-3">
+            @if (!string.IsNullOrEmpty(viewUser.Photo))
+            {
+                <label class="form-label text-muted small d-block">Valid ID</label>
+                <img src="@viewUser.Photo" class="id-preview" alt="Valid ID"
+                     style="cursor:zoom-in;"
+                     @onclick="() => OpenLightbox(viewUser.Photo)" />
+            }
+            else
+            {
+                <div class="id-preview-placeholder">No Valid ID Uploaded</div>
+            }
+        </div>
+        <div class="row g-3">
+            <div class="col-6">
+                <label class="form-label text-muted small">First Name</label>
+                <div class="fw-semibold">@viewUser.FirstName</div>
+            </div>
+            <div class="col-6">
+                <label class="form-label text-muted small">Last Name</label>
+                <div class="fw-semibold">@viewUser.LastName</div>
+            </div>
+            <div class="col-6">
+                <label class="form-label text-muted small">Username</label>
+                <div class="fw-semibold">@viewUser.Username</div>
+            </div>
+            <div class="col-6">
+                <label class="form-label text-muted small">User ID</label>
+                <div class="fw-semibold">@viewUser.UserId</div>
+            </div>
+            <div class="col-12">
+                <label class="form-label text-muted small">Email</label>
+                <div class="fw-semibold" style="word-break:break-all;">@(string.IsNullOrWhiteSpace(viewUser.Email) ? "—" : viewUser.Email)</div>
+            </div>
+            <div class="col-12">
+                <label class="form-label text-muted small">Contact Number</label>
+                <div class="fw-semibold">@(string.IsNullOrWhiteSpace(viewUser.ContactNumber) ? "—" : viewUser.ContactNumber)</div>
+            </div>
+            <div class="col-12">
+                <label class="form-label text-muted small">Address</label>
+                <div class="fw-semibold">@(string.IsNullOrWhiteSpace(viewUser.Address) ? "—" : viewUser.Address)</div>
+            </div>
+
+            <div class="col-12"><hr /></div>
+
+            <div class="col-6">
+                <label class="form-label text-muted small">Internet Plan</label>
+                <div class="fw-semibold">@(viewSub?.PlanName ?? "—")</div>
+            </div>
+            <div class="col-6">
+                <label class="form-label text-muted small">Plan Price</label>
+                <div class="fw-semibold">@(viewSub != null ? $"₱{viewSub.PlanPrice:N2}" : "—")</div>
+            </div>
+            <div class="col-4">
+                <label class="form-label text-muted small">Status</label>
+                <div><span class="status-badge @viewStatus.CssClass">@viewStatus.Text</span></div>
+            </div>
+            <div class="col-4">
+                <label class="form-label text-muted small">Start Date</label>
+                <div class="fw-semibold">@(viewSub?.StartDate.ToString("M/d/yyyy") ?? "—")</div>
+            </div>
+            <div class="col-4">
+                <label class="form-label text-muted small">End Date</label>
+                <div class="fw-semibold">@(viewSub?.EndDate?.ToString("M/d/yyyy") ?? "—")</div>
+            </div>
+        </div>
+        <div class="d-flex gap-2 mt-4 justify-content-end">
+            <button class="btn btn-secondary" @onclick="CloseViewModal">Close</button>
+        </div>
+    </div>
+}
 
 <!-- DELETE CONFIRMATION MODAL -->
 @if (showDeleteConfirm)
@@ -151,6 +260,25 @@
             <button class="btn-close" @onclick="CancelForm"></button>
         </div>
         <div class="row g-3">
+            <div class="col-12 text-center">
+                @if (!string.IsNullOrEmpty(photoPreview))
+                {
+                    <img src="@photoPreview" class="id-preview" alt="Valid ID preview" />
+                }
+                else
+                {
+                    <div class="id-preview-placeholder">No Valid ID Uploaded</div>
+                }
+                <div class="mt-2">
+                    <label class="form-label d-block">Valid ID</label>
+                    <InputFile OnChange="OnPhotoSelected" accept="image/*" class="form-control" />
+                    <small class="text-muted d-block mt-1">Upload a clear photo of a government-issued ID (max 2MB).</small>
+                    @if (photoError != null)
+                    {
+                        <div class="text-danger small mt-1">@photoError</div>
+                    }
+                </div>
+            </div>
             <div class="col-md-6">
                 <label class="form-label">First Name <span class="text-danger">*</span></label>
                 <input class="form-control" placeholder="First Name" @bind="user.FirstName" />
@@ -233,6 +361,19 @@
     </div>
 }
 
+<!-- LIGHTBOX -->
+@if (lightboxPhoto != null)
+{
+    <div class="lightbox-backdrop" @onclick="CloseLightbox">
+        <div class="lightbox-container" @onclick:stopPropagation="true">
+            <button class="lightbox-close" @onclick="CloseLightbox">
+                <i class="bi bi-x-lg"></i>
+            </button>
+            <img src="@lightboxPhoto" class="lightbox-img" alt="Valid ID" />
+        </div>
+    </div>
+}
+
 @code {
     private string username = "Admin";
     private List<Users> users = new();
@@ -243,11 +384,17 @@
     private bool isEditing = false;
     private bool showForm = false;
     private bool showDeleteConfirm = false;
+    private bool showViewModal = false;
+    private Users? viewUser = null;
     private string deleteTargetId = string.Empty;
     private string deleteTargetName = string.Empty;
     private string searchText = string.Empty;
+    private string searchField = "all";
     private string passwordInput = string.Empty;
     private string errorMessage = string.Empty;
+    private string? photoPreview = null;
+    private string? photoError = null;
+    private string? lightboxPhoto = null;
 
     private string selectedPlanId = string.Empty;
     private InternetPlan? selectedPlan => internetPlans.FirstOrDefault(x => x.PlanId == selectedPlanId);
@@ -260,15 +407,56 @@
         subscriptions.FirstOrDefault(x => x.UserId == userId && x.Status == "Active")
         ?? subscriptions.FirstOrDefault(x => x.UserId == userId);
 
-    private IEnumerable<Users> filteredUsers =>
-        string.IsNullOrWhiteSpace(searchText)
-        ? users
-        : users.Where(x =>
-            (x.FirstName != null && x.FirstName.Contains(searchText, StringComparison.OrdinalIgnoreCase))
-            || (x.LastName != null && x.LastName.Contains(searchText, StringComparison.OrdinalIgnoreCase))
-            || (x.Username != null && x.Username.Contains(searchText, StringComparison.OrdinalIgnoreCase))
-            || (x.UserId != null && x.UserId.Contains(searchText, StringComparison.OrdinalIgnoreCase))
-        );
+    private (string Text, string CssClass) GetStatusDisplay(Subscription? sub)
+    {
+        if (sub == null) return ("—", "text-muted");
+
+        if (sub.Status == "Inactive")
+            return ("Inactive", "badge-inactive");
+
+        if (sub.EndDate.HasValue && sub.EndDate.Value.Date < DateTime.Today)
+            return ("Due Date", "badge-expired");
+
+        return ("Active", "badge-active");
+    }
+
+    private IEnumerable<Users> filteredUsers
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(searchText))
+                return users;
+
+            var query = searchText.ToLower();
+
+            return users.Where(x =>
+            {
+                var sub = GetSubscription(x.UserId);
+                var status = GetStatusDisplay(sub);
+
+                return searchField switch
+                {
+                    "firstname" => x.FirstName?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+                    "lastname" => x.LastName?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+                    "username" => x.Username?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+                    "id" => x.UserId?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+                    "email" => x.Email?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+                    "address" => x.Address?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+                    "plan" => sub?.PlanName?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+                    "status" => status.Text.Contains(searchText, StringComparison.OrdinalIgnoreCase),
+                    _ => // "all" - search across all fields
+                        (x.FirstName?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                        (x.LastName?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                        (x.Username?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                        (x.UserId?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                        (x.Email?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                        (x.Address?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                        (sub?.PlanName?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                        status.Text.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+                };
+            });
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -294,15 +482,67 @@
         internetPlans = plans?.Where(x => x.IsActive).ToList() ?? new();
     }
 
+    async Task OnPhotoSelected(InputFileChangeEventArgs e)
+    {
+        photoError = null;
+        var file = e.File;
+        if (file == null) return;
+
+        const long maxSizeBytes = 2 * 1024 * 1024; // 2MB limit
+        if (file.Size > maxSizeBytes)
+        {
+            photoError = "Photo must be 2MB or smaller.";
+            return;
+        }
+
+        try
+        {
+            using var stream = file.OpenReadStream(maxSizeBytes);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            var base64 = Convert.ToBase64String(ms.ToArray());
+            var dataUrl = $"data:{file.ContentType};base64,{base64}";
+
+            photoPreview = dataUrl;
+            user.Photo = dataUrl;
+        }
+        catch (Exception)
+        {
+            photoError = "Could not read the selected photo. Please try another file.";
+        }
+    }
+
+    void OpenLightbox(string? photo)
+    {
+        if (!string.IsNullOrEmpty(photo))
+            lightboxPhoto = photo;
+    }
+
+    void CloseLightbox() => lightboxPhoto = null;
+
     void OpenAddForm()
     {
         user = new Users { Role = "Subscriber" };
         passwordInput = string.Empty;
         selectedPlanId = string.Empty;
+        photoPreview = null;
+        photoError = null;
 
         isEditing = false;
         errorMessage = string.Empty;
         showForm = true;
+    }
+
+    void ViewDetails(Users item)
+    {
+        viewUser = item;
+        showViewModal = true;
+    }
+
+    void CloseViewModal()
+    {
+        showViewModal = false;
+        viewUser = null;
     }
 
     void EditUser(Users item)
@@ -317,9 +557,12 @@
             Role = item.Role,
             Email = item.Email,
             ContactNumber = item.ContactNumber,
-            Address = item.Address
+            Address = item.Address,
+            Photo = item.Photo
         };
         passwordInput = string.Empty;
+        photoPreview = item.Photo;
+        photoError = null;
         isEditing = true;
         errorMessage = string.Empty;
         showForm = true;
@@ -425,6 +668,8 @@
             user = new Users();
             passwordInput = string.Empty;
             selectedPlanId = string.Empty;
+            photoPreview = null;
+            photoError = null;
             isEditing = false;
             showForm = false;
 
@@ -441,6 +686,8 @@
         user = new Users();
         passwordInput = string.Empty;
         selectedPlanId = string.Empty;
+        photoPreview = null;
+        photoError = null;
 
         editSubStatus = "Active";
         editStartDate = DateTime.Today;

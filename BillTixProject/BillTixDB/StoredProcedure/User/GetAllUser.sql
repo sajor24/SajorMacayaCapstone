@@ -11,6 +11,7 @@ BEGIN
         Email,
         ContactNumber,
         Address,
+        Photo,
         CreatedAt,
         TechSpecialization,
         TechArea,

@@ -13,7 +13,7 @@ builder.Services.AddSingleton<Repository>();
 
 // Email
 builder.Services.AddScoped<IEmailService, EmailService>();
-
+// Users
 builder.Services.AddScoped<ICreate_User, Create_User>();
 builder.Services.AddScoped<ILoginUser, LoginUser>();
 builder.Services.AddScoped<IUpdate_User, Update_User>();
