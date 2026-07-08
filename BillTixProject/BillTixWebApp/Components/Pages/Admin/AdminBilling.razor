@@ -202,7 +202,7 @@
             </div>
             <div class="col-md-6">
                 <label class="form-label">Status</label>
-                <select class="form-select" @bind="billing.Status">
+                <select class="form-select" @bind="selectedStatus">
                     <option value="Pending">Pending</option>
                     <option value="Paid">Paid</option>
                     <option value="Overdue">Overdue</option>
@@ -218,6 +218,10 @@
             </div>
         </div>
         <div class="d-flex gap-2 mt-4 justify-content-end">
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="text-danger small me-auto align-self-center">@errorMessage</div>
+            }
             <button class="btn btn-secondary" @onclick="CancelForm">Cancel</button>
             <button class="btn btn-primary" @onclick="SaveBilling">
                 @(isEditing ? "Update" : "Add Bill")
@@ -230,6 +234,7 @@
     private List<Billing> billings = new();
     private List<Users> subscribers = new();
     private Billing billing = new() { Status = "Pending" };
+    private string selectedStatus = "Pending";
     private bool isEditing = false;
     private bool showForm = false;
     private bool showDeleteConfirm = false;
@@ -299,30 +304,12 @@
     {
         var result = await getAll.ExecuteAsync();
         billings = result?.ToList() ?? new();
-
-        // Auto-mark overdue: Pending bills past their DueDate
-        var overdueBills = billings
-            .Where(x => x.Status == "Pending"
-                     && x.DueDate.HasValue
-                     && x.DueDate.Value.Date < DateTime.Today)
-            .ToList();
-
-        foreach (var bill in overdueBills)
-        {
-            bill.Status = "Overdue";
-            await update.ExecuteAsync(bill);
-        }
-
-        if (overdueBills.Any())
-        {
-            var refreshed = await getAll.ExecuteAsync();
-            billings = refreshed?.ToList() ?? new();
-        }
     }
 
     void OpenAddForm()
     {
         billing = new Billing { Status = "Pending" };
+        selectedStatus = "Pending";
         isEditing = false;
         errorMessage = string.Empty;
         showForm = true;
@@ -332,15 +319,18 @@
     {
         billing = new Billing
         {
-            BillingId = item.BillingId,
-            UserId = item.UserId,
-            Amount = item.Amount,
+            BillingId     = item.BillingId,
+            UserId        = item.UserId ?? billings.FirstOrDefault(x => x.BillingId == item.BillingId)?.UserId,
+            Amount        = item.Amount,
             PaymentMethod = item.PaymentMethod,
-            Status = item.Status,
-            DueDate = item.DueDate,
-            PaidAt = item.PaidAt,
-            Description = item.Description
+            Status        = item.Status,
+            DueDate       = item.DueDate,
+            PaidAt        = item.PaidAt,
+            Description   = item.Description,
+            FirstName     = item.FirstName,
+            LastName      = item.LastName
         };
+        selectedStatus = item.Status ?? "Pending";
         isEditing = true;
         errorMessage = string.Empty;
         showForm = true;
@@ -348,56 +338,28 @@
 
     async Task SaveBilling()
     {
-        if (string.IsNullOrWhiteSpace(billing.UserId) || billing.Amount <= 0)
+        if (!isEditing && string.IsNullOrWhiteSpace(billing.UserId))
         {
-            errorMessage = "Subscriber and Amount are required.";
+            errorMessage = "Please select a subscriber.";
+            return;
+        }
+        if (billing.Amount <= 0)
+        {
+            errorMessage = "Amount must be greater than 0.";
             return;
         }
 
-        var userSubs = await getSubByUser.ExecuteAsync(billing.UserId);
-        var activeSub = userSubs?.FirstOrDefault(x => x.Status == "Active");
+        // Ensure UserId is set for edit mode
+        if (isEditing && string.IsNullOrWhiteSpace(billing.UserId))
+            billing.UserId = billings.FirstOrDefault(x => x.BillingId == billing.BillingId)?.UserId;
 
-        if (!isEditing && activeSub != null)
-            billing.DueDate = activeSub.EndDate;
+        // Apply status from dropdown
+        billing.Status = selectedStatus;
 
-        // Track if this bill was previously NOT paid (to avoid duplicate next-month bills on re-edit)
-        var wasAlreadyPaid = isEditing &&
-            billings.Any(x => x.BillingId == billing.BillingId && x.Status == "Paid");
-
-        if (billing.Status == "Paid")
-        {
+        if (selectedStatus == "Paid")
             billing.PaidAt ??= DateTime.Now;
-
-            // Only extend subscription and create next bill when first marking as Paid
-            if (activeSub != null && !wasAlreadyPaid)
-            {
-                var baseDate = activeSub.EndDate ?? DateTime.Now;
-                var nextDueDate = baseDate.AddMonths(1);
-
-                activeSub.EndDate = nextDueDate;
-                await updateSubscription.ExecuteAsync(activeSub);
-
-                // Update current bill's DueDate to reflect the new cycle
-                billing.DueDate = billing.DueDate.HasValue
-                    ? billing.DueDate.Value.AddMonths(1)
-                    : nextDueDate;
-
-                // Create next month's bill
-                var nextBill = new Billing
-                {
-                    UserId = billing.UserId,
-                    Amount = activeSub.PlanPrice,
-                    Description = $"Monthly subscription - {activeSub.PlanName}",
-                    DueDate = nextDueDate,
-                    Status = "Pending"
-                };
-                await create.ExecuteAsync(nextBill);
-            }
-        }
         else
-        {
             billing.PaidAt = null;
-        }
 
         try
         {
@@ -410,17 +372,18 @@
             showForm = false;
             isEditing = false;
             billing = new Billing { Status = "Pending" };
+            selectedStatus = "Pending";
             errorMessage = string.Empty;
         }
         catch (Exception ex)
         {
-            errorMessage = $"Error saving billing: {ex.Message}";
+            errorMessage = $"Error: {ex.Message}";
         }
     }
-
     void CancelForm()
     {
         billing = new Billing { Status = "Pending" };
+        selectedStatus = "Pending";
         isEditing = false;
         showForm = false;
         errorMessage = string.Empty;
@@ -430,6 +393,44 @@
     {
         deleteTarget = item;
         showDeleteConfirm = true;
+    }
+
+    async Task MarkAsPaid(Billing item)
+    {
+        try
+        {
+            item.Status = "Paid";
+            item.PaidAt = DateTime.Now;
+            await update.ExecuteAsync(item);
+
+            var userSubs = await getSubByUser.ExecuteAsync(item.UserId!);
+            var activeSub = userSubs?.FirstOrDefault(x => x.Status == "Active");
+
+            if (activeSub != null)
+            {
+                var baseDate = activeSub.EndDate ?? DateTime.Now;
+                var nextDueDate = baseDate.AddMonths(1);
+
+                activeSub.EndDate = nextDueDate;
+                await updateSubscription.ExecuteAsync(activeSub);
+
+                var nextBill = new Billing
+                {
+                    UserId      = item.UserId,
+                    Amount      = activeSub.PlanPrice,
+                    Description = $"Monthly subscription - {activeSub.PlanName}",
+                    DueDate     = nextDueDate,
+                    Status      = "Pending"
+                };
+                await create.ExecuteAsync(nextBill);
+            }
+
+            await LoadBillings();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
     }
 
     async Task ConfirmDelete()

@@ -15,6 +15,7 @@
 @inject IUpdate_Subscription updateSubscription
 @inject IDelete_Subscription deleteSubscription
 @inject IGetAll_InternetPlan getAllPlans
+@inject ICreate_Billing createBilling
 @inject AuthenticationStateProvider AuthStateProvider
 @attribute [Authorize(Roles = "Staff")]
 
@@ -81,7 +82,7 @@
                             <th>Valid ID</th>
                             <th>ID</th>
                             <th>Name</th>
-                            <th>Adress</th>
+                            <th>Address</th>
                             <th>Phone</th>
                             <th>Plan</th>
                             <th>Status</th>
@@ -108,8 +109,8 @@
                                 </td>
                                 <td class="fw-semibold">@item.UserId</td>
                                 <td>@item.FirstName @item.LastName</td>
-                                <td class="text-muted">@item.Address</td>
-                                <td class="text-muted">@item.ContactNumber</td>
+                                <td class="text-muted">@(item.Address ?? "—")</td>
+                                <td class="text-muted">@(item.ContactNumber ?? "—")</td>
                                 <td>@(sub?.PlanName ?? "—")</td>
                                 <td>
                                     @{
@@ -652,16 +653,30 @@
 
                 if (newUser != null)
                 {
+                    var startDate = DateTime.Now;
+                    var endDate = startDate.AddMonths(1);
+
                     var sub = new Subscription
                     {
                         UserId = newUser.UserId,
                         PlanName = selectedPlan.PlanName,
                         PlanPrice = selectedPlan.Price,
-                        StartDate = DateTime.Now,
-                        EndDate = DateTime.Now.AddMonths(1),
+                        StartDate = startDate,
+                        EndDate = endDate,
                         Status = "Active"
                     };
                     await createSubscription.ExecuteAsync(sub);
+
+                    // Auto-create the first bill for this subscriber
+                    var bill = new Billing
+                    {
+                        UserId = newUser.UserId,
+                        Amount = selectedPlan.Price,
+                        Description = $"Monthly subscription - {selectedPlan.PlanName}",
+                        DueDate = endDate,
+                        Status = "Pending"
+                    };
+                    await createBilling.ExecuteAsync(bill);
                 }
             }
 

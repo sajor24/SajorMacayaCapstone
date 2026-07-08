@@ -15,6 +15,7 @@
 @inject IUpdate_Subscription updateSubscription
 @inject IDelete_Subscription deleteSubscription
 @inject IGetAll_InternetPlan getAllPlans
+@inject ICreate_Billing createBilling
 @inject AuthenticationStateProvider AuthStateProvider
 @attribute [Authorize(Roles = "Admin")]
 
@@ -652,16 +653,30 @@
 
                 if (newUser != null)
                 {
+                    var startDate = DateTime.Now;
+                    var endDate = startDate.AddMonths(1);
+
                     var sub = new Subscription
                     {
                         UserId = newUser.UserId,
                         PlanName = selectedPlan.PlanName,
                         PlanPrice = selectedPlan.Price,
-                        StartDate = DateTime.Now,
-                        EndDate = DateTime.Now.AddMonths(1),
+                        StartDate = startDate,
+                        EndDate = endDate,
                         Status = "Active"
                     };
                     await createSubscription.ExecuteAsync(sub);
+
+                    // Auto-create the first bill for this subscriber
+                    var bill = new Billing
+                    {
+                        UserId = newUser.UserId,
+                        Amount = selectedPlan.Price,
+                        Description = $"Monthly subscription - {selectedPlan.PlanName}",
+                        DueDate = endDate,
+                        Status = "Pending"
+                    };
+                    await createBilling.ExecuteAsync(bill);
                 }
             }
 

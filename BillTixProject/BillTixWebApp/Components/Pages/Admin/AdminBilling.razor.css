@@ -335,3 +335,14 @@
     text-align: center;
     padding: 40px;
 }
+
+.paid-btn {
+    background: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
+}
+
+.paid-btn:hover {
+    background: #dcfce7;
+    border-color: #16a34a;
+}

@@ -109,7 +109,15 @@
                                     }
                                     else { <span class="text-muted">—</span> }
                                 </td>
-                                <td>@(item.TechCompletedJobs ?? 0)</td>
+                                <td>
+                                    @{
+                                        var techName = $"{item.FirstName} {item.LastName}";
+                                        var resolvedCount = serviceRequests.Count(x =>
+                                            string.Equals(x.AssignedTo, techName, StringComparison.OrdinalIgnoreCase) &&
+                                            x.Status == "Resolved");
+                                    }
+                                    @resolvedCount
+                                </td>
                                 <td>
                                     <button class="action-btn edit-btn" title="Edit" @onclick="() => EditTech(item)">
                                         <i class="bi bi-pencil-square"></i>
