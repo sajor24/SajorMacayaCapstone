@@ -202,7 +202,7 @@
             </div>
             <div class="col-md-6">
                 <label class="form-label">Status</label>
-                <select class="form-select" @bind="selectedStatus">
+                <select class="form-select" @bind="billing.Status">
                     <option value="Pending">Pending</option>
                     <option value="Paid">Paid</option>
                     <option value="Overdue">Overdue</option>
@@ -260,8 +260,8 @@
 
             return result.Where(x => searchField switch
             {
-                "name"   => ($"{x.FirstName} {x.LastName}").Contains(searchText, StringComparison.OrdinalIgnoreCase),
-                "id"     => x.BillingId?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+                "name" => ($"{x.FirstName} {x.LastName}").Contains(searchText, StringComparison.OrdinalIgnoreCase),
+                "id" => x.BillingId?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
                 "status" => x.Status?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
                 "method" => x.PaymentMethod?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
                 "duedate" =>
@@ -305,37 +305,6 @@
         var result = await getAll.ExecuteAsync();
         billings = result?.ToList() ?? new();
     }
-
-    void OpenAddForm()
-    {
-        billing = new Billing { Status = "Pending" };
-        selectedStatus = "Pending";
-        isEditing = false;
-        errorMessage = string.Empty;
-        showForm = true;
-    }
-
-    void EditBilling(Billing item)
-    {
-        billing = new Billing
-        {
-            BillingId     = item.BillingId,
-            UserId        = item.UserId ?? billings.FirstOrDefault(x => x.BillingId == item.BillingId)?.UserId,
-            Amount        = item.Amount,
-            PaymentMethod = item.PaymentMethod,
-            Status        = item.Status,
-            DueDate       = item.DueDate,
-            PaidAt        = item.PaidAt,
-            Description   = item.Description,
-            FirstName     = item.FirstName,
-            LastName      = item.LastName
-        };
-        selectedStatus = item.Status ?? "Pending";
-        isEditing = true;
-        errorMessage = string.Empty;
-        showForm = true;
-    }
-
     async Task SaveBilling()
     {
         if (!isEditing && string.IsNullOrWhiteSpace(billing.UserId))
@@ -349,14 +318,14 @@
             return;
         }
 
-        // Ensure UserId is set for edit mode
         if (isEditing && string.IsNullOrWhiteSpace(billing.UserId))
             billing.UserId = billings.FirstOrDefault(x => x.BillingId == billing.BillingId)?.UserId;
 
-        // Apply status from dropdown
-        billing.Status = selectedStatus;
+        // Kunin ang lumang status bago mag-save para sa checking ng upgrade/due date
+        string? oldStatus = isEditing ? billings.FirstOrDefault(x => x.BillingId == billing.BillingId)?.Status : null;
 
-        if (selectedStatus == "Paid")
+        // Dito natin iseset ang PaidAt base sa mismong billing.Status
+        if (billing.Status == "Paid")
             billing.PaidAt ??= DateTime.Now;
         else
             billing.PaidAt = null;
@@ -368,17 +337,60 @@
             else
                 await create.ExecuteAsync(billing);
 
+            // Dito na iche-check kung Paid ang bago at hindi Paid ang dati
+            if (billing.Status == "Paid" && oldStatus != "Paid")
+            {
+                var userSubs = await getSubByUser.ExecuteAsync(billing.UserId!);
+                var activeSub = userSubs?.FirstOrDefault(x => x.Status == "Active");
+
+                if (activeSub != null)
+                {
+                    var baseDate = activeSub.EndDate ?? DateTime.Now;
+                    var nextDueDate = baseDate.AddMonths(1);
+
+                    activeSub.EndDate = nextDueDate;
+                    await updateSubscription.ExecuteAsync(activeSub);
+                }
+            }
+
             await LoadBillings();
             showForm = false;
             isEditing = false;
-            billing = new Billing { Status = "Pending" };
-            selectedStatus = "Pending";
+            billing = new Billing { Status = "Pending" }; // Reset sa default
             errorMessage = string.Empty;
         }
         catch (Exception ex)
         {
             errorMessage = $"Error: {ex.Message}";
         }
+    }
+
+    void OpenAddForm()
+    {
+        billing = new Billing { Status = "Pending" }; // Default new bills to Pending sa dropdown
+        isEditing = false;
+        errorMessage = string.Empty;
+        showForm = true;
+    }
+
+    void EditBilling(Billing item)
+    {
+        billing = new Billing
+        {
+            BillingId = item.BillingId,
+            UserId = item.UserId ?? billings.FirstOrDefault(x => x.BillingId == item.BillingId)?.UserId,
+            Amount = item.Amount,
+            PaymentMethod = item.PaymentMethod,
+            Status = item.Status ?? "Pending", // Saluhin ang kasalukuyang status nito
+            DueDate = item.DueDate,
+            PaidAt = item.PaidAt,
+            Description = item.Description,
+            FirstName = item.FirstName,
+            LastName = item.LastName
+        };
+        isEditing = true;
+        errorMessage = string.Empty;
+        showForm = true;
     }
     void CancelForm()
     {
@@ -416,11 +428,11 @@
 
                 var nextBill = new Billing
                 {
-                    UserId      = item.UserId,
-                    Amount      = activeSub.PlanPrice,
+                    UserId = item.UserId,
+                    Amount = activeSub.PlanPrice,
                     Description = $"Monthly subscription - {activeSub.PlanName}",
-                    DueDate     = nextDueDate,
-                    Status      = "Pending"
+                    DueDate = nextDueDate,
+                    Status = "Pending"
                 };
                 await create.ExecuteAsync(nextBill);
             }
