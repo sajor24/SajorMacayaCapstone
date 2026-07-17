@@ -17,12 +17,11 @@
 <div class="plans-wrapper">
 
     
-    <div class="dashboard-topnav">
-        <div>
-            <h3 class="fw-bold mb-0">Available Internet Plans</h3>
-            <p class="text-muted">Upgrade or change your subscription plan</p>
-        </div>
+    <div class="header">
+        <h3 class="fw-bold mb-0">Available Internet Plans</h3>
+        <p class="text-muted">Upgrade or change your subscription plan</p>
     </div>
+   
     @if (!string.IsNullOrEmpty(message))
     {
         <div class="alert @(isError ? "alert-danger" : "alert-success") alert-dismissible mb-3">
@@ -106,7 +105,7 @@
                         <button class="btn-plan btn-plan-switch"
                                 @onclick="() => OpenUpgradeForm(plan)"
                                 disabled="@HasPendingBilling">
-                            Switch to This Plan
+                            Select to This Plan
                         </button>
 
                         @if (HasPendingBilling)

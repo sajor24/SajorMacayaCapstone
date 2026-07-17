@@ -1,22 +1,34 @@
 ﻿.plans-wrapper {
     padding: 32px;
-    background: linear-gradient(145deg, #ecfdf5 0%, #d1fae5 45%, #f0fdf4 100%);
+    background: linear-gradient(179deg, #f4f9f1 4%, #43e97b 24%);
     min-height: 100vh;
 }
 
-.plans-header {
-    margin-bottom: 24px;
+.header {
+    background: white;
+    padding: 16px 32px;
+    border-bottom: 3px solid #10b981;
+    box-shadow: 0 2px 8px rgba(16,185,129,.1);
+    margin: -32px -32px 24px -32px;
 }
 
-.plans-header h3 {
-    color: #111;
-    font-size: 1.5rem;
-}
+    .header h3 {
+        color: #111;
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 700;
+    }
+
+    .header p {
+        color: #059669;
+        margin: 0;
+        font-size: .82rem;
+    }
 
 /* ── Current Plan Banner ── */
 .current-plan-banner {
-    background: #eef3ff;
-    border: 1.5px solid #c7d7ff;
+    background: white;
+    border: 1.5px solid #a7f3d0;
     border-radius: 14px;
     padding: 20px 28px;
     display: flex;
@@ -26,7 +38,7 @@
 
 .current-plan-label {
     font-size: .8rem;
-    color: #4f46e5;
+    color: #059669;
     font-weight: 600;
     margin-bottom: 4px;
 }
@@ -39,13 +51,13 @@
 
 .current-plan-price {
     font-size: .88rem;
-    color: #4f46e5;
+    color: #059669;
     font-weight: 500;
     margin-top: 2px;
 }
 
 .current-plan-status {
-    background: #4f46e5;
+    background: #059669;
     color: white;
     font-size: .75rem;
     font-weight: 700;
@@ -69,17 +81,17 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    transition: box-shadow 0.2s, transform 0.2s;
+    transition: box-shadow .2s, transform .2s;
 }
 
-.plan-card:hover {
-    box-shadow: 0 8px 28px rgba(79,70,229,0.10);
-    transform: translateY(-4px);
-}
+    .plan-card:hover {
+        box-shadow: 0 8px 28px rgba(5,150,105,.15);
+        transform: translateY(-4px);
+    }
 
 .plan-current {
-    border: 2px solid #4f46e5;
-    box-shadow: 0 4px 20px rgba(79,70,229,0.12);
+    border: 2px solid #059669;
+    box-shadow: 0 4px 20px rgba(5,150,105,.15);
 }
 
 /* ── Top Badges ── */
@@ -92,7 +104,7 @@
 }
 
 .badge-current-plan {
-    background: #4f46e5;
+    background: #059669;
     color: white;
     font-size: .72rem;
     font-weight: 700;
@@ -125,13 +137,13 @@
 .speed-number {
     font-size: 2rem;
     font-weight: 800;
-    color: #4f46e5;
+    color: #059669;
 }
 
 .speed-unit {
     font-size: 1rem;
     font-weight: 500;
-    color: #4f46e5;
+    color: #059669;
 }
 
 .plan-price-display {
@@ -151,17 +163,17 @@
 .plan-features {
     list-style: none;
     padding: 0;
-    margin: 4px 0 8px 0;
+    margin: 4px 0 8px;
     display: flex;
     flex-direction: column;
     gap: 7px;
     flex: 1;
 }
 
-.plan-features li {
-    font-size: .88rem;
-    color: #444;
-}
+    .plan-features li {
+        font-size: .88rem;
+        color: #444;
+    }
 
 .feature-check {
     color: #22c55e;
@@ -188,20 +200,20 @@
     border: 1.5px solid #d1d5db;
 }
 
-.btn-plan-switch:hover {
-    background: #f3f4f6;
-    border-color: #aaa;
-}
+    .btn-plan-switch:hover {
+        background: #f3f4f6;
+        border-color: #aaa;
+    }
 
 .btn-plan-upgrade {
-    background: #4f46e5;
+    background: #059669;
     color: white;
 }
 
-.btn-plan-upgrade:hover {
-    background: #4338ca;
-    transform: translateY(-2px);
-}
+    .btn-plan-upgrade:hover {
+        background: #047857;
+        transform: translateY(-2px);
+    }
 
 .btn-plan-current {
     background: transparent;
@@ -224,16 +236,16 @@
     cursor: pointer;
 }
 
-.btn-plan-cancel:hover {
-    background: #ef4444;
-    color: white;
-}
+    .btn-plan-cancel:hover {
+        background: #ef4444;
+        color: white;
+    }
 
 /* ── Modal ── */
 .modal-backdrop-custom {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.4);
+    background: rgba(0,0,0,.4);
     z-index: 1040;
 }
 
@@ -252,15 +264,15 @@
     overflow-y: auto;
 }
 
-@media (max-width: 1100px) {
+@media (max-width:1100px) {
     .plans-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2,1fr);
     }
 }
 
-@media (max-width: 600px) {
+@media (max-width:600px) {
     .plans-wrapper {
-        padding: 70px 16px 16px 16px;
+        padding: 70px 16px 16px;
     }
 
     .plans-grid {

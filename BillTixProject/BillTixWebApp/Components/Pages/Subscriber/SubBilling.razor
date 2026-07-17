@@ -104,7 +104,6 @@
                         <th>Billing ID</th>
                         <th>Amount</th>
                         <th>Description</th>
-                        <th>Due Date</th>
                         <th>Status</th>
                         <th>Paid At</th>
                     </tr>
@@ -116,7 +115,6 @@
                             <td class="fw-semibold">@bill.BillingId</td>
                             <td>₱@bill.Amount.ToString("N2")</td>
                             <td class="text-muted">@(bill.Description ?? "—")</td>
-                            <td class="text-muted">@(bill.DueDate?.ToString("MMM dd, yyyy") ?? "—")</td>
                             <td>
                                 <span class="status-badge @GetStatusClass(bill.Status)">@bill.Status</span>
                             </td>
