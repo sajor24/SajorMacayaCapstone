@@ -18,14 +18,16 @@
             <h2>Internet Plans</h2>
             <p>Manage your internet plans</p>
         </div>
-        <div class="topnav-right">
+    </div>
+
+    <div class="page-content">
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold mb-0" style="color:#111;">Internet Plans</h3>
             <button class="btn btn-primary d-flex align-items-center gap-2" @onclick="OpenAddForm">
                 <i class="bi bi-plus-circle-fill"></i> Add Plan
             </button>
         </div>
-    </div>
-
-    <div class="page-content">
 
         @if (!string.IsNullOrEmpty(errorMessage))
         {

@@ -6,6 +6,8 @@
 @rendermode InteractiveServer
 @attribute [Authorize(Roles = "Admin")]
 @inject IGetAll_Billing getAll
+@inject IUpdate_Billing updateBilling
+@inject IGetAll_Subscription getAllSubscriptions
 @inject IJSRuntime JS
 
 <div class="sub-wrapper">
@@ -15,16 +17,16 @@
             <h2>Financial Report</h2>
             <p>Monthly revenue and billing summary</p>
         </div>
-        <div class="topnav-right">
-            <button class="btn btn-outline-secondary d-flex align-items-center gap-2" @onclick="PrintReport">
-                <i class="bi bi-printer-fill"></i> Print
-            </button>
-        </div>
     </div>
 
     <div class="page-content" id="report-content">
 
-       
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold mb-0" style="color:#111;">Financial Report</h3>
+            <button class="btn btn-primary d-flex align-items-center gap-2" @onclick="PrintReport">
+                <i class="bi bi-printer-fill"></i> Print
+            </button>
+        </div>
 
         <!-- FILTER -->
         <div class="table-card mb-4">
@@ -90,16 +92,75 @@
 
         <!-- DETAILED TRANSACTIONS -->
         <div class="table-card">
-            <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                 <div>
                     <div class="fw-semibold" style="color:#111;">All Transactions (@selectedYear)</div>
-                    <small class="text-muted">@yearBillings.Count records</small>
+                    <small class="text-muted">@filteredYearBillings.Count() records</small>
                 </div>
-                <div class="search-box">
-                    <i class="bi bi-search text-muted"></i>
-                    <input placeholder="Search..." @bind="searchText" @bind:event="oninput" />
+                <div class="d-flex gap-2 align-items-center flex-wrap justify-content-end">
+
+                    <!-- DATE RANGE FILTER BY PAID AT -->
+                    <div class="d-flex align-items-center gap-1 me-2">
+                        <span class="text-muted small" style="white-space:nowrap;">Paid From:</span>
+                        <input type="date" class="form-control form-control-sm" style="width:140px;" @bind="startDate" />
+
+                        <span class="text-muted small" style="white-space:nowrap;">To:</span>
+                        <input type="date" class="form-control form-control-sm" style="width:140px;" @bind="endDate" />
+
+                        @if (startDate.HasValue || endDate.HasValue)
+                        {
+                            <button class="btn btn-sm btn-outline-secondary" style="padding:2px 8px;"
+                                    @onclick="ClearDateFilter" title="Clear Date Filter">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                        }
+                    </div>
+
+                    <!-- Search field selector -->
+                    <select class="form-select form-select-sm" style="width:160px;" @bind="searchField">
+                        <option value="all">All Fields</option>
+                        <option value="id">Billing ID</option>
+                        <option value="name">Subscriber Name</option>
+                        <option value="status">Status</option>
+                        <option value="method">Payment Method</option>
+                    </select>
+                    <div class="search-box">
+                        <i class="bi bi-search text-muted"></i>
+                        <input placeholder="Search..." @bind="searchText" @bind:event="oninput" />
+                    </div>
                 </div>
             </div>
+
+            <!-- DYNAMIC DATE SUMMARY -->
+            @if (startDate.HasValue || endDate.HasValue)
+            {
+                var rangeBills = filteredYearBillings.ToList();
+                var rangeRevenue = rangeBills.Where(x => x.Status == "Paid").Sum(x => x.Amount);
+                var rangePaid = rangeBills.Count(x => x.Status == "Paid");
+                var rangePending = rangeBills.Count(x => x.Status == "Pending" || x.Status == "Overdue");
+
+                <div class="summary-cards mb-3">
+                    <div class="summary-card blue">
+                        <div class="summary-label">Filtered Records</div>
+                        <div class="summary-value">@rangeBills.Count</div>
+                    </div>
+                    <div class="summary-card green">
+                        <div class="summary-label">Paid</div>
+                        <div class="summary-value">@rangePaid</div>
+                    </div>
+                    <div class="summary-card orange">
+                        <div class="summary-label">Unpaid / Overdue</div>
+                        <div class="summary-value">@rangePending</div>
+                    </div>
+                    <div class="summary-card" style="border-left: 4px solid #10b981;">
+                        <div class="summary-label">
+                            Revenue For Selected Period
+                        </div>
+                        <div class="summary-value text-success">₱@rangeRevenue.ToString("N2")</div>
+                    </div>
+                </div>
+            }
+
             <div class="table-responsive">
                 <table class="sub-table">
                     <thead>
@@ -142,46 +203,117 @@
 
 @code {
     private List<Billing> billings = new();
+    private List<Subscription> subscriptions = new();
     private int selectedYear = DateTime.Now.Year;
     private string searchText = string.Empty;
+    private string searchField = "all";
+
+    // MGA BAGONG INPUT PARA SA DATE RANGE FILTER
+    private DateTime? startDate = null;
+    private DateTime? endDate = null;
 
     private List<Billing> yearBillings =>
         billings.Where(x => x.CreatedAt.Year == selectedYear).ToList();
 
-    private IEnumerable<Billing> filteredYearBillings =>
-        string.IsNullOrWhiteSpace(searchText)
-        ? yearBillings
-        : yearBillings.Where(x =>
-            (x.BillingId != null && x.BillingId.Contains(searchText, StringComparison.OrdinalIgnoreCase))
-            || (x.FirstName != null && x.FirstName.Contains(searchText, StringComparison.OrdinalIgnoreCase))
-            || (x.LastName != null && x.LastName.Contains(searchText, StringComparison.OrdinalIgnoreCase))
-            || (x.Status != null && x.Status.Contains(searchText, StringComparison.OrdinalIgnoreCase))
-        );
+    private void ClearDateFilter()
+    {
+        startDate = null;
+        endDate = null;
+    }
+
+    private IEnumerable<Billing> filteredYearBillings
+    {
+        get
+        {
+            var result = yearBillings.AsEnumerable();
+
+            // 1. Filter gamit ang Simula na Petsa (Start Date)
+            if (startDate.HasValue)
+            {
+                result = result.Where(x => x.PaidAt.HasValue && x.PaidAt.Value.Date >= startDate.Value.Date);
+            }
+
+            // 2. Filter gamit ang Katapusan na Petsa (End Date)
+            if (endDate.HasValue)
+            {
+                result = result.Where(x => x.PaidAt.HasValue && x.PaidAt.Value.Date <= endDate.Value.Date);
+            }
+
+            // 3. Filter gamit ang Keyword Text Search
+            if (string.IsNullOrWhiteSpace(searchText))
+                return result;
+
+            return result.Where(x => searchField switch
+            {
+                "id" => x.BillingId?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+                "name" => (x.FirstName?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true)
+                            || (x.LastName?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true),
+                "status" => x.Status?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+                "method" => x.PaymentMethod?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+                _ =>
+                    (x.BillingId?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                    (x.FirstName?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                    (x.LastName?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                    (x.Status?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                    (x.PaymentMethod?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true)
+            });
+        }
+    }
 
     private List<MonthlyRow> monthlyReport => Enumerable.Range(1, 12)
         .Select(m => new MonthlyRow
         {
-            Month    = new DateTime(selectedYear, m, 1).ToString("MMMM"),
-            Total    = yearBillings.Count(x => x.CreatedAt.Month == m),
-            Paid     = yearBillings.Count(x => x.CreatedAt.Month == m && x.Status == "Paid"),
-            Pending  = yearBillings.Count(x => x.CreatedAt.Month == m && x.Status == "Pending"),
-            Overdue  = yearBillings.Count(x => x.CreatedAt.Month == m && x.Status == "Overdue"),
-            Revenue  = yearBillings.Where(x => x.CreatedAt.Month == m && x.Status == "Paid").Sum(x => x.Amount)
+            Month = new DateTime(selectedYear, m, 1).ToString("MMMM"),
+            Total = yearBillings.Count(x => x.CreatedAt.Month == m),
+            Paid = yearBillings.Count(x => x.CreatedAt.Month == m && x.Status == "Paid"),
+            Pending = yearBillings.Count(x => x.CreatedAt.Month == m && x.Status == "Pending"),
+            // Overdue = subscribers whose subscription expired in this month of the selected year
+            Overdue = subscriptions.Count(x =>
+                x.EndDate.HasValue &&
+                x.EndDate.Value.Year == selectedYear &&
+                x.EndDate.Value.Month == m &&
+                x.EndDate.Value.Date < DateTime.Today &&
+                x.Status != "Inactive"),
+            Revenue = yearBillings.Where(x => x.CreatedAt.Month == m && x.Status == "Paid").Sum(x => x.Amount)
         })
         .Where(x => x.Total > 0)
         .ToList();
 
     string GetStatusClass(string? status) => status switch
     {
-        "Paid"    => "badge-paid",
+        "Paid" => "badge-paid",
         "Overdue" => "badge-overdue",
-        _         => "badge-pending"
+        _ => "badge-pending"
     };
 
     protected override async Task OnInitializedAsync()
     {
         var result = await getAll.ExecuteAsync();
         billings = result?.ToList() ?? new();
+
+        var subs = await getAllSubscriptions.ExecuteAsync();
+        subscriptions = subs?.ToList() ?? new();
+
+        // Auto-mark overdue: Pending bills with no payment and past due date
+        var overdue = billings
+            .Where(x =>
+                x.Status == "Pending" &&
+                x.DueDate.HasValue &&
+                x.DueDate.Value.Date < DateTime.Today &&
+                string.IsNullOrWhiteSpace(x.PaymentMethod))
+            .ToList();
+
+        foreach (var bill in overdue)
+        {
+            bill.Status = "Overdue";
+            await updateBilling.ExecuteAsync(bill);
+        }
+
+        if (overdue.Any())
+        {
+            var refreshed = await getAll.ExecuteAsync();
+            billings = refreshed?.ToList() ?? new();
+        }
     }
 
     async Task PrintReport()
@@ -191,11 +323,11 @@
 
     private class MonthlyRow
     {
-        public string Month   { get; set; } = "";
-        public int    Total   { get; set; }
-        public int    Paid    { get; set; }
-        public int    Pending { get; set; }
-        public int    Overdue { get; set; }
+        public string Month { get; set; } = "";
+        public int Total { get; set; }
+        public int Paid { get; set; }
+        public int Pending { get; set; }
+        public int Overdue { get; set; }
         public decimal Revenue { get; set; }
     }
 }

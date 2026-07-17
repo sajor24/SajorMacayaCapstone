@@ -21,14 +21,16 @@
             <h2>Technician Management</h2>
             <p>Manage and monitor field technicians</p>
         </div>
-        <div class="topnav-right">
+    </div>
+
+    <div class="page-content">
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold mb-0" style="color:#111;">Technicians</h3>
             <button class="btn btn-primary d-flex align-items-center gap-2 px-4" @onclick="OpenAddForm">
                 <i class="bi bi-person-plus-fill"></i> Add Technician
             </button>
         </div>
-    </div>
-
-    <div class="page-content">
 
         @if (!string.IsNullOrEmpty(errorMessage))
         {
@@ -107,16 +109,14 @@
                                     {
                                         <span><i class="bi bi-geo-alt text-muted me-1"></i>@item.TechArea</span>
                                     }
-                                    else { <span class="text-muted">—</span> }
+                                    else
+                                    {
+
+                                        <span class="text-muted">—</span>
+                                    }
                                 </td>
                                 <td>
-                                    @{
-                                        var techName = $"{item.FirstName} {item.LastName}";
-                                        var resolvedCount = serviceRequests.Count(x =>
-                                            string.Equals(x.AssignedTo, techName, StringComparison.OrdinalIgnoreCase) &&
-                                            x.Status == "Resolved");
-                                    }
-                                    @resolvedCount
+                                    @(item.TechCompletedJobs ?? 0)
                                 </td>
                                 <td>
                                     <button class="action-btn edit-btn" title="Edit" @onclick="() => EditTech(item)">
@@ -184,8 +184,15 @@
             <div class="col-md-6">
                 <label class="form-label">
                     Password
-                    @if (!isEditing) { <span class="text-danger">*</span> }
-                    else { <span class="text-muted small">(leave blank to keep)</span> }
+                    @if (!isEditing)
+                    {
+                        <span class="text-danger">*</span>
+                    }
+                    else
+                    {
+
+                        <span class="text-muted small">(leave blank to keep)</span>
+                    }
                 </label>
                 <input type="password" class="form-control"
                        placeholder="@(isEditing ? "Leave blank to keep" : "Password")"
@@ -252,7 +259,7 @@
     private string errorMessage = string.Empty;
     private int techCompletedJobs = 0;
 
-    private int openRequests      => serviceRequests.Count(x => x.Status == "Open" || x.Status == "Pending");
+    private int openRequests => serviceRequests.Count(x => x.Status == "Open" || x.Status == "Pending");
     private int inProgressRequests => serviceRequests.Count(x => x.Status == "In Progress");
 
     private IEnumerable<Users> filteredTechnicians =>
@@ -260,9 +267,9 @@
         ? technicians
         : technicians.Where(x =>
             (x.FirstName ?? "").Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
-            (x.LastName  ?? "").Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
-            (x.Username  ?? "").Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
-            (x.UserId    ?? "").Contains(searchText, StringComparison.OrdinalIgnoreCase));
+            (x.LastName ?? "").Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+            (x.Username ?? "").Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+            (x.UserId ?? "").Contains(searchText, StringComparison.OrdinalIgnoreCase));
 
     protected override async Task OnInitializedAsync()
     {
@@ -301,18 +308,18 @@
     {
         techUser = new Users
         {
-            UserId             = item.UserId,
-            FirstName          = item.FirstName,
-            LastName           = item.LastName,
-            Username           = item.Username,
-            Password           = item.Password,
-            Role               = "Technician",
-            Email              = item.Email,
-            ContactNumber      = item.ContactNumber,
-            Address            = item.Address,
+            UserId = item.UserId,
+            FirstName = item.FirstName,
+            LastName = item.LastName,
+            Username = item.Username,
+            Password = item.Password,
+            Role = "Technician",
+            Email = item.Email,
+            ContactNumber = item.ContactNumber,
+            Address = item.Address,
             TechSpecialization = item.TechSpecialization,
-            TechArea           = item.TechArea,
-            TechCompletedJobs  = item.TechCompletedJobs
+            TechArea = item.TechArea,
+            TechCompletedJobs = item.TechCompletedJobs
         };
         techCompletedJobs = item.TechCompletedJobs ?? 0;
         passwordInput = string.Empty;
@@ -324,7 +331,7 @@
     async Task SaveTech()
     {
         if (string.IsNullOrWhiteSpace(techUser.FirstName) ||
-            string.IsNullOrWhiteSpace(techUser.LastName)  ||
+            string.IsNullOrWhiteSpace(techUser.LastName) ||
             string.IsNullOrWhiteSpace(techUser.Username))
         {
             errorMessage = "First Name, Last Name, and Username are required.";

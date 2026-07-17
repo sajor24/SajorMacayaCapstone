@@ -13,13 +13,14 @@ builder.Services.AddSingleton<Repository>();
 
 // Email
 builder.Services.AddScoped<IEmailService, EmailService>();
-// Users
+
 builder.Services.AddScoped<ICreate_User, Create_User>();
 builder.Services.AddScoped<ILoginUser, LoginUser>();
 builder.Services.AddScoped<IUpdate_User, Update_User>();
 builder.Services.AddScoped<IDelete_User, Delete_User>();
 builder.Services.AddScoped<IGetAll_User, GetAll_User>();
 builder.Services.AddScoped<IUpdateCompletedJobs_User, UpdateCompletedJobs_User>();
+
 
 // Billing
 builder.Services.AddScoped<ICreate_Billing, Create_Billing>();

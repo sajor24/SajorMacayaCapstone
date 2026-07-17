@@ -10,7 +10,6 @@
 @inject IJSRuntime JS
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IGetAll_User getAll
-@inject IGetRecent_Billing getRecentBilling
 @inject IGetAll_Billing getAllBilling
 
 <PageTitle>Admin Dashboard - BillTix</PageTitle>
@@ -26,7 +25,8 @@
     </div>
 
     <div class="content">
-        <h1>Dashboard</h1>
+        <h3 class="fw-bold mb-0" style="color:#111;">Dashboard</h3>
+        <p></p>
 
         <div class="stat-cards">
             <div class="stat-card">
@@ -98,7 +98,6 @@
     private int totalSubscribers = 0;
     private decimal totalRevenue = 0;
     private int pendingBills = 0;
-    private IEnumerable<Billing> transactions = new List<Billing>();
     private List<Billing> bill = new();
 
 
@@ -126,7 +125,4 @@
         var result = await getAllBilling.ExecuteAsync();
         bill = result?.ToList() ?? new();
     }
-   
-
-    
 }

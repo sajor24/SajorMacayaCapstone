@@ -20,7 +20,7 @@
 
     <div class="topnav">
         <div class="topnav-left">
-            <h2>Upgrade Requests</h2>
+            <h2>Payment Request</h2>
             <p>Review and approve subscriber plan upgrades</p>
         </div>
     </div>
@@ -36,9 +36,40 @@
         }
 
         <div class="table-card">
-            <div class="mb-3">
-                <div class="fw-semibold" style="color:#111;">Payment Request</div>
-                <small class="text-muted">Pending: @requests.Count(x => x.Status == "Pending")</small>
+            <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+                <div>
+                    <div class="fw-semibold" style="color:#111;">Payment Request</div>
+                    <small class="text-muted">Pending: @requests.Count(x => x.Status == "Pending")</small>
+                </div>
+                <div class="d-flex gap-2 align-items-center flex-wrap justify-content-end">
+                    <!-- Date filter by Requested At -->
+                    <div class="d-flex align-items-center gap-1">
+                        <span class="text-muted" style="font-size:.82rem; white-space:nowrap;">Date:</span>
+                        <input type="date" class="form-control form-control-sm" style="width:150px;"
+                               @bind="filterDate" @bind:event="oninput" />
+                        @if (filterDate.HasValue)
+                        {
+                            <button class="btn btn-sm btn-outline-secondary" style="padding:2px 8px;"
+                                    @onclick="() => filterDate = null" title="Clear date">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        }
+                    </div>
+                    <!-- Search field selector -->
+                    <select class="form-select form-select-sm" style="width:160px;" @bind="searchField">
+                        <option value="all">All Fields</option>
+                        <option value="id">Request ID</option>
+                        <option value="name">Subscriber Name</option>
+                        <option value="plan">Plan</option>
+                        <option value="ref">Reference No.</option>
+                        <option value="status">Status</option>
+                    </select>
+                    <!-- Search input -->
+                    <div class="search-box">
+                        <i class="bi bi-search text-muted"></i>
+                        <input placeholder="Search..." @bind="searchText" @bind:event="oninput" />
+                    </div>
+                </div>
             </div>
 
             <div class="table-responsive">
@@ -55,7 +86,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var req in requests)
+                        @foreach (var req in filteredRequests)
                         {
                             <tr>
                                 <td class="fw-semibold">@req.RequestId</td>
@@ -93,7 +124,7 @@
                                 </td>
                             </tr>
                         }
-                        @if (!requests.Any())
+                        @if (!filteredRequests.Any())
                         {
                             <tr>
                                 <td colspan="7" class="text-center text-muted py-4">No upgrade requests.</td>
@@ -109,6 +140,42 @@
     private List<UpgradeRequest> requests = new();
     private string message = string.Empty;
     private bool isError = false;
+    private string searchText = string.Empty;
+    private string searchField = "all";
+    private DateTime? filterDate = null;
+
+    private IEnumerable<UpgradeRequest> filteredRequests
+    {
+        get
+        {
+            var result = requests.AsEnumerable();
+
+            // Date filter — by RequestedAt date
+            if (filterDate.HasValue)
+                result = result.Where(x => x.RequestedAt.Date == filterDate.Value.Date);
+
+            if (string.IsNullOrWhiteSpace(searchText))
+                return result;
+
+            return result.Where(x => searchField switch
+            {
+                "id" => x.RequestId?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+                "name" => ($"{x.FirstName} {x.LastName}").Contains(searchText, StringComparison.OrdinalIgnoreCase)
+                            || (x.Username?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true),
+                "plan" => x.PlanName?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+                "ref" => x.ReferenceNo?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+                "status" => x.Status?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+                _ =>
+                    (x.RequestId?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                    (x.FirstName?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                    (x.LastName?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                    (x.Username?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                    (x.PlanName?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                    (x.ReferenceNo?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                    (x.Status?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true)
+            });
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {

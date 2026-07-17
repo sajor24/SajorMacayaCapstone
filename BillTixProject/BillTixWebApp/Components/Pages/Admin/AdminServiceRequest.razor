@@ -6,6 +6,7 @@
 @rendermode InteractiveServer
 @attribute [Authorize(Roles = "Admin")]
 @inject IGetAll_ServiceRequest getAllRequests
+@inject ICreate_ServiceRequest createRequest
 @inject IUpdate_ServiceRequest updateRequest
 @inject IDelete_ServiceRequest deleteRequest
 @inject IGetAll_User getUsers
@@ -20,6 +21,13 @@
     </div>
 
     <div class="page-content">
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold mb-0"</h3>
+            <button class="btn btn-primary d-flex align-items-center gap-2" @onclick="OpenAddModal">
+                <i class="bi bi-plus-circle-fill"></i> Add Request
+            </button>
+        </div>
 
         @if (!string.IsNullOrEmpty(message))
         {
@@ -54,6 +62,21 @@
             <div class="d-flex justify-content-between align-items-start mb-3">
                 <div class="fw-semibold" style="color:#111;">All Service Requests</div>
                 <div class="d-flex gap-2 align-items-center flex-wrap justify-content-end">
+
+                    <!-- DATE RANGE FILTER -->
+                    <div class="d-flex gap-1 align-items-center me-2">
+                        <span class="text-muted small">From:</span>
+                        <input type="date" class="form-select form-select-sm" style="width:140px;" @bind="startDate" />
+                        <span class="text-muted small">To:</span>
+                        <input type="date" class="form-select form-select-sm" style="width:140px;" @bind="endDate" />
+                        @if (startDate.HasValue || endDate.HasValue)
+                        {
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="ClearDateFilter" title="Clear Date Filter">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                        }
+                    </div>
+
                     <select class="form-select form-select-sm" style="width:160px;" @bind="searchField">
                         <option value="all">All Fields</option>
                         <option value="id">Request ID</option>
@@ -122,6 +145,93 @@
         </div>
     </div>
 </div>
+
+<!-- ADD REQUEST MODAL -->
+@if (showAddModal)
+{
+    <div class="modal-backdrop-custom" @onclick="CloseAddModal"></div>
+    <div class="modal-box shadow-lg">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">Add Service Request</h5>
+            <button class="btn-close" @onclick="CloseAddModal"></button>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-12">
+                <label class="form-label fw-semibold">Subscriber <span class="text-danger">*</span></label>
+                <select class="form-select" @bind="newRequest.UserId">
+                    <option value="">— Select Subscriber —</option>
+                    @foreach (var sub in subscribers)
+                    {
+                        <option value="@sub.UserId">@sub.FirstName @sub.LastName (@sub.UserId)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">Issue Type <span class="text-danger">*</span></label>
+                <select class="form-select" @bind="newRequest.IssueType">
+                    <option value="">Select issue type</option>
+                    <option value="No Connection">No Connection</option>
+                    <option value="Slow Internet">Slow Internet</option>
+                    <option value="Router Problem">Router Problem</option>
+                    <option value="WiFi Issue">WiFi Issue</option>
+                    <option value="Billing Concern">Billing Concern</option>
+                    <option value="Plan Upgrade">Plan Upgrade</option>
+                    <option value="Installation">Installation</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">Priority</label>
+                <select class="form-select" @bind="newRequest.Priority">
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Urgent">Urgent</option>
+                </select>
+            </div>
+            <div class="col-12">
+                <label class="form-label fw-semibold">Description</label>
+                <textarea class="form-control" rows="3"
+                          placeholder="Describe the issue..."
+                          @bind="newRequest.Description"></textarea>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">Contact Number</label>
+                <input class="form-control" placeholder="e.g. 09123456789"
+                       @bind="newRequest.ContactNumber" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">Assign Technician</label>
+                <select class="form-select" @bind="newAssignedTechId">
+                    <option value="">— Assign Later —</option>
+                    @foreach (var tech in technicians)
+                    {
+                        <option value="@tech.UserId">
+                            @tech.FirstName @tech.LastName
+                            @if (!string.IsNullOrEmpty(tech.TechSpecialization))
+                            {
+                                <text> · @tech.TechSpecialization</text>
+                            }
+                        </option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(addFormError))
+        {
+            <div class="alert alert-danger mt-3">@addFormError</div>
+        }
+
+        <div class="d-flex gap-2 mt-4 justify-content-end">
+            <button class="btn btn-secondary" @onclick="CloseAddModal">Cancel</button>
+            <button class="btn btn-primary" @onclick="SaveNewRequest" disabled="@isAddSaving">
+                @(isAddSaving ? "Saving..." : "Add Request")
+            </button>
+        </div>
+    </div>
+}
 
 <!-- ASSIGN MODAL -->
 @if (showAssignModal && selectedRequest != null)
@@ -231,6 +341,9 @@
     private string message = string.Empty;
     private bool isError = false;
 
+    private DateTime? startDate;
+    private DateTime? endDate;
+
     private bool showAssignModal = false;
     private ServiceRequest? selectedRequest;
     private string assignedTechnicianId = string.Empty;
@@ -242,26 +355,62 @@
     private ServiceRequest? deleteTarget;
     private bool isDeleting = false;
 
-    private IEnumerable<ServiceRequest> filteredRequests =>
-        string.IsNullOrWhiteSpace(searchText)
-        ? requests
-        : requests.Where(x => searchField switch
+    // Add Request
+    private bool showAddModal = false;
+    private ServiceRequest newRequest = new() { Priority = "Medium", Status = "Open" };
+    private string newAssignedTechId = string.Empty;
+    private string addFormError = string.Empty;
+    private bool isAddSaving = false;
+
+    private List<Users> subscribers = new();
+
+    private void ClearDateFilter()
+    {
+        startDate = null;
+        endDate = null;
+    }
+
+    private IEnumerable<ServiceRequest> filteredRequests
+    {
+        get
         {
-            "id" => x.RequestId?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
-            "name" => ($"{x.FirstName} {x.LastName}").Contains(searchText, StringComparison.OrdinalIgnoreCase),
-            "issue" => x.IssueType?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
-            "address" => x.Address?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
-            "status" => x.Status?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
-            "assigned" => x.AssignedTo?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
-            _ =>
-                (x.RequestId?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
-                (x.FirstName?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
-                (x.LastName?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
-                (x.IssueType?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
-                (x.Address?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
-                (x.Status?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
-                (x.AssignedTo?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true)
-        });
+            var result = requests.AsEnumerable();
+
+            // 1. Date Range Filter
+            if (startDate.HasValue)
+            {
+                result = result.Where(x => x.CreatedAt.Date >= startDate.Value.Date);
+            }
+            if (endDate.HasValue)
+            {
+                result = result.Where(x => x.CreatedAt.Date <= endDate.Value.Date);
+            }
+
+            // 2. Text Search Filter
+            if (!string.IsNullOrWhiteSpace(searchText))
+            {
+                result = result.Where(x => searchField switch
+                {
+                    "id" => x.RequestId?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+                    "name" => ($"{x.FirstName} {x.LastName}").Contains(searchText, StringComparison.OrdinalIgnoreCase),
+                    "issue" => x.IssueType?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+                    "address" => x.Address?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+                    "status" => x.Status?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+                    "assigned" => x.AssignedTo?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+                    _ =>
+                        (x.RequestId?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                        (x.FirstName?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                        (x.LastName?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                        (x.IssueType?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                        (x.Address?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                        (x.Status?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                        (x.AssignedTo?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true)
+                });
+            }
+
+            return result;
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -275,6 +424,73 @@
 
         var users = await getUsers.ExecuteAsync();
         technicians = users?.Where(x => x.Role == "Technician").ToList() ?? new();
+        subscribers = users?.Where(x => x.Role == "Subscriber").ToList() ?? new();
+    }
+
+    void OpenAddModal()
+    {
+        newRequest = new ServiceRequest { Priority = "Medium", Status = "Open" };
+        newAssignedTechId = string.Empty;
+        addFormError = string.Empty;
+        showAddModal = true;
+    }
+
+    void CloseAddModal()
+    {
+        showAddModal = false;
+        addFormError = string.Empty;
+    }
+
+    async Task SaveNewRequest()
+    {
+        if (string.IsNullOrWhiteSpace(newRequest.UserId))
+        {
+            addFormError = "Please select a subscriber.";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(newRequest.IssueType))
+        {
+            addFormError = "Please select an issue type.";
+            return;
+        }
+
+        isAddSaving = true;
+        addFormError = string.Empty;
+
+        try
+        {
+            // Set address from subscriber record
+            var sub = subscribers.FirstOrDefault(x => x.UserId == newRequest.UserId);
+            newRequest.Address = sub?.Address;
+            if (string.IsNullOrWhiteSpace(newRequest.ContactNumber))
+                newRequest.ContactNumber = sub?.ContactNumber;
+
+            // Assign technician if selected
+            if (!string.IsNullOrWhiteSpace(newAssignedTechId))
+            {
+                var tech = technicians.FirstOrDefault(x => x.UserId == newAssignedTechId);
+                if (tech != null)
+                {
+                    newRequest.AssignedTo = $"{tech.FirstName} {tech.LastName}";
+                    newRequest.Status = "In Progress";
+                }
+            }
+
+            await createRequest.ExecuteAsync(newRequest);
+            await LoadData();
+
+            message = "Service request added successfully.";
+            isError = false;
+            showAddModal = false;
+        }
+        catch (Exception ex)
+        {
+            addFormError = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isAddSaving = false;
+        }
     }
 
     void OpenAssignModal(ServiceRequest req)

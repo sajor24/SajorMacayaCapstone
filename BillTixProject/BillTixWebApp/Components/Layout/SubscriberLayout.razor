@@ -12,7 +12,7 @@
     <button class="mobile-menu-btn" @onclick="ToggleMobileDrawer">
         <i class="bi @(mobileOpen ? "bi-x-lg" : "bi-list")"></i>
     </button>
-    <span class="mobile-brand-text">BILLTIX</span>
+    <span class="mobile-brand-text">Palma IMTECH</span>
 </div>
 
 @if (mobileOpen)
@@ -26,8 +26,21 @@
     <nav class="sidebar">
 
         <div class="sidebar-brand">
-            <div class="brand-icon brand-icon-sub"><i class="bi bi-grid-3x3-gap-fill"></i></div>
-            @if (!collapsed){ <span class="brand-text">BILLTIX</span> }
+            <div class="brand-icon brand-icon-sub">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M5 12.55a11 11 0 0 1 14.08 0" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M1.42 9a16 16 0 0 1 21.16 0" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M8.53 16.11a6 6 0 0 1 6.95 0" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="12" cy="20" r="1.5" fill="white"/>
+                </svg>
+            </div>
+            @if (!collapsed)
+            {
+                <div style="display:flex;flex-direction:column;line-height:1.15;overflow:hidden;">
+                    <span style="font-size:.95rem;font-weight:800;color:#111827;letter-spacing:.5px;white-space:nowrap;">Palma IMTECH</span>
+                    <span style="font-size:.65rem;font-weight:700;color:#d97706;letter-spacing:2px;text-transform:uppercase;white-space:nowrap;">FBR INTERNET</span>
+                </div>
+            }
         </div>
 
         <div class="sidebar-nav">
@@ -118,14 +131,15 @@
     .sub-container {
         display: flex;
         min-height: 100vh;
-        background: #0f1729;
+        background: #f5f6fa;
     }
 
     .sub-container .sidebar {
         width: 240px;
         min-width: 240px;
         height: 100vh;
-        background: #0d1b2a;
+        background: #ffffff;
+        border-right: 1px solid #e5e7eb;
         display: flex;
         flex-direction: column;
         position: sticky;
@@ -146,7 +160,7 @@
         align-items: center;
         gap: 10px;
         padding: 20px 14px 16px;
-        border-bottom: 1px solid rgba(255,255,255,0.06);
+        border-bottom: 1px solid #f3f4f6;
         min-height: 68px;
         overflow: hidden;
     }
@@ -154,7 +168,7 @@
     .brand-icon-sub {
         width: 38px;
         height: 38px;
-        background: #2563eb;
+        background: #059669;
         border-radius: 10px;
         display: flex;
         align-items: center;
@@ -167,7 +181,7 @@
     .sub-container .brand-text {
         font-size: 1.1rem;
         font-weight: 800;
-        color: #fff;
+        color: #111827;
         letter-spacing: 1.5px;
         white-space: nowrap;
         flex: 1;
@@ -184,12 +198,12 @@
     }
 
     .sub-container .sidebar-nav::-webkit-scrollbar { width: 3px; }
-    .sub-container .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+    .sub-container .sidebar-nav::-webkit-scrollbar-thumb { background: #d1fae5; border-radius: 4px; }
 
     .sub-container .nav-group-label {
         font-size: .7rem;
         font-weight: 700;
-        color: #475569;
+        color: #9ca3af;
         text-transform: uppercase;
         letter-spacing: .08em;
         padding: 8px 8px 4px;
@@ -200,9 +214,9 @@
         display: flex;
         align-items: center;
         gap: 12px;
-        padding: 10px;
-        border-radius: 10px;
-        color: #94a3b8;
+        padding: 10px 14px;
+        border-radius: 50px;
+        color: #6b7280;
         text-decoration: none;
         font-size: .92rem;
         font-weight: 500;
@@ -216,14 +230,14 @@
     }
 
     .sub-container .nav-item:hover {
-        background: rgba(255,255,255,0.06);
-        color: #e2e8f0;
+        background: #f0fdf4;
+        color: #059669;
         text-decoration: none;
     }
 
     .sub-container .nav-item.nav-active {
-        background: #1e3a5f;
-        color: #60a5fa !important;
+        background: #059669;
+        color: #ffffff !important;
         font-weight: 600;
     }
 
@@ -234,7 +248,6 @@
         flex-shrink: 0;
     }
 
-    /* Notification badge */
     .notif-badge {
         margin-left: auto;
         background: #ef4444;
@@ -251,7 +264,6 @@
         line-height: 1;
     }
 
-    /* Red dot when collapsed and has unread notifs */
     .notif-dot {
         position: absolute;
         top: 6px;
@@ -260,7 +272,7 @@
         height: 8px;
         background: #ef4444;
         border-radius: 50%;
-        border: 2px solid #0d1b2a;
+        border: 2px solid #ffffff;
     }
 
     .sub-container.is-collapsed .nav-item {
@@ -268,6 +280,7 @@
         gap: 0;
         padding: 10px 0;
         position: relative;
+        border-radius: 50px;
     }
 
     .sub-container.is-collapsed .nav-item[title]:hover::after {
@@ -276,15 +289,15 @@
         left: calc(100% + 10px);
         top: 50%;
         transform: translateY(-50%);
-        background: #1e3a5f;
-        color: #e2e8f0;
+        background: #111827;
+        color: #ffffff;
         font-size: .8rem;
         font-weight: 500;
         white-space: nowrap;
         padding: 5px 10px;
         border-radius: 6px;
-        border: 1px solid rgba(96,165,250,0.2);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 12px rgba(0,0,0,.15);
         z-index: 9999;
         pointer-events: none;
     }
@@ -293,23 +306,22 @@
 
     .sub-container .sidebar-footer {
         padding: 10px;
-        border-top: 1px solid rgba(255,255,255,0.06);
+        border-top: 1px solid #f3f4f6;
     }
 
-    .sub-container .logout-item { color: #f87171 !important; }
+    .sub-container .logout-item { color: #ef4444 !important; }
     .sub-container .logout-item:hover {
-        background: rgba(248,113,113,0.1) !important;
-        color: #fca5a5 !important;
+        background: #fef2f2 !important;
+        color: #dc2626 !important;
     }
 
     .sub-container .main-content {
         flex: 1;
-        background: #111827;
+        background: #f5f6fa;
         overflow-y: auto;
         min-width: 0;
     }
 
-    /* Desktop toggle */
     .sub-toggle {
         position: fixed;
         top: 20px;
@@ -317,9 +329,9 @@
         z-index: 200;
         width: 28px;
         height: 28px;
-        background: #1e3a5f;
-        border: 2px solid #2563eb;
-        color: #60a5fa;
+        background: #ffffff;
+        border: 2px solid #e5e7eb;
+        color: #6b7280;
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -327,13 +339,12 @@
         cursor: pointer;
         font-size: .8rem;
         transition: left 0.25s ease, background .2s;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        box-shadow: 0 2px 8px rgba(0,0,0,.1);
     }
 
     .sub-toggle.is-collapsed { left: calc(68px - 14px); }
-    .sub-toggle:hover { background: #2563eb; color: white; }
+    .sub-toggle:hover { background: #f0fdf4; border-color: #059669; color: #059669; }
 
-    /* Mobile */
     .mobile-topbar-sub { display: none; }
 
     .logout-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000; }
@@ -348,17 +359,17 @@
             top: 0; left: 0; right: 0;
             height: 56px;
             z-index: 1500;
-            background: #0d1b2a;
-            border-bottom: 1px solid rgba(255,255,255,0.06);
+            background: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
             align-items: center;
             gap: 12px;
             padding: 0 16px;
         }
 
         .mobile-menu-btn {
-            background: rgba(255,255,255,0.06);
+            background: #f3f4f6;
             border: none;
-            color: #94a3b8;
+            color: #374151;
             width: 36px;
             height: 36px;
             border-radius: 8px;
@@ -372,7 +383,7 @@
         .mobile-brand-text {
             font-size: 1rem;
             font-weight: 800;
-            color: #fff;
+            color: #111827;
             letter-spacing: 1.5px;
         }
 
@@ -404,9 +415,14 @@
         .sub-container.is-collapsed .nav-item {
             justify-content: flex-start !important;
             gap: 12px !important;
+            padding: 10px 14px !important;
+            border-radius: 50px !important;
         }
 
+        .sub-container.is-collapsed .nav-item span { display: inline !important; }
         .sub-container.is-collapsed .nav-group-label { display: block !important; }
+        .sub-container.is-collapsed .brand-text { display: block !important; }
+        .sub-container.is-collapsed .sidebar { width: 240px !important; min-width: 240px !important; }
     }
 </style>
 

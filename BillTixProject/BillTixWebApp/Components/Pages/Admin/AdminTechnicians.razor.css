@@ -1,4 +1,9 @@
-.sub-wrapper { min-height: 100vh; background: #f5f6fa; display: flex; flex-direction: column; }
+.sub-wrapper {
+    min-height: 100vh;
+    background: linear-gradient(179deg, #f4f9f1 4%, #43e97b 24%);
+    display: flex;
+    flex-direction: column;
+}
 
 .topnav {
     background: white;
@@ -6,11 +11,12 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 2px solid #2563eb;
+    border-bottom: 3px solid #10b981;
+    box-shadow: 0 2px 8px rgba(16,185,129,.1);
 }
 
-.topnav-left h2 { font-size: 1.3rem; font-weight: 800; color: #111; margin: 0; }
-.topnav-left p  { font-size: .82rem; color: #2563eb; margin: 0; }
+.topnav-left h2 { font-size: 1.2rem; font-weight: 700; color: #111; margin: 0; }
+.topnav-left p  { font-size: .82rem; color: #059669; margin: 0; }
 .topnav-right   { display: flex; align-items: center; gap: 16px; }
 
 .page-content { padding: 32px; flex: 1; }
@@ -44,9 +50,9 @@
     flex-shrink: 0;
 }
 
-.icon-blue  { background: #eff6ff; color: #2563eb; }
+.icon-blue  { background: #f0fdf4; color: #059669; }
 .icon-green { background: #f0fdf4; color: #16a34a; }
-.icon-pin   { background: #eff6ff; color: #2563eb; }
+.icon-pin   { background: #f0fdf4; color: #059669; }
 
 .tech-stat-label { font-size: .8rem; color: #888; margin-bottom: 4px; }
 .tech-stat-value { font-size: 1.8rem; font-weight: 800; color: #111; line-height: 1; }
@@ -81,7 +87,7 @@
 .tech-name { font-weight: 600; color: #111; }
 
 .action-btn { border: 1px solid #e5e7eb; background: white; border-radius: 8px; padding: 6px 10px; cursor: pointer; transition: .2s; font-size: .9rem; }
-.edit-btn:hover   { background: #eff6ff; border-color: #2563eb; color: #2563eb; }
+.edit-btn:hover   { background: #eff6ff; border-color: #059669; color: #059669; }
 .delete-btn:hover { background: #fff0f0; border-color: #ef4444; color: #ef4444; }
 
 /* Modals */
@@ -111,3 +117,5 @@
     .page-content { padding: 16px; }
     .topnav { padding: 12px 16px; flex-direction: column; align-items: flex-start; gap: 12px; }
 }
+
+

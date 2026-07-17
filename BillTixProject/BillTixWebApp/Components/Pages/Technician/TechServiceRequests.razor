@@ -209,11 +209,11 @@
             if (!string.IsNullOrWhiteSpace(searchText))
                 result = result.Where(x => searchField switch
                 {
-                    "id"      => x.RequestId?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
-                    "name"    => ($"{x.FirstName} {x.LastName}").Contains(searchText, StringComparison.OrdinalIgnoreCase),
-                    "issue"   => x.IssueType?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+                    "id" => x.RequestId?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+                    "name" => ($"{x.FirstName} {x.LastName}").Contains(searchText, StringComparison.OrdinalIgnoreCase),
+                    "issue" => x.IssueType?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
                     "address" => x.Address?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
-                    "status"  => x.Status?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
+                    "status" => x.Status?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true,
                     _ =>
                         (x.RequestId?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true) ||
                         ($"{x.FirstName} {x.LastName}").Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
@@ -305,21 +305,12 @@
         }
     }
 
-    string GetPriorityClass(string? p) => p?.ToLower() switch
-    {
-        "high"   => "priority-high",
-        "urgent" => "priority-urgent",
-        "medium" => "priority-medium",
-        "low"    => "priority-low",
-        _        => ""
-    };
-
     string GetStatusClass(string? s) => s?.ToLower() switch
     {
-        "open"        => "status-pending",
-        "pending"     => "status-pending",
+        "open" => "status-pending",
+        "pending" => "status-pending",
         "in progress" => "status-inprogress",
-        "resolved"    => "status-resolved",
-        _             => ""
+        "resolved" => "status-resolved",
+        _ => ""
     };
 }

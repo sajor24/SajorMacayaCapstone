@@ -1,5 +1,4 @@
-﻿
-@page "/login"
+﻿@page "/login"
 @rendermode InteractiveServer
 @inject NavigationManager _Nav
 @using BillTixWebApp.Components.Layout
@@ -120,13 +119,13 @@
         justify-content: center;
         padding: 20px;
         overflow: hidden;
-        background: #0b1220;
+        background: #06251c;
     }
 
     .bg-layer {
         position: absolute;
         inset: 0;
-        background: radial-gradient(circle at 12% 18%, rgba(37,99,235,.22), transparent 35%), radial-gradient(circle at 86% 80%, rgba(16,185,129,.16), transparent 34%), linear-gradient(145deg, #0b1220 0%, #0f172a 55%, #111827 100%);
+        background: radial-gradient(circle at 12% 18%, rgba(16,185,129,.28), transparent 35%), radial-gradient(circle at 86% 80%, rgba(110,231,183,.20), transparent 34%), linear-gradient(145deg, #06251c 0%, #0b3d2e 55%, #0d2f24 100%);
     }
 
     .mesh {
@@ -140,7 +139,7 @@
     .mesh-1 {
         width: 280px;
         height: 280px;
-        background: rgba(59,130,246,.35);
+        background: rgba(16,185,129,.4);
         top: -70px;
         right: -40px;
     }
@@ -148,7 +147,7 @@
     .mesh-2 {
         width: 240px;
         height: 240px;
-        background: rgba(16,185,129,.25);
+        background: rgba(110,231,183,.3);
         bottom: -70px;
         left: -50px;
     }
@@ -156,10 +155,10 @@
     .card {
         width: 100%;
         max-width: 390px;
-        background: rgba(255,255,255,.95);
-        border: 1px solid #e5e7eb;
+        background: rgba(255,255,255,.96);
+        border: 1px solid #d1fae5;
         border-radius: 14px;
-        box-shadow: 0 20px 45px rgba(2,6,23,.35);
+        box-shadow: 0 20px 45px rgba(6,37,28,.4);
         padding: 28px 24px 22px;
         position: relative;
         z-index: 2;
@@ -169,14 +168,15 @@
         font-size: 1.55rem;
         font-weight: 700;
         text-align: center;
-        color: #111827;
+        color: #0b3d2e;
         margin-bottom: 4px;
+        letter-spacing: .02em;
     }
 
     .subtitle {
         text-align: center;
         font-size: .92rem;
-        color: #6b7280;
+        color: #6b8f7f;
         margin-bottom: 20px;
     }
 
@@ -215,8 +215,8 @@
         }
 
             .field input:focus {
-                border-color: #2563eb;
-                box-shadow: 0 0 0 3px rgba(37,99,235,.15);
+                border-color: #10b981;
+                box-shadow: 0 0 0 3px rgba(16,185,129,.18);
             }
 
     .password-wrap {
@@ -244,8 +244,8 @@
     }
 
         .toggle-pass:hover {
-            background: #f3f4f6;
-            color: #111827;
+            background: #ecfdf5;
+            color: #0b3d2e;
         }
 
     .btn {
@@ -256,13 +256,16 @@
         font-size: .95rem;
         font-weight: 600;
         color: #fff;
-        background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%);
+        background: linear-gradient(90deg, #10b981 0%, #059669 100%);
         cursor: pointer;
         margin-top: 4px;
+        transition: filter .15s, transform .15s, box-shadow .15s;
     }
 
         .btn:hover {
-            filter: brightness(1.03);
+            filter: brightness(1.05);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(16,185,129,.35);
         }
 
     .back {
@@ -270,11 +273,13 @@
         text-align: center;
         margin-top: 14px;
         font-size: .88rem;
-        color: #2563eb;
+        color: #10b981;
         text-decoration: none;
+        font-weight: 500;
     }
 
         .back:hover {
             text-decoration: underline;
+            color: #059669;
         }
 </style>

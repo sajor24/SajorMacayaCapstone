@@ -333,6 +333,17 @@
                 </select>
             </div>
 
+            @if (!isEditing)
+            {
+                <div class="col-12">
+                    <label class="form-label fw-semibold">Payment Status <span class="text-danger">*</span></label>
+                    <select class="form-select" @bind="newSubPaymentStatus">
+                        <option value="Paid">Paid — subscription active with next billing date</option>
+                        <option value="Pending">Pending — no next billing until payment confirmed</option>
+                    </select>
+                </div>
+            }
+
             @if (isEditing)
             {
                 <div class="col-md-6">
@@ -379,7 +390,8 @@
     private string username = "Admin";
     private List<Users> users = new();
     private List<Subscription> subscriptions = new();
-    private List<InternetPlan> internetPlans = new();
+    private List<InternetPlan> internetPlans = new();       // active only — for Add dropdown
+    private List<InternetPlan> allInternetPlans = new();    // all plans — for matching during edit
 
     private Users user = new();
     private bool isEditing = false;
@@ -398,11 +410,15 @@
     private string? lightboxPhoto = null;
 
     private string selectedPlanId = string.Empty;
-    private InternetPlan? selectedPlan => internetPlans.FirstOrDefault(x => x.PlanId == selectedPlanId);
+    // Search both active and all plans so editing a subscriber with an inactive plan doesn't crash
+    private InternetPlan? selectedPlan =>
+        internetPlans.FirstOrDefault(x => x.PlanId == selectedPlanId)
+        ?? allInternetPlans.FirstOrDefault(x => x.PlanId == selectedPlanId);
 
     private string editSubStatus = "Active";
     private DateTime editStartDate = DateTime.Today;
     private DateTime? editEndDate = null;
+    private string newSubPaymentStatus = "Paid";
 
     private Subscription? GetSubscription(string? userId) =>
         subscriptions.FirstOrDefault(x => x.UserId == userId && x.Status == "Active")
@@ -481,6 +497,7 @@
 
         var plans = await getAllPlans.ExecuteAsync();
         internetPlans = plans?.Where(x => x.IsActive).ToList() ?? new();
+        allInternetPlans = plans?.ToList() ?? new();
     }
 
     async Task OnPhotoSelected(InputFileChangeEventArgs e)
@@ -602,7 +619,7 @@
 
         if (string.IsNullOrWhiteSpace(selectedPlanId) || selectedPlan == null)
         {
-            errorMessage = "Please select an Internet Plan.";
+            errorMessage = "Please select an Internet Plan. (The previously assigned plan may no longer be active — please choose a new one.)";
             return;
         }
 
@@ -654,7 +671,10 @@
                 if (newUser != null)
                 {
                     var startDate = DateTime.Now;
-                    var endDate = startDate.AddMonths(1);
+                    // Paid = may EndDate (+1 month), Pending = walang EndDate
+                    DateTime? endDate = newSubPaymentStatus == "Paid"
+                        ? startDate.AddMonths(1)
+                        : (DateTime?)null;
 
                     var sub = new Subscription
                     {
@@ -667,14 +687,14 @@
                     };
                     await createSubscription.ExecuteAsync(sub);
 
-                    // Auto-create the first bill for this subscriber
+                    // Auto-create the first bill
                     var bill = new Billing
                     {
                         UserId = newUser.UserId,
                         Amount = selectedPlan.Price,
                         Description = $"Monthly subscription - {selectedPlan.PlanName}",
                         DueDate = endDate,
-                        Status = "Pending"
+                        Status = newSubPaymentStatus
                     };
                     await createBilling.ExecuteAsync(bill);
                 }
@@ -683,6 +703,7 @@
             user = new Users();
             passwordInput = string.Empty;
             selectedPlanId = string.Empty;
+            newSubPaymentStatus = "Paid";
             photoPreview = null;
             photoError = null;
             isEditing = false;
@@ -701,6 +722,7 @@
         user = new Users();
         passwordInput = string.Empty;
         selectedPlanId = string.Empty;
+        newSubPaymentStatus = "Paid";
         photoPreview = null;
         photoError = null;
 

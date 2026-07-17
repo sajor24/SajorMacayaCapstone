@@ -13,14 +13,16 @@
 @inject IDelete_UpgradeRequest deleteRequest
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IGetAll_User getAll
-
+@inject IGetByUser_Billing getBillings
 <div class="plans-wrapper">
 
-    <div class="plans-header">
-        <h3 class="fw-bold mb-0">Available Internet Plans</h3>
-        <p class="text-muted">Upgrade or change your subscription plan</p>
+    
+    <div class="dashboard-topnav">
+        <div>
+            <h3 class="fw-bold mb-0">Available Internet Plans</h3>
+            <p class="text-muted">Upgrade or change your subscription plan</p>
+        </div>
     </div>
-
     @if (!string.IsNullOrEmpty(message))
     {
         <div class="alert @(isError ? "alert-danger" : "alert-success") alert-dismissible mb-3">
@@ -100,9 +102,23 @@
                 }
                 else
                 {
-                    <button class="btn-plan btn-plan-switch" @onclick="() => OpenUpgradeForm(plan)">
-                        Switch to This Plan
-                    </button>
+                    <div class="plan-container">
+                        <button class="btn-plan btn-plan-switch"
+                                @onclick="() => OpenUpgradeForm(plan)"
+                                disabled="@HasPendingBilling">
+                            Switch to This Plan
+                        </button>
+
+                        @if (HasPendingBilling)
+                        {
+                            <div class="billing-warning-box" style="margin-top: 8px; font-size: 13px; color: #d9534f;">
+                                <p style="margin: 0; font-weight: bold;">⚠️ Action Required:</p>
+                                <span style="display: block; font-size: 12px; color: #666;">
+                                    Please settle your pending payment or wait for Admin approval.
+                                </span>
+                            </div>
+                        }
+                    </div>
                 }
             </div>
         }
@@ -166,7 +182,8 @@
     </div>
 }
 
-@code {    private List<InternetPlan> plans = new();
+@code {
+    private List<InternetPlan> plans = new();
     private List<Subscription> currentSubs = new();
     private List<UpgradeRequest> pendingRequests = new();
     private string userId = string.Empty;
@@ -179,14 +196,16 @@
     private InternetPlan? selectedPlan;
     private bool showCancelConfirm = false;
     private UpgradeRequest? cancelTarget;
+    private List<Billing> billings = new();
+    private bool HasPendingBilling =>
+    billings.Any(x =>
+        (x.Status == "Pending" || x.Status == "Overdue") &&
+        !string.IsNullOrWhiteSpace(x.PaymentMethod));
 
-    private bool _loaded = false;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnInitializedAsync()
     {
-        if (!firstRender || _loaded) return;
-        _loaded = true;
 
+      
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
@@ -201,6 +220,7 @@
                 userId = currentUser.UserId ?? "";
                 var subs = await getSubscription.ExecuteAsync(userId);
                 currentSubs = subs?.Where(x => x.Status == "Active").ToList() ?? new();
+                billings = (await getBillings.ExecuteAsync(userId))?.ToList() ?? new();
 
                 // Load this user's pending requests from DB
                 var allReqs = await getAllRequests.ExecuteAsync();
@@ -233,19 +253,40 @@
 
     async Task SubmitUpgradeRequest()
     {
+        if (HasPendingBilling)
+        {
+            formError = "You already have a pending billing payment. Please wait until it is approved.";
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(referenceNo))
         {
             formError = "Reference number is required.";
             return;
         }
 
-        if (selectedPlan == null) return;
+        if (selectedPlan == null)
+            return;
 
         isSubmitting = true;
         formError = string.Empty;
 
         try
         {
+            // Check if there is already a pending request for this plan
+            var allReqs = await getAllRequests.ExecuteAsync();
+
+            bool duplicatePending = allReqs?.Any(x =>
+                x.UserId == userId &&
+                x.PlanId == selectedPlan.PlanId &&
+                x.Status == "Pending") == true;
+
+            if (duplicatePending)
+            {
+                formError = "You already have a pending request for this plan.";
+                return;
+            }
+
             var request = new UpgradeRequest
             {
                 UserId = userId,
@@ -257,9 +298,8 @@
 
             await createRequest.ExecuteAsync(request);
 
-            // Refresh pending requests from DB
-            var allReqs = await getAllRequests.ExecuteAsync();
-            pendingRequests = allReqs?
+            // Refresh pending requests
+            pendingRequests = (await getAllRequests.ExecuteAsync())?
                 .Where(x => x.UserId == userId && x.Status == "Pending")
                 .ToList() ?? new();
 
@@ -274,14 +314,16 @@
         {
             formError = $"Error: {ex.Message}";
         }
-
-        isSubmitting = false;
+        finally
+        {
+            isSubmitting = false;
+        }
     }
-
     void ConfirmCancelRequest(UpgradeRequest req)
     {
         cancelTarget = req;
         showCancelConfirm = true;
+
     }
 
     async Task ExecuteCancelRequest()

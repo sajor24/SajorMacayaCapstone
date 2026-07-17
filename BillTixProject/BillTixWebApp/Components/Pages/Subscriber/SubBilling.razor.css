@@ -1,17 +1,31 @@
 ﻿/* ===== Page Wrapper ===== */
 .plans-wrapper {
     padding: 32px;
-    background: #f5f6fa;
+    background: linear-gradient(145deg, #ecfdf5 0%, #d1fae5 45%, #f0fdf4 100%);
     min-height: 100vh;
 }
 
+/* White topnav style for billing header */
 .plans-header {
-    margin-bottom: 24px;
+    background: white;
+    padding: 16px 32px;
+    border-bottom: 3px solid #10b981;
+    box-shadow: 0 2px 8px rgba(16,185,129,.1);
+    margin: -32px -32px 24px -32px;
 }
 
-    .plans-header h3 {
-        color: #111;
-    }
+.plans-header h3 {
+    color: #111;
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.plans-header p {
+    color: #059669;
+    margin: 0;
+    font-size: .82rem;
+}
 
 /* ===== Current Bill Banner (same feel as internet plans) ===== */
 .current-plan-banner {

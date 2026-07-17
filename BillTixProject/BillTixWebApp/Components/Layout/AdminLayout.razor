@@ -6,7 +6,7 @@
     <button class="mobile-menu-btn" @onclick="ToggleMobileDrawer">
         <i class="bi @(mobileOpen ? "bi-x-lg" : "bi-list")"></i>
     </button>
-    <span class="mobile-brand-text">BILLTIX</span>
+    <span class="mobile-brand-text">Palma IMTECH</span>
 </div>
 
 <!-- ── Mobile overlay ── -->
@@ -22,8 +22,21 @@
     <nav class="sidebar">
 
         <div class="sidebar-brand">
-            <div class="brand-icon"><i class="bi bi-grid-3x3-gap-fill"></i></div>
-            @if (!collapsed){ <span class="brand-text">BILLTIX</span> }
+            <div class="brand-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M5 12.55a11 11 0 0 1 14.08 0" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M1.42 9a16 16 0 0 1 21.16 0" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M8.53 16.11a6 6 0 0 1 6.95 0" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="12" cy="20" r="1.5" fill="white"/>
+                </svg>
+            </div>
+            @if (!collapsed)
+            {
+                <div style="display:flex;flex-direction:column;line-height:1.15;overflow:hidden;">
+                    <span style="font-size:.95rem;font-weight:800;color:#111827;letter-spacing:.5px;white-space:nowrap;">Palma IMTECH</span>
+                    <span style="font-size:.65rem;font-weight:700;color:#d97706;letter-spacing:2px;text-transform:uppercase;white-space:nowrap;">FBR INTERNET</span>
+                </div>
+            }
         </div>
 
         <div class="sidebar-nav">

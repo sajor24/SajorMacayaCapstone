@@ -1,6 +1,6 @@
 ﻿.account-page {
     padding: 20px;
-    background: #f6f8fc;
+    background: linear-gradient(145deg, #ecfdf5 0%, #d1fae5 45%, #f0fdf4 100%);
     min-height: 100vh;
 }
 

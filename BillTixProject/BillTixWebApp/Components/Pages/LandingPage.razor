@@ -6,633 +6,215 @@
 @using Domain.Models
 @inject IGetAll_InternetPlan getAll
 
-<PageTitle>BILLTIX</PageTitle>
+<PageTitle>Palma IMTECH - FBR Internet</PageTitle>
 
 <style>
-    * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-        font-family: 'Plus Jakarta Sans', 'Segoe UI', -apple-system, sans-serif;
-    }
-
-    body {
-        background: #0d0b14;
-        color: #f1eaff;
-        overflow-x: hidden;
-    }
-
-    html {
-        scroll-behavior: smooth;
-    }
-
-    /* ===== Keyframes ===== */
-    @@keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    @@keyframes navFadeDown {
-        from {
-            opacity: 0;
-            transform: translateY(-20px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', -apple-system, sans-serif; }
+    html { scroll-behavior: smooth; }
+    body { background: #f0fdf4; color: #111827; overflow-x: hidden; }
 
     @@keyframes floatIcon {
-        0%, 100% {
-            transform: translateY(0) scale(1);
-        }
-
-        50% {
-            transform: translateY(-8px) scale(1.05);
-        }
+        0%,100% { transform: translateY(0); }
+        50%      { transform: translateY(-8px); }
     }
-
-    @@keyframes signalPulse {
-        0%, 100% {
-            opacity: var(--base-opacity, 0.4);
-            transform: scale(1);
-        }
-
-        50% {
-            opacity: 1;
-            transform: scale(1.02);
-        }
-    }
-
     @@keyframes dotPing {
-        0% {
-            box-shadow: 0 0 0 0 rgba(40,199,111,0.7);
-        }
-
-        70% {
-            box-shadow: 0 0 0 12px rgba(40,199,111,0);
-        }
-
-        100% {
-            box-shadow: 0 0 0 0 rgba(40,199,111,0);
-        }
+        0%   { box-shadow: 0 0 0 0 rgba(5,150,105,0.7); }
+        70%  { box-shadow: 0 0 0 12px rgba(5,150,105,0); }
+        100% { box-shadow: 0 0 0 0 rgba(5,150,105,0); }
+    }
+    @@keyframes signalPulse {
+        0%,100% { opacity: var(--base-opacity,.4); transform: scale(1); }
+        50%      { opacity: 1; transform: scale(1.02); }
     }
 
-    /* ===== Navbar ===== */
     .navbar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 16px 48px;
-        background: rgba(11, 11, 18, 0.8);
+        position: fixed; top: 0; left: 0; right: 0;
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 14px 48px;
+        background: rgba(255,255,255,0.92);
         backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border-bottom: 1px solid rgba(255,255,255,0.05);
+        border-bottom: 1px solid #d1fae5;
         z-index: 100;
-        animation: navFadeDown 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+        box-shadow: 0 2px 16px rgba(5,150,105,0.07);
     }
+    .navbar .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .navbar .brand-texts { display: flex; flex-direction: column; line-height: 1.15; }
+    .navbar .brand-name { font-size: 1.25rem; font-weight: 800; color: #065f46; letter-spacing: 0.5px; }
+    .navbar .brand-imtech { color: #065f46; font-weight: 900; }
+    .navbar .brand-sub { font-size: .72rem; font-weight: 700; color: #d97706; letter-spacing: 2.5px; text-transform: uppercase; }
+    .navbar .brand-icon-wrap {
+        width: 48px; height: 48px; background: linear-gradient(135deg,#059669,#34d399);
+        border-radius: 14px; display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0; box-shadow: 0 4px 12px rgba(5,150,105,.3);
+    }
+    .navbar .nav-links { display: flex; gap: 36px; list-style: none; }
+    .navbar .nav-links .nav-link-item {
+        color: #374151; text-decoration: none; font-size: .9rem; font-weight: 600;
+        transition: color .2s; position: relative;
+    }
+    .navbar .nav-links .nav-link-item:hover { color:#059669; }
+    .navbar .nav-right { display: flex; align-items: center; gap: 12px; }
+    .navbar .nav-cta {
+        padding: 9px 26px; border-radius: 30px;
+        background: linear-gradient(90deg,#059669,#34d399);
+        color: #fff; border: none; font-size: .9rem; font-weight: 700;
+        cursor: pointer; transition: all .3s; box-shadow: 0 4px 12px rgba(5,150,105,.25);
+    }
+    .navbar .nav-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(5,150,105,.35); }
+    .navbar .hamburger { display: none; flex-direction: column; gap: 5px; width: 30px; background: none; border: none; cursor: pointer; }
+    .navbar .hamburger span { width:100%; height:2.5px; background:#065f46; border-radius:4px; }
 
-        .navbar .brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 1.6rem;
-            font-weight: 800;
-            letter-spacing: 2px;
-            color: #ffffff;
-            text-decoration: none;
-        }
-
-            .navbar .brand .dot {
-                width: 10px;
-                height: 10px;
-                border-radius: 50%;
-                background: #28c76f;
-                animation: dotPing 2s infinite;
-            }
-
-        .navbar .nav-links {
-            display: flex;
-            gap: 40px;
-            list-style: none;
-        }
-
-            .navbar .nav-links li {
-                font-size: 0.9rem;
-                font-weight: 600;
-            }
-
-            .navbar .nav-links .nav-link-item {
-                color: #a4a0cb;
-                text-decoration: none;
-                transition: color 0.25s, transform 0.25s;
-                display: inline-block;
-            }
-
-                .navbar .nav-links .nav-link-item:hover {
-                    color: #ffffff;
-                    transform: translateY(-1px);
-                }
-
-        .navbar .nav-right {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .navbar .nav-cta {
-            padding: 10px 28px;
-            border-radius: 30px;
-            border: 1px solid rgba(115, 103, 240, 0.5);
-            background: rgba(115, 103, 240, 0.1);
-            color: #fff;
-            font-size: 0.9rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-            .navbar .nav-cta:hover {
-                background: #7367f0;
-                border-color: #7367f0;
-                box-shadow: 0 8px 20px rgba(115, 103, 240, 0.3);
-                transform: translateY(-2px);
-            }
-
-        .navbar .hamburger {
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            gap: 6px;
-            width: 32px;
-            height: 32px;
-            background: none;
-            border: none;
-            cursor: pointer;
-        }
-
-            .navbar .hamburger span {
-                width: 100%;
-                height: 2.5px;
-                background: #f1eaff;
-                border-radius: 4px;
-                transition: all 0.3s;
-            }
-
-    /* ===== Sections & Utilities ===== */
     .hero {
-        position: relative;
-        min-height: 100vh;
-        background: radial-gradient(circle at 80% 20%, rgba(115, 103, 240, 0.15) 0%, transparent 50%), #0b0b12;
-        padding: 160px 48px 100px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 60px;
+        position: relative; min-height: 100vh;
+        background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 40%, #a7f3d0 100%);
+        padding: 140px 48px 80px;
+        display: flex; align-items: center; justify-content: space-between; gap: 60px;
+        overflow: hidden;
     }
-
-    .hero-copy {
-        max-width: 620px;
-        z-index: 2;
-    }
-
+    .hero-copy { max-width: 600px; z-index: 2; }
     .eyebrow {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        background: rgba(40, 199, 111, 0.1);
-        border: 1px solid rgba(40, 199, 111, 0.2);
-        padding: 6px 16px;
-        border-radius: 20px;
-        font-family: monospace;
-        font-size: 0.8rem;
-        font-weight: 700;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-        color: #28c76f;
-        margin-bottom: 28px;
+        display: inline-flex; align-items: center; gap: 8px;
+        background: rgba(5,150,105,.1); border: 1px solid rgba(5,150,105,.25);
+        padding: 6px 16px; border-radius: 20px;
+        font-size: .78rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+        color: #059669; margin-bottom: 24px;
     }
-
-    .hero h1 {
-        font-size: clamp(2.8rem, 6vw, 4.5rem);
-        font-weight: 800;
-        line-height: 1.1;
-        letter-spacing: -1.5px;
-        margin-bottom: 24px;
-        color: #fff;
-    }
-
-        .hero h1 .accent {
-            background: linear-gradient(90deg, #7367f0, #28c76f);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-    .hero p {
-        font-size: 1.15rem;
-        line-height: 1.65;
-        color: #b4baff;
-        opacity: 0.85;
-        margin-bottom: 40px;
-    }
-
-    .hero-actions {
-        display: flex;
-        gap: 20px;
-        flex-wrap: wrap;
-    }
-
+    .eyebrow .dot { width:8px; height:8px; border-radius:50%; background:#059669; animation: dotPing 2s infinite; display:inline-block; }
+    .hero h1 { font-size: clamp(2.4rem, 5vw, 4rem); font-weight: 800; line-height: 1.1; letter-spacing: -1px; margin-bottom: 20px; color: #064e3b; }
+    .hero h1 .accent { color: #059669; }
+    .hero p { font-size: 1.1rem; line-height: 1.7; color: #065f46; opacity: .85; margin-bottom: 36px; }
+    .hero-actions { display: flex; gap: 16px; flex-wrap: wrap; }
     .hero-btn {
-        padding: 16px 38px;
-        background: linear-gradient(90deg, #7367f0 0%, #28c76f 100%);
-        background-size: 200% auto;
-        color: #fff;
-        border: none;
-        border-radius: 30px;
-        font-size: 1rem;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.3s ease;
+        padding: 14px 36px; background: #059669; color: #fff; border: none; border-radius: 30px;
+        font-size: 1rem; font-weight: 700; cursor: pointer; transition: all .3s;
+        box-shadow: 0 8px 20px rgba(5,150,105,.3);
     }
-
-        .hero-btn:hover {
-            background-position: right center;
-            transform: translateY(-3px);
-            box-shadow: 0 12px 30px rgba(115, 103, 240, 0.4);
-        }
-
+    .hero-btn:hover { background: #047857; transform: translateY(-3px); }
     .hero-btn-outline {
-        padding: 16px 36px;
-        background: transparent;
-        color: #f1eaff;
-        border: 1.5px solid rgba(255,255,255,0.15);
-        border-radius: 30px;
-        font-size: 1rem;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.3s ease;
+        padding: 14px 34px; background: transparent; color: #065f46;
+        border: 2px solid #059669; border-radius: 30px; font-size: 1rem; font-weight: 700;
+        cursor: pointer; transition: all .3s; text-decoration: none; display: inline-flex; align-items: center;
     }
-
-        .hero-btn-outline:hover {
-            background: rgba(255,255,255,0.05);
-            border-color: rgba(255,255,255,0.3);
-            transform: translateY(-3px);
-        }
+    .hero-btn-outline:hover { background: #059669; color: white; transform: translateY(-3px); }
 
     .signal-art {
-        position: absolute;
-        right: 0;
-        bottom: 5%;
-        width: min(600px, 50vw);
-        height: min(600px, 50vw);
-        z-index: 1;
-        pointer-events: none;
+        position: absolute; right: 0; bottom: 0;
+        width: min(520px, 48vw); height: min(520px, 48vw);
+        z-index: 1; pointer-events: none; opacity: .7;
     }
+    .signal-art path { transform-origin: bottom right; animation: signalPulse 3.5s ease-in-out infinite; }
+    .signal-art path:nth-child(1) { --base-opacity:.15; animation-delay:0s; }
+    .signal-art path:nth-child(2) { --base-opacity:.3;  animation-delay:.2s; }
+    .signal-art path:nth-child(3) { --base-opacity:.45; animation-delay:.4s; }
+    .signal-art path:nth-child(4) { --base-opacity:.6;  animation-delay:.6s; }
+    .signal-art path:nth-child(5) { --base-opacity:.8;  animation-delay:.8s; }
 
-        .signal-art path {
-            transform-origin: bottom left;
-            animation: signalPulse 3.5s ease-in-out infinite;
-        }
-
-            .signal-art path:nth-child(1) {
-                --base-opacity: 0.15;
-                animation-delay: 0s;
-            }
-
-            .signal-art path:nth-child(2) {
-                --base-opacity: 0.3;
-                animation-delay: 0.2s;
-            }
-
-            .signal-art path:nth-child(3) {
-                --base-opacity: 0.45;
-                animation-delay: 0.4s;
-            }
-
-            .signal-art path:nth-child(4) {
-                --base-opacity: 0.6;
-                animation-delay: 0.6s;
-            }
-
-            .signal-art path:nth-child(5) {
-                --base-opacity: 0.8;
-                animation-delay: 0.8s;
-            }
-
-    .pricing-section, .roles-section {
-        position: relative;
-        padding: 100px 48px;
-        text-align: center;
+    .stats-bar {
+        background: linear-gradient(90deg, #059669, #047857);
+        padding: 28px 48px; display: flex; justify-content: center; gap: 60px; flex-wrap: wrap;
     }
+    .stat-item { text-align: center; color: white; }
+    .stat-item .stat-val { font-size: 2rem; font-weight: 800; }
+    .stat-item .stat-lbl { font-size: .82rem; opacity: .85; font-weight: 600; letter-spacing: 1px; }
 
-    .pricing-section {
-        background: #14121f;
-    }
-
-    .roles-section {
-        background: #0d0b14;
-    }
-
-        .pricing-section h2, .roles-section h2 {
-            font-size: 2.5rem;
-            font-weight: 800;
-            margin-bottom: 12px;
-            color: #ffffff;
-        }
-
-        .pricing-section .sub, .roles-section .sub {
-            color: #9c98bd;
-            margin-bottom: 50px;
-            font-size: 1.1rem;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-    .pricing-cards, .role-cards {
-        display: flex;
-        justify-content: center;
-        gap: 28px;
-        flex-wrap: wrap;
-        max-width: 1200px;
-        margin: 0 auto;
-    }
-
+    .pricing-section { padding: 100px 48px; text-align: center; background: #ffffff; }
+    .pricing-section h2 { font-size: 2.2rem; font-weight: 800; color: #064e3b; margin-bottom: 10px; }
+    .pricing-section .sub { color: #6b7280; margin-bottom: 50px; font-size: 1.05rem; max-width: 560px; margin-left:auto; margin-right:auto; }
+    .pricing-cards { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; max-width: 1100px; margin: 0 auto; }
     .pricing-card {
-        background: rgba(25, 23, 38, 0.6);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 24px;
-        padding: 40px 32px;
-        width: 280px;
-        text-align: left;
-        backdrop-filter: blur(10px);
-        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        background: #f9fafb; border: 1.5px solid #d1fae5;
+        border-radius: 20px; padding: 36px 28px; width: 270px; text-align: left; transition: all .3s;
     }
+    .pricing-card:hover { transform: translateY(-10px); border-color: #059669; box-shadow: 0 16px 40px rgba(5,150,105,.15); }
+    .pricing-card h3 { font-size: 1.15rem; color: #111827; margin-bottom: 8px; font-weight: 700; }
+    .pricing-card .speed { color: #059669; font-weight: 700; font-size: .85rem; margin-bottom: 20px; background: #d1fae5; padding: 4px 12px; border-radius: 12px; display: inline-block; }
+    .pricing-card .price { font-size: 1.9rem; font-weight: 800; color: #064e3b; margin-bottom: 20px; }
+    .pricing-card .price span { font-size: .85rem; color: #9ca3af; font-weight: 500; }
+    .pricing-card ul { list-style: none; border-top: 1px solid #e5e7eb; padding-top: 18px; }
+    .pricing-card ul li { font-size: .9rem; color: #374151; padding: 7px 0; display: flex; align-items: center; gap: 8px; }
+    .pricing-card ul li::before { content: "✓"; color: #059669; font-weight: 900; }
 
-        .pricing-card:hover {
-            transform: translateY(-12px);
-            border-color: rgba(115, 103, 240, 0.5);
-            background: rgba(25, 23, 38, 0.9);
-        }
-
-        .pricing-card h3 {
-            font-size: 1.2rem;
-            color: #ffffff;
-            margin-bottom: 8px;
-        }
-
-        .pricing-card .speed {
-            color: #28c76f;
-            font-weight: 700;
-            font-size: 0.9rem;
-            margin-bottom: 24px;
-            background: rgba(40, 199, 111, 0.1);
-            padding: 4px 12px;
-            border-radius: 12px;
-            display: inline-block;
-        }
-
-        .pricing-card .price {
-            font-size: 2rem;
-            font-weight: 800;
-            margin-bottom: 24px;
-        }
-
-            .pricing-card .price span {
-                font-size: 0.9rem;
-                color: #8985a8;
-            }
-
-        .pricing-card ul {
-            list-style: none;
-            border-top: 1px solid rgba(255,255,255,0.05);
-            padding-top: 20px;
-        }
-
-            .pricing-card ul li {
-                font-size: 0.95rem;
-                color: #b5b1d7;
-                padding: 8px 0;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-
-                .pricing-card ul li::before {
-                    content: "✓";
-                    color: #28c76f;
-                    font-weight: 900;
-                }
-
+    .roles-section { padding: 100px 48px; text-align: center; background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%); }
+    .roles-section h2 { font-size: 2.2rem; font-weight: 800; color: #064e3b; margin-bottom: 10px; }
+    .roles-section .sub { color: #6b7280; margin-bottom: 50px; font-size: 1.05rem; max-width: 560px; margin-left:auto; margin-right:auto; }
+    .role-cards { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; max-width: 1100px; margin: 0 auto; }
     .role-card {
-        background: rgba(20, 18, 31, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.04);
-        border-radius: 20px;
-        padding: 36px 28px;
-        width: 260px;
-        text-align: left;
-        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        background: white; border: 1.5px solid #d1fae5; border-radius: 20px;
+        padding: 32px 24px; width: 240px; text-align: left; transition: all .3s;
+        box-shadow: 0 2px 12px rgba(5,150,105,.06);
     }
-
-        .role-card:hover {
-            transform: translateY(-8px);
-            border-color: rgba(40, 199, 111, 0.4);
-        }
-
-            .role-card:hover .icon {
-                animation: floatIcon 1.2s ease-in-out infinite;
-            }
-
-        .role-card .icon {
-            font-size: 2.5rem;
-            margin-bottom: 16px;
-            display: inline-block;
-        }
-
-        .role-card h4 {
-            font-size: 1.25rem;
-            font-weight: 700;
-            margin-bottom: 4px;
-            color: #ffffff;
-        }
-
-        .role-card .subtitle {
-            color: #28c76f;
-            font-size: 0.85rem;
-            font-weight: 700;
-            margin-bottom: 14px;
-            text-transform: uppercase;
-        }
-
-        .role-card p {
-            font-size: 0.9rem;
-            color: #9c98bd;
-            margin-bottom: 24px;
-            line-height: 1.6;
-            min-height: 70px;
-        }
-
+    .role-card:hover { transform: translateY(-8px); border-color: #059669; box-shadow: 0 16px 36px rgba(5,150,105,.15); }
+    .role-card:hover .icon { animation: floatIcon 1.2s ease-in-out infinite; }
+    .role-card .icon { font-size: 2.2rem; margin-bottom: 14px; display: inline-block; }
+    .role-card h4 { font-size: 1.1rem; font-weight: 700; color: #111827; margin-bottom: 2px; }
+    .role-card .subtitle { color: #059669; font-size: .8rem; font-weight: 700; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+    .role-card p { font-size: .88rem; color: #6b7280; margin-bottom: 20px; line-height: 1.6; min-height: 60px; }
     .btn-login {
-        background: rgba(255,255,255,0.05);
-        color: white;
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 12px;
-        padding: 12px 0;
-        width: 100%;
-        cursor: pointer;
-        font-size: 0.95rem;
-        font-weight: 700;
-        transition: all 0.3s;
+        background: #f0fdf4; color: #059669; border: 1.5px solid #6ee7b7;
+        border-radius: 12px; padding: 10px 0; width: 100%; cursor: pointer; font-size: .9rem; font-weight: 700; transition: all .3s;
     }
+    .role-card:hover .btn-login { background: #059669; color: white; border-color: transparent; }
 
-    .role-card:hover .btn-login {
-        background: linear-gradient(90deg, #7367f0 0%, #28c76f 100%);
-        border-color: transparent;
+    .footer { background: linear-gradient(135deg, #064e3b 0%, #065f46 100%); color: #a7f3d0; text-align: center; padding: 60px 48px; }
+    .footer h3 { font-size: 1.6rem; font-weight: 800; margin-bottom: 8px; color: #fff; }
+    .footer p { font-size: .9rem; opacity: .7; }
+    .footer .footer-brand { font-size: .8rem; color: #f59e0b; font-weight: 700; letter-spacing: 2px; margin-bottom: 4px; }
+
+    .reveal { opacity: 0; transform: translateY(28px); transition: opacity .7s ease, transform .7s ease; }
+    .reveal.show { opacity: 1; transform: translateY(0); }
+    .delay-1 { transition-delay: .1s; }
+    .delay-2 { transition-delay: .2s; }
+    .delay-3 { transition-delay: .3s; }
+    .delay-4 { transition-delay: .4s; }
+
+    @@media (max-width: 900px) {
+        .hero { flex-direction: column; text-align: center; padding: 130px 24px 60px; }
+        .hero-actions { justify-content: center; }
+        .signal-art { position: relative; width: 65vw; height: 65vw; margin-top: 30px; }
+        .stats-bar { gap: 32px; padding: 24px; }
     }
-
-    .footer {
-        background: linear-gradient(135deg, #0b0b12 0%, #151124 100%);
-        border-top: 1px solid rgba(255,255,255,0.05);
-        color: #9c98bd;
-        text-align: center;
-        padding: 80px 48px;
-    }
-
-        .footer h3 {
-            font-size: 2rem;
-            font-weight: 800;
-            margin-bottom: 12px;
-            color: #fff;
-        }
-
-    /* ===== Reveal Animation ===== */
-    .reveal {
-        opacity: 0;
-        transform: translateY(30px);
-        transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-        .reveal.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-    .delay-1 {
-        transition-delay: .1s;
-    }
-
-    .delay-2 {
-        transition-delay: .2s;
-    }
-
-    .delay-3 {
-        transition-delay: .3s;
-    }
-
-    .delay-4 {
-        transition-delay: .4s;
-    }
-
-    /* ===== Responsive ===== */
-   @@media (max-width: 900px) {
-        .hero {
-            flex-direction: column;
-            text-align: center;
-            padding: 140px 24px 8px;
-        }
-
-        .hero-actions {
-            justify-content: center;
-        }
-
-        .signal-art {
-            position: relative;
-            width: 70vw;
-            height: 70vw;
-            margin-top: 40px;
-        }
-    }
-
     @@media (max-width: 700px) {
-        .navbar {
-            padding: 16px 24px;
+        .navbar { padding: 12px 20px; }
+        .navbar .hamburger { display: flex; }
+        .navbar .nav-links {
+            display: none; position: absolute; top: 100%; left: 0; right: 0;
+            flex-direction: column; background: white;
+            border-bottom: 1px solid #d1fae5; box-shadow: 0 8px 20px rgba(0,0,0,.08);
         }
-
-            .navbar .hamburger {
-                display: flex;
-            }
-
-            .navbar .nav-links {
-                display: none;
-                position: absolute;
-                top: 100%;
-                left: 0;
-                right: 0;
-                flex-direction: column;
-                background: #0b0b12;
-                border-bottom: 1px solid rgba(255,255,255,0.08);
-            }
-
-                .navbar .nav-links.open {
-                    display: flex;
-                }
-
-                .navbar .nav-links li {
-                    width: 100%;
-                    border-top: 1px solid rgba(255,255,255,0.05);
-                }
-
-                .navbar .nav-links .nav-link-item {
-                    display: block;
-                    padding: 18px 0;
-                    width: 100%;
-                    text-align: center;
-                }
-
-        .pricing-section, .roles-section, .footer {
-            padding: 80px 24px;
-        }
-
-        .pricing-cards, .role-cards {
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .pricing-card, .role-card {
-            width: 100%;
-            max-width: 340px;
-        }
+        .navbar .nav-links.open { display: flex; }
+        .navbar .nav-links li { border-top: 1px solid #f0fdf4; }
+        .navbar .nav-links .nav-link-item { display: block; padding: 16px 24px; }
+        .pricing-section, .roles-section, .footer { padding: 70px 20px; }
+        .pricing-cards, .role-cards { flex-direction: column; align-items: center; gap: 16px; }
+        .pricing-card, .role-card { width: 100%; max-width: 340px; }
+        .stat-item .stat-val { font-size: 1.5rem; }
     }
 </style>
 
 <div class="navbar">
-    <a href="#" class="brand"><span class="dot"></span> BILLTIX</a>
-
-    <ul class="nav-links @(mobileNavOpen ? "open" : "")" id="navLinks">
+    <a href="#" class="brand">
+        <div class="brand-icon-wrap">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Wifi signal arcs -->
+                <path d="M5 12.55a11 11 0 0 1 14.08 0" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                <path d="M1.42 9a16 16 0 0 1 21.16 0" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round"/>
+                <path d="M8.53 16.11a6 6 0 0 1 6.95 0" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="12" cy="20" r="1.5" fill="white"/>
+            </svg>
+        </div>
+        <div class="brand-texts">
+            <span class="brand-name">Palma <span class="brand-imtech">IMTECH</span></span>
+            <span class="brand-sub">FBR INTERNET</span>
+        </div>
+    </a>
+    <ul class="nav-links @(mobileNavOpen ? "open" : "")">
         <li><a href="#pricing" class="nav-link-item" @onclick="CloseMobileNav">Plans</a></li>
-        <li><a href="#pricing" class="nav-link-item" @onclick="CloseMobileNav">Coverage</a></li>
-        <li><a href="#roles" class="nav-link-item" @onclick="CloseMobileNav">Support</a></li>
+        <li><a href="#roles" class="nav-link-item" @onclick="CloseMobileNav">Portals</a></li>
+        <li><a href="#contact" class="nav-link-item" @onclick="CloseMobileNav">Contact</a></li>
     </ul>
-
     <div class="nav-right">
         <button class="nav-cta" @onclick='() => _Nav.NavigateTo("/login")'>Login</button>
-
-        <button class="hamburger" id="hamburgerBtn" @onclick="ToggleMobileNav" aria-label="Toggle menu" aria-expanded="@mobileNavOpen.ToString().ToLower()">
+        <button class="hamburger" @onclick="ToggleMobileNav">
             <span></span><span></span><span></span>
         </button>
     </div>
@@ -640,54 +222,61 @@
 
 <div class="hero">
     <div class="hero-copy">
-        <div class="eyebrow reveal"><span class="dot"></span> Network Online</div>
-        <h1 class="reveal delay-1">Internet that<br />just <span class="accent">stays connected.</span></h1>
-        <p class="reveal delay-2">Fast, reliable service and billing you can actually keep track of — no surprises, no dropouts.</p>
+        <div class="eyebrow reveal"><span class="dot"></span> FBR Fiber Internet</div>
+        <h1 class="reveal delay-1">Stay Connected<br />with <span class="accent">Fast &amp; Reliable</span><br />Internet.</h1>
+        <p class="reveal delay-2">Palma iMTECH Solutions and Data Provider — delivering high-speed FBR internet to your home and business. Manage your billing anytime, anywhere.</p>
         <div class="hero-actions reveal delay-2">
             <button class="hero-btn" @onclick='() => _Nav.NavigateTo("/login")'>Get Started</button>
-            <a class="hero-btn-outline" href="#pricing" style="text-decoration:none; display:inline-flex; align-items:center;">View Plans</a>
+            <a class="hero-btn-outline" href="#pricing">View Plans</a>
         </div>
     </div>
-    <svg class="signal-art" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+    <svg class="signal-art" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
         <defs>
-            <linearGradient id="signalGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-                <stop offset="0%" stop-color="#7367f0" />
-                <stop offset="100%" stop-color="#28c76f" />
+            <linearGradient id="sg" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#059669" />
+                <stop offset="100%" stop-color="#34d399" />
             </linearGradient>
         </defs>
-        <g fill="none" stroke="url(#signalGrad)" stroke-width="3" stroke-linecap="round">
-            <path d="M 100 500 A 400 400 0 0 1 500 100" />
-            <path d="M 160 500 A 340 340 0 0 1 500 160" />
-            <path d="M 220 500 A 280 280 0 0 1 500 220" />
-            <path d="M 280 500 A 220 220 0 0 1 500 280" />
-            <path d="M 340 500 A 160 160 0 0 1 500 340" />
+        <g fill="none" stroke="url(#sg)" stroke-width="2.5" stroke-linecap="round">
+            <path d="M 60 460 A 400 400 0 0 1 460 60" />
+            <path d="M 110 460 A 350 350 0 0 1 460 110" />
+            <path d="M 165 460 A 295 295 0 0 1 460 165" />
+            <path d="M 225 460 A 235 235 0 0 1 460 225" />
+            <path d="M 290 460 A 170 170 0 0 1 460 290" />
         </g>
-        <circle class="source-dot" cx="500" cy="500" r="9" fill="#28c76f" />
+        <circle cx="460" cy="460" r="10" fill="#059669" />
     </svg>
 </div>
 
+<div class="stats-bar reveal">
+    <div class="stat-item"><div class="stat-val">99.9%</div><div class="stat-lbl">Uptime</div></div>
+    <div class="stat-item"><div class="stat-val">24/7</div><div class="stat-lbl">Support</div></div>
+    <div class="stat-item"><div class="stat-val">FBR</div><div class="stat-lbl">Fiber Technology</div></div>
+    <div class="stat-item"><div class="stat-val">Fast</div><div class="stat-lbl">High Speed Internet</div></div>
+</div>
+
 <div class="pricing-section" id="pricing">
-    <h2 class="reveal">Simple, Transparent Pricing</h2>
-    <p class="sub reveal delay-1">Choose the perfect plan for your needs. No hidden fees, cancel anytime.</p>
+    <h2 class="reveal">Our Internet Plans</h2>
+    <p class="sub reveal delay-1">Flexible plans for every need. No hidden fees, no surprises.</p>
     <div class="pricing-cards">
         @if (plans.Count == 0)
         {
-            <p class="sub reveal">No plans available right now. Please check back soon.</p>
+            <p class="sub">No plans available right now. Please check back soon.</p>
         }
         else
         {
             @for (int i = 0; i < plans.Count; i++)
             {
                 var item = plans[i];
-                var delaySeconds = (0.1 + (i * 0.1)).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
-                <div class="pricing-card reveal" style="transition-delay:@(delaySeconds)s">
+                var delay = (0.1 + (i * 0.1)).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
+                <div class="pricing-card reveal" style="transition-delay:@(delay)s">
                     <h3>@item.PlanName</h3>
                     <div class="speed">@item.Speed</div>
-                    <div class="price">₱@item.Price.ToString("N2")<span>/Month</span></div>
+                    <div class="price">&#8369;@item.Price.ToString("N2")<span>/mo</span></div>
                     <ul>
-                        @foreach (var feature in (item.Features ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries))
+                        @foreach (var f in (item.Features ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
                         {
-                            <li>@feature.Trim()</li>
+                            <li>@f.Trim()</li>
                         }
                     </ul>
                 </div>
@@ -703,63 +292,53 @@
         <div class="role-card reveal delay-1">
             <div class="icon">👤</div>
             <h4>Subscriber</h4>
-            <div class="subtitle">Access your account</div>
-            <p>View billing statements, pay bills online, and track your payment history.</p>
+            <div class="subtitle">My Account</div>
+            <p>View and pay your bills, track payment history, and manage your subscription.</p>
             <button class="btn-login" @onclick='() => _Nav.NavigateTo("/login?role=Subscriber")'>Login as Subscriber</button>
         </div>
         <div class="role-card reveal delay-2">
             <div class="icon">👥</div>
             <h4>Staff</h4>
-            <div class="subtitle">Manage accounts</div>
-            <p>View your billing statements, pay bills online, and track your payment history.</p>
+            <div class="subtitle">Manage Accounts</div>
+            <p>Assist subscribers, process payments, and handle customer concerns.</p>
             <button class="btn-login" @onclick='() => _Nav.NavigateTo("/login?role=Staff")'>Login as Staff</button>
         </div>
         <div class="role-card reveal delay-3">
             <div class="icon">🛡️</div>
             <h4>Administrator</h4>
-            <div class="subtitle">Full system access</div>
-            <p>Manage subscriber accounts, configure billing rates, and process payments.</p>
+            <div class="subtitle">Full Access</div>
+            <p>Manage all accounts, billing, financial reports, and system configuration.</p>
             <button class="btn-login" @onclick='() => _Nav.NavigateTo("/login?role=Admin")'>Login as Admin</button>
         </div>
         <div class="role-card reveal delay-4">
             <div class="icon">🔧</div>
             <h4>Technician</h4>
-            <div class="subtitle">Field operations</div>
-            <p>Manage subscriber accounts, configure billing rates, and process payments.</p>
+            <div class="subtitle">Field Operations</div>
+            <p>View assigned service requests and manage field installations and repairs.</p>
             <button class="btn-login" @onclick='() => _Nav.NavigateTo("/login?role=Technician")'>Login as Technician</button>
         </div>
     </div>
 </div>
 
+<div class="footer" id="contact">
+    <div class="footer-brand">Palma IMTECH Solutions and Data Provider</div>
+    <h3>FBR Internet</h3>
+    <p>Fast. Reliable. Always connected.</p>
+    <p style="margin-top:16px; font-size:.8rem;">&#169; @DateTime.Now.Year Palma iMTECH. All rights reserved.</p>
+</div>
 
 <script>
     (() => {
-        const io = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('show');
-                    io.unobserve(entry.target);
-                }
-            });
+        const io = new IntersectionObserver(entries => {
+            entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('show'); io.unobserve(e.target); } });
         }, { threshold: 0.1 });
-
-        function observeAll(root) {
-            root.querySelectorAll('.reveal:not(.show)').forEach(el => io.observe(el));
-        }
-
-        observeAll(document);
-
-        const mo = new MutationObserver((mutations) => {
-            mutations.forEach(mutation => {
-                mutation.addedNodes.forEach(node => {
-                    if (node.nodeType !== 1) return;
-                    if (node.matches && node.matches('.reveal')) io.observe(node);
-                    if (node.querySelectorAll) observeAll(node);
-                });
-            });
-        });
-
-        mo.observe(document.body, { childList: true, subtree: true });
+        function obs(root) { root.querySelectorAll('.reveal:not(.show)').forEach(el => io.observe(el)); }
+        obs(document);
+        new MutationObserver(mutations => mutations.forEach(m => m.addedNodes.forEach(n => {
+            if (n.nodeType !== 1) return;
+            if (n.matches && n.matches('.reveal')) io.observe(n);
+            if (n.querySelectorAll) obs(n);
+        }))).observe(document.body, { childList: true, subtree: true });
     })();
 </script>
 
@@ -770,17 +349,9 @@
     protected override async Task OnInitializedAsync()
     {
         var result = await getAll.ExecuteAsync();
-        plans = result?.ToList() ?? new();
+        plans = result?.Where(x => x.IsActive).ToList() ?? new();
     }
 
-    // Native Blazor methods para sa Navigation Link control at Hamburger menu state
-    private void ToggleMobileNav()
-    {
-        mobileNavOpen = !mobileNavOpen;
-    }
-
-    private void CloseMobileNav()
-    {
-        mobileNavOpen = false;
-    }
+    void ToggleMobileNav() => mobileNavOpen = !mobileNavOpen;
+    void CloseMobileNav() => mobileNavOpen = false;
 }

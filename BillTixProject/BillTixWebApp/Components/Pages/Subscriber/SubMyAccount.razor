@@ -2,6 +2,7 @@
 @layout SubscriberLayout
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
 @using Domain.ICommands
 @using Domain.Models
 @rendermode InteractiveServer
@@ -60,6 +61,36 @@
                 <button class="btn btn-primary mt-3" @onclick="SaveProfile">Save Changes</button>
             </div>
 
+            <!-- VALID ID / PHOTO UPLOAD -->
+            <div class="card">
+                <h4>Valid ID</h4>
+                <p class="muted">Upload a clear photo of your government-issued ID</p>
+
+                <div class="text-center mb-3">
+                    @if (!string.IsNullOrEmpty(photoPreview))
+                    {
+                        <img src="@photoPreview" class="id-preview" alt="Valid ID" />
+                    }
+                    else
+                    {
+                        <div class="id-preview-placeholder">No Valid ID Uploaded</div>
+                    }
+                </div>
+
+                <InputFile OnChange="OnPhotoSelected" accept="image/*" class="form-control form-control-sm" />
+                <small class="text-muted d-block mt-1">Max file size: 2MB. Accepted formats: JPG, PNG, GIF.</small>
+
+                @if (!string.IsNullOrEmpty(photoError))
+                {
+                    <div class="text-danger small mt-1">@photoError</div>
+                }
+
+                <button class="btn btn-primary mt-3" @onclick="SaveProfile"
+                        disabled="@(string.IsNullOrEmpty(photoPreview) && string.IsNullOrEmpty(user.Photo))">
+                    Save ID
+                </button>
+            </div>
+
             <div class="card">
                 <h4>Change Password</h4>
                 <p class="muted">Leave blank if you don't want to change</p>
@@ -86,10 +117,16 @@
                 <div class="summary-list">
                     <div><span>Account ID</span><strong>@user.UserId</strong></div>
                     <div><span>Username</span><strong>@user.Username</strong></div>
-                    <div><span>Status</span><span class="badge-active">Active</span></div>
+                    <div>
+                        <span>Status</span>
+                        @{
+                            var (statusText, statusCss) = GetSubscriptionStatus();
+                        }
+                        <span class="@statusCss">@statusText</span>
+                    </div>
                     <div><span>Current Plan</span><strong>@(currentSub?.PlanName ?? "No Plan")</strong></div>
                     <div><span>Member Since</span><strong>@user.CreatedAt.ToString("MMM dd, yyyy")</strong></div>
-                    <div><span>Next Billing</span><strong>@(currentSub?.EndDate?.ToString("MMM dd, yyyy") ?? "—")</strong></div>
+                    <div><span>Due Date</span><strong>@(currentSub?.EndDate?.ToString("MMM dd, yyyy") ?? "—")</strong></div>
                 </div>
             </div>
         </div>
@@ -119,6 +156,12 @@
     .summary-list div:last-child { border-bottom: none; padding-bottom: 0; }
     .summary-list span:first-child { color: #888; font-size: .88rem; }
     .badge-active { background: #d1fae5; color: #059669; padding: 4px 12px; border-radius: 20px; font-size: .75rem; font-weight: 600; }
+    .badge-inactive { background: #f3f4f6; color: #6b7280; padding: 4px 12px; border-radius: 20px; font-size: .75rem; font-weight: 600; }
+    .badge-duedate { background: #fef3c7; color: #d97706; padding: 4px 12px; border-radius: 20px; font-size: .75rem; font-weight: 600; }
+
+    /* Valid ID preview */
+    .id-preview { width: 100%; max-height: 180px; object-fit: contain; border-radius: 10px; border: 1px solid #e5e7eb; }
+    .id-preview-placeholder { width: 100%; height: 120px; background: #f3f4f6; border-radius: 10px; border: 2px dashed #d1d5db; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: .88rem; }
 
     @@media (max-width: 800px) {
         .account-page { padding: 70px 16px 16px 16px; }
@@ -134,6 +177,8 @@
     private bool isError = false;
     private string newPassword = string.Empty;
     private string confirmPassword = string.Empty;
+    private string? photoPreview = null;
+    private string photoError = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -149,9 +194,53 @@
             if (found != null)
             {
                 user = found;
+                photoPreview = user.Photo;
                 var subs = await getSubscription.ExecuteAsync(user.UserId ?? "");
-                currentSub = subs?.FirstOrDefault(x => x.Status == "Active");
+                currentSub = subs?.FirstOrDefault(x => x.Status == "Active")
+                          ?? subs?.FirstOrDefault();
             }
+        }
+    }
+
+    (string Text, string Css) GetSubscriptionStatus()
+    {
+        if (currentSub == null)
+            return ("Inactive", "badge-inactive");
+
+        if (currentSub.Status == "Inactive")
+            return ("Inactive", "badge-inactive");
+
+        if (currentSub.EndDate.HasValue && currentSub.EndDate.Value.Date < DateTime.Today)
+            return ("Due Date", "badge-duedate");
+
+        return ("Active", "badge-active");
+    }
+
+    async Task OnPhotoSelected(InputFileChangeEventArgs e)
+    {
+        photoError = string.Empty;
+        var file = e.File;
+        if (file == null) return;
+
+        const long maxBytes = 2 * 1024 * 1024;
+        if (file.Size > maxBytes)
+        {
+            photoError = "Photo must be 2MB or smaller.";
+            return;
+        }
+
+        try
+        {
+            using var stream = file.OpenReadStream(maxBytes);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            var base64 = Convert.ToBase64String(ms.ToArray());
+            photoPreview = $"data:{file.ContentType};base64,{base64}";
+            user.Photo = photoPreview;
+        }
+        catch
+        {
+            photoError = "Could not read the selected photo. Please try another file.";
         }
     }
 
@@ -160,6 +249,7 @@
         try
         {
             await update.ExecuteAsync(user);
+            photoPreview = user.Photo;
             message = "Profile updated successfully!";
             isError = false;
         }

@@ -10,7 +10,6 @@
 @inject IJSRuntime JS
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IGetAll_User getAll
-@inject IGetRecent_Billing getRecentBilling
 @inject IGetAll_Billing getAllBilling
 
 <PageTitle>Staff Dashboard - BillTix</PageTitle>
@@ -26,7 +25,8 @@
     </div>
 
     <div class="content">
-        <h1>Dashboard</h1>
+        <h3 class="fw-bold mb-0" style="color:#111;">Dashboard</h3>
+        <p></p>
 
         <div class="stat-cards">
             <div class="stat-card">
@@ -98,47 +98,31 @@
     private int totalSubscribers = 0;
     private decimal totalRevenue = 0;
     private int pendingBills = 0;
-    private IEnumerable<Billing> transactions = new List<Billing>();
     private List<Billing> bill = new();
 
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadBillings();
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
         if (user.Identity?.IsAuthenticated == true)
             username = user.Identity.Name ?? "Admin";
 
         var users = await getAll.ExecuteAsync();
-
-
-
         totalSubscribers = users?.Count(x => x.Role == "Subscriber") ?? 0;
 
-        try
+        var allBillings = await getAllBilling.ExecuteAsync();
+        if (allBillings != null)
         {
-            var allBillings = await getAllBilling.ExecuteAsync();
-            if (allBillings != null)
-            {
-                totalRevenue = allBillings.Where(x => x.Status == "Paid").Sum(x => x.Amount);
-                pendingBills = allBillings.Count(x => x.Status == "Pending");
-            }
-
-            var recent = await getRecentBilling.ExecuteAsync(5);
+            bill = allBillings.ToList();
+            totalRevenue = bill.Where(x => x.Status == "Paid").Sum(x => x.Amount);
+            pendingBills = bill.Count(x => x.Status == "Pending" || x.Status == "Overdue");
         }
-        catch
-        {
-            // Billing table may not have data yet
-        }
-
     }
+
     async Task LoadBillings()
     {
         var result = await getAllBilling.ExecuteAsync();
         bill = result?.ToList() ?? new();
     }
-
-   
-
 }

@@ -8,15 +8,16 @@
 @attribute [Authorize(Roles = "Subscriber")]
 @inject IGetByUser_Billing getBillings
 @inject IUpdate_Billing updateBilling
+@inject IDelete_Billing deleteBilling
 @inject IGetByUser_Subscription getSubscription
 @inject IGetAll_InternetPlan getPlans
-@inject ICreate_UpgradeRequest createRequest
 @inject IGetAll_UpgradeRequest getAllRequests
 @inject IDelete_UpgradeRequest deleteRequest
+@inject ICreate_UpgradeRequest createUpgradeRequest
 @inject ICreate_Billing createBilling
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IGetAll_User getAll
-
+@inject ICreate_ServiceRequest createRequest
 <div class="plans-wrapper">
 
     <div class="plans-header">
@@ -34,37 +35,60 @@
 
     @if (activeSub != null)
     {
-        var selectedPendingReq = selectedPlan != null
-            ? pendingRequests.FirstOrDefault(x => x.PlanId == selectedPlan.PlanId && x.Status == "Pending")
-            : null;
+        var pendingUpgrade = pendingRequests.FirstOrDefault(x => x.Status == "Pending");
 
         <div class="current-plan-banner mb-4">
             <div style="flex:1;">
                 <div class="current-plan-label">Current Bill</div>
                 <div class="d-flex justify-content-between align-items-center mt-1">
                     <div>
-                        <div class="current-plan-name">@(selectedPlan?.PlanName ?? activeSub.PlanName)</div>
+                        <div class="current-plan-name">@(activeSub.PlanName)</div>
                         <div class="current-plan-price">
-                            ₱@((selectedPlan?.Price ?? currentBill?.Amount ?? activeSub.PlanPrice).ToString("N2")) / month
+                            ₱@((currentBill?.Amount ?? activeSub.PlanPrice).ToString("N2")) / month
                         </div>
                         <div class="text-muted small mt-1">
                             Due: @(currentBill?.DueDate?.ToString("MMMM dd, yyyy") ?? activeSub.EndDate?.ToString("MMMM dd, yyyy") ?? "—")
                         </div>
-                        <div class="text-muted small">You can pay in advance before due date.</div>
+
+                        @if (HasSubmittedPayment)
+                        {
+                            <div class="text-muted small mt-1">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Payment submitted (@currentBill!.PaymentMethod). Waiting for admin confirmation.
+                            </div>
+                        }
+                        else if (pendingUpgrade != null)
+                        {
+                            <div class="text-muted small mt-1">
+                                <i class="bi bi-info-circle me-1"></i>
+                                You have a pending upgrade request to <strong>@pendingUpgrade.PlanName</strong>.
+                                Go to <strong>Billing</strong> tab to pay it, or cancel the request below.
+                            </div>
+                            <button class="btn btn-outline-danger btn-sm mt-2"
+                                    @onclick="() => CancelUpgradeRequest(pendingUpgrade)">
+                                <i class="bi bi-x-circle me-1"></i> Cancel Request
+                            </button>
+                        }
+                        else
+                        {
+                            <div class="text-muted small">You can pay in advance before due date.</div>
+                        }
                     </div>
-                    @if (selectedPendingReq != null)
+
+                    @if (HasSubmittedPayment)
                     {
-                        <button class="btn-plan btn-plan-cancel" @onclick="() => ConfirmCancelRequest(selectedPendingReq)">
-                            <i class="bi bi-x-circle me-1"></i> Cancel Request
+                        <button class="btn-plan btn-plan-switch btn-danger"
+                                @onclick="() => CancelPayment(currentBill)">
+                            Cancel Payment
                         </button>
-                    }
-                    else if (activeSub != null)
-                    {
-                        <button class="btn-plan btn-plan-switch" @onclick="OpenPayForm">Pay Now</button>
                     }
                     else
                     {
-                        <span class="badge-pending-plan">No Bill</span>
+                        <button class="btn-plan btn-plan-switch"
+                                @onclick="OpenPayForm"
+                                disabled="@HasPendingUpgrade">
+                            Pay Now
+                        </button>
                     }
                 </div>
             </div>
@@ -127,12 +151,8 @@
                 <strong>@(activeSub?.PlanName ?? "—")</strong>
             </div>
             <div class="d-flex justify-content-between mt-2">
-                <span class="text-muted">Selected Plan</span>
-                <strong>@(selectedPlan?.PlanName ?? "—")</strong>
-            </div>
-            <div class="d-flex justify-content-between mt-2">
                 <span class="text-muted">Amount</span>
-                <strong class="text-success">₱@((selectedPlan?.Price ?? currentBill?.Amount ?? activeSub?.PlanPrice ?? 0).ToString("N2"))</strong>
+                <strong class="text-success">₱@((currentBill?.Amount ?? activeSub?.PlanPrice ?? 0).ToString("N2"))</strong>
             </div>
             <div class="d-flex justify-content-between mt-2">
                 <span class="text-muted">Due Date</span>
@@ -140,15 +160,12 @@
             </div>
         </div>
 
-        <div class="mb-3">
-            <label class="form-label fw-semibold">Plan to Pay <span class="text-danger">*</span></label>
-            <select class="form-select" @bind="selectedPlanId">
-                <option value="">Select Plan</option>
-                @foreach (var plan in plans)
-                {
-                    <option value="@plan.PlanId">@plan.PlanName - ₱@plan.Price.ToString("N2")</option>
-                }
-            </select>
+        <div class="mb-3 p-2" style="background:#fff3cd; border-radius:8px;">
+            <small class="text-muted">
+                <i class="bi bi-info-circle me-1"></i>
+                This pays your current plan bill. Want a different plan? Go to
+                <strong>Internet Plans</strong> to submit an upgrade request instead.
+            </small>
         </div>
 
         <div class="mb-3">
@@ -181,24 +198,6 @@
         </div>
     </div>
 }
-
-@if (showCancelConfirm && cancelTarget != null)
-{
-    <div class="modal-backdrop-custom" @onclick="() => showCancelConfirm = false"></div>
-    <div class="modal-box shadow-lg" style="width:420px;">
-        <div class="text-center py-2">
-            <div style="font-size:3rem;">⚠️</div>
-            <h5 class="fw-bold mt-2">Cancel Request?</h5>
-            <p class="text-muted mt-1">
-                Are you sure you want to cancel your upgrade request for <strong>@cancelTarget.PlanName</strong>?
-            </p>
-        </div>
-        <div class="d-flex gap-2 mt-3 justify-content-center">
-            <button class="btn btn-secondary px-4" @onclick="() => showCancelConfirm = false">No, Keep It</button>
-            <button class="btn btn-danger px-4" @onclick="ExecuteCancelRequest">Yes, Cancel</button>
-        </div>
-    </div>
-}
 @code {
     private List<Billing> billings = new();
     private List<InternetPlan> plans = new();
@@ -214,20 +213,22 @@
     private string paymentMethod = string.Empty;
     private string referenceNo = string.Empty;
     private string formError = string.Empty;
-    private string selectedPlanId = string.Empty;
 
-    private bool showCancelConfirm = false;
-    private UpgradeRequest? cancelTarget;
-
-    private InternetPlan? selectedPlan => plans.FirstOrDefault(x => x.PlanId == selectedPlanId);
-
-    // Allow advance payment: get earliest bill that is not Paid/Cancelled
+    // Current unpaid bill
     private Billing? currentBill => billings
         .Where(x =>
             !string.Equals(x.Status, "Paid", StringComparison.OrdinalIgnoreCase) &&
             !string.Equals(x.Status, "Cancelled", StringComparison.OrdinalIgnoreCase))
         .OrderBy(x => x.DueDate ?? DateTime.MaxValue)
         .FirstOrDefault();
+
+    // Check if user has pending upgrade request
+    private bool HasPendingUpgrade =>
+        pendingRequests.Any(x => x.Status == "Pending");
+
+    // Check if current bill already has a submitted payment awaiting confirmation
+    private bool HasSubmittedPayment =>
+        currentBill != null && !string.IsNullOrWhiteSpace(currentBill.PaymentMethod);
 
     string GetStatusClass(string? status) => status switch
     {
@@ -258,15 +259,14 @@
 
     async Task LoadData()
     {
-        var billResult = await getBillings.ExecuteAsync(userId);
-        billings = billResult?.ToList() ?? new();
+        billings = (await getBillings.ExecuteAsync(userId))?.ToList() ?? new();
 
-        // Auto-overdue only for truly pending and no payment proof
         var overdueBills = billings
-            .Where(x => string.Equals(x.Status, "Pending", StringComparison.OrdinalIgnoreCase)
-                     && x.DueDate.HasValue
-                     && x.DueDate.Value.Date < DateTime.Today
-                     && string.IsNullOrWhiteSpace(x.PaymentMethod))
+            .Where(x =>
+                x.Status == "Pending" &&
+                x.DueDate.HasValue &&
+                x.DueDate.Value.Date < DateTime.Today &&
+                string.IsNullOrWhiteSpace(x.PaymentMethod))
             .ToList();
 
         foreach (var bill in overdueBills)
@@ -277,40 +277,40 @@
 
         if (overdueBills.Any())
         {
-            var refreshed = await getBillings.ExecuteAsync(userId);
-            billings = refreshed?.ToList() ?? new();
+            billings = (await getBillings.ExecuteAsync(userId))?.ToList() ?? new();
         }
 
-        var subs = await getSubscription.ExecuteAsync(userId);
-        activeSub = subs?.FirstOrDefault(x => x.Status == "Active");
+        activeSub = (await getSubscription.ExecuteAsync(userId))
+            ?.FirstOrDefault(x => x.Status == "Active");
 
-        var planResult = await getPlans.ExecuteAsync();
-        plans = planResult?.Where(x => x.IsActive).ToList() ?? new();
-
-        var allReqs = await getAllRequests.ExecuteAsync();
-        pendingRequests = allReqs?
-            .Where(x => x.UserId == userId && x.Status == "Pending")
+        plans = (await getPlans.ExecuteAsync())
+            ?.Where(x => x.IsActive)
             .ToList() ?? new();
 
-        if (activeSub != null && string.IsNullOrWhiteSpace(selectedPlanId))
-        {
-            var match = plans.FirstOrDefault(x => x.PlanName == activeSub.PlanName);
-            if (match != null) selectedPlanId = match.PlanId ?? "";
-        }
+        pendingRequests = (await getAllRequests.ExecuteAsync())
+            ?.Where(x => x.UserId == userId && x.Status == "Pending")
+            .ToList() ?? new();
     }
 
     void OpenPayForm()
     {
+        if (HasPendingUpgrade)
+        {
+            isError = true;
+            message = "You have a pending upgrade request. Please wait for approval or cancel it from Internet Plans before paying your bill.";
+            return;
+        }
+
+        if (HasSubmittedPayment)
+        {
+            isError = true;
+            message = "You already submitted a payment for this bill. Cancel it first if you want to change it.";
+            return;
+        }
+
         paymentMethod = string.Empty;
         referenceNo = string.Empty;
         formError = string.Empty;
-
-        if (activeSub != null && string.IsNullOrWhiteSpace(selectedPlanId))
-        {
-            var match = plans.FirstOrDefault(x => x.PlanName == activeSub.PlanName);
-            if (match != null) selectedPlanId = match.PlanId ?? "";
-        }
-
         showPayForm = true;
     }
 
@@ -324,9 +324,9 @@
 
     async Task SubmitPayment()
     {
-        if (string.IsNullOrWhiteSpace(selectedPlanId))
+        if (HasPendingUpgrade)
         {
-            formError = "Please select a plan.";
+            formError = "You have a pending upgrade request. Please wait for approval or cancel it before paying.";
             return;
         }
 
@@ -342,120 +342,65 @@
             return;
         }
 
+        if (activeSub == null)
+        {
+            formError = "No active subscription found.";
+            return;
+        }
+
         isSubmitting = true;
         formError = string.Empty;
 
         try
         {
-            // 1) Find existing payable bill (advance payment allowed)
-            var targetBill = currentBill ?? billings
-                .Where(x =>
-                    !string.Equals(x.Status, "Paid", StringComparison.OrdinalIgnoreCase) &&
-                    !string.Equals(x.Status, "Cancelled", StringComparison.OrdinalIgnoreCase))
-                .OrderBy(x => x.DueDate ?? DateTime.MaxValue)
-                .FirstOrDefault();
+            var targetBill = currentBill;
 
-            // 2) If no bill exists, create one from active subscription (IMPORTANT)
             if (targetBill == null)
             {
-                if (activeSub == null)
-                {
-                    formError = "No active subscription found.";
-                    return;
-                }
-
                 targetBill = new Billing
                 {
                     UserId = userId,
-                    Amount = selectedPlan?.Price ?? activeSub.PlanPrice,
-                    Description = $"Payment for {(selectedPlan?.PlanName ?? activeSub.PlanName)}",
+                    Amount = activeSub.PlanPrice,
+                    Description = $"Payment for {activeSub.PlanName}",
                     DueDate = activeSub.EndDate ?? DateTime.Today.AddDays(30),
                     Status = "Pending",
                     PaymentMethod = $"{paymentMethod} - Ref: {referenceNo}",
                     CreatedAt = DateTime.Now
                 };
 
-                // NOTE: requires @inject ICreate_Billing createBilling
                 await createBilling.ExecuteAsync(targetBill);
-
-                // refresh list so next operations are consistent
-                await LoadData();
-
-                // get the newly created bill
-                targetBill = billings
-                    .Where(x =>
-                        !string.Equals(x.Status, "Paid", StringComparison.OrdinalIgnoreCase) &&
-                        !string.Equals(x.Status, "Cancelled", StringComparison.OrdinalIgnoreCase))
-                    .OrderBy(x => x.DueDate ?? DateTime.MaxValue)
-                    .FirstOrDefault();
-
-                if (targetBill == null)
-                {
-                    formError = "Unable to prepare bill for payment.";
-                    return;
-                }
             }
             else
             {
-                // 3) Update existing bill
                 targetBill.PaymentMethod = $"{paymentMethod} - Ref: {referenceNo}";
                 targetBill.Status = "Pending";
-
-                if (selectedPlan != null)
-                {
-                    targetBill.Amount = selectedPlan.Price;
-                    targetBill.Description = $"Payment for {selectedPlan.PlanName}";
-                }
 
                 await updateBilling.ExecuteAsync(targetBill);
             }
 
-            // 4) Create UpgradeRequest only if selected plan differs from active plan
-            bool upgradeCreated = false;
-            bool duplicatePending = false;
+            // Create UpgradeRequest so admin can see it in Payment Request page
+            // Check first if walang existing pending request para sa current plan
+            var existingReq = pendingRequests.FirstOrDefault(x =>
+                x.PlanName == activeSub.PlanName && x.Status == "Pending");
 
-            var activePlan = plans.FirstOrDefault(x =>
-                string.Equals(x.PlanName, activeSub?.PlanName, StringComparison.OrdinalIgnoreCase));
-            var activePlanId = activePlan?.PlanId ?? string.Empty;
-
-            var isPlanChange = selectedPlan != null &&
-                               !string.Equals(selectedPlan.PlanId, activePlanId, StringComparison.OrdinalIgnoreCase);
-
-            if (isPlanChange && selectedPlan != null)
+            if (existingReq == null)
             {
-                var allReqs = await getAllRequests.ExecuteAsync();
-
-                duplicatePending = allReqs?.Any(x =>
-                    x.UserId == userId &&
-                    x.PlanId == selectedPlan.PlanId &&
-                    x.Status == "Pending") == true;
-
-                if (!duplicatePending)
+                var planMatch = plans.FirstOrDefault(x => x.PlanName == activeSub.PlanName);
+                await createUpgradeRequest.ExecuteAsync(new UpgradeRequest
                 {
-                    var req = new UpgradeRequest
-                    {
-                        UserId = userId,
-                        PlanId = selectedPlan.PlanId,
-                        PlanName = selectedPlan.PlanName,
-                        ReferenceNo = referenceNo,
-                        Status = "Pending"
-                    };
-
-                    await createRequest.ExecuteAsync(req);
-                    upgradeCreated = true;
-                }
+                    UserId = userId,
+                    PlanId = planMatch?.PlanId,
+                    PlanName = activeSub.PlanName,
+                    ReferenceNo = referenceNo,
+                    Status = "Pending"
+                });
             }
 
             await LoadData();
+
             showPayForm = false;
             isError = false;
-
-            if (upgradeCreated)
-                message = "Payment submitted and upgrade request created. Please wait for admin approval.";
-            else if (duplicatePending)
-                message = "Payment submitted. You already have a pending upgrade request for this plan.";
-            else
-                message = "Payment submitted! Please wait for admin confirmation.";
+            message = "Payment submitted! Please wait for admin confirmation.";
         }
         catch (Exception ex)
         {
@@ -467,20 +412,34 @@
         }
     }
 
-    void ConfirmCancelRequest(UpgradeRequest req)
+    async Task CancelPayment(Billing? bill)
     {
-        cancelTarget = req;
-        showCancelConfirm = true;
-    }
-
-    async Task ExecuteCancelRequest()
-    {
-        if (cancelTarget == null) return;
+        if (bill == null) return;
 
         try
         {
-            await deleteRequest.ExecuteAsync(cancelTarget);
-            pendingRequests.Remove(cancelTarget);
+            // Remove the billing record entirely instead of leaving a blank "Pending" row behind
+            await deleteBilling.ExecuteAsync(bill);
+            await LoadData();
+
+            isError = false;
+            message = "Payment cancelled and removed. You can submit a new payment anytime.";
+        }
+        catch (Exception ex)
+        {
+            isError = true;
+            message = ex.Message;
+        }
+    }
+
+    async Task CancelUpgradeRequest(UpgradeRequest request)
+    {
+        if (request == null) return;
+
+        try
+        {
+            await deleteRequest.ExecuteAsync(request);
+            pendingRequests.Remove(request);
             message = "Upgrade request cancelled.";
             isError = false;
         }
@@ -490,8 +449,7 @@
             isError = true;
         }
 
-        cancelTarget = null;
-        showCancelConfirm = false;
+     
         await LoadData();
     }
 }
